@@ -16,6 +16,7 @@
 		"strictBindCallApply": false,
 		"forceConsistentCasingInFileNames": false,
 		"noFallthroughCasesInSwitch": false,
+		"noImplicitThis": true,
 		"baseUrl": "./",
 		"paths": {
 			"@modules/*": ["./src/modules", "./src/modules/*"],
