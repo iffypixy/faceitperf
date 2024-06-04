@@ -33,6 +33,7 @@
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"postcss": "^8.4.38",
 		"tailwindcss": "^3.4.3",
+		"tailwindcss-animate": "^1.0.7",
 		"typescript": "^5.2.2",
 		"vite": "^5.2.0",
 		"vite-plugin-svgr": "^4.2.0",

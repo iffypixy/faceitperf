@@ -1,3 +1,85 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+	html {
+		box-sizing: border-box;
+		font-size: 62.5%;
+
+		@media screen(xl) {
+			font-size: 55%;
+		}
+
+		@media screen(lg) {
+			font-size: 50%;
+		}
+
+		@media screen(md) {
+			font-size: 45%;
+		}
+
+		@media screen(sm) {
+			font-size: 40%;
+		}
+
+		@media screen(xs) {
+			font-size: 35%;
+		}
+	}
+
+	*,
+	*::before,
+	*::after {
+		box-sizing: inherit;
+		padding: 0;
+		margin: 0;
+	}
+
+	body {
+		@apply text-16;
+		@apply font-unbounded;
+		@apply bg-paper;
+		@apply text-paper-contrast;
+	}
+}
+
+@font-face {
+	font-family: "Unbounded";
+	font-weight: 400;
+	src:
+		local("Unbounded"),
+		url("@fonts/Unbounded/Unbounded-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Unbounded";
+	font-weight: 500;
+	src:
+		local("Unbounded"),
+		url("@fonts/Unbounded/Unbounded-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Unbounded";
+	font-weight: 600;
+	src:
+		local("Unbounded"),
+		url("@fonts/Unbounded/Unbounded-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Unbounded";
+	font-weight: 700;
+	src:
+		local("Unbounded"),
+		url("@fonts/Unbounded/Unbounded-Bold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Unbounded";
+	font-weight: 900;
+	src:
+		local("Unbounded"),
+		url("@fonts/Unbounded/Unbounded-ExtraBold.woff2") format("woff2");
+}

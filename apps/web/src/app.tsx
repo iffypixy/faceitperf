@@ -1,1 +1,3 @@
-export const App: React.FC = () => <h1>faceitperf</h1>;
+import {Routes} from "@pages/routes";
+
+export const App: React.FC = () => <Routes />;

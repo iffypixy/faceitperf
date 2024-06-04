@@ -14,8 +14,15 @@
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true
+		"noFallthroughCasesInSwitch": true,
+		"baseUrl": "./",
+		"paths": {
+			"@shared/*": ["./src/shared", "./src/shared/*"],
+			"@features/*": ["./src/features", "./src/features/*"],
+			"@pages/*": ["./src/pages", "./src/pages/*"],
+			"@entities/*": ["./src/entities", "./src/entities/*"]
+		}
 	},
-	"include": ["src"],
+	"include": ["src", "types"],
 	"references": [{"path": "./tsconfig.vite.json"}]
 }

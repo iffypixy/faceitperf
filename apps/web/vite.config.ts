@@ -6,4 +6,9 @@ import svgr from "vite-plugin-svgr";
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [react(), tsconfigPaths(), svgr()],
+	resolve: {
+		alias: {
+			"@fonts": "/src/shared/assets/fonts",
+		},
+	},
 });

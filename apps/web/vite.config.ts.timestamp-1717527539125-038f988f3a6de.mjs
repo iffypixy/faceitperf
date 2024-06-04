@@ -1,0 +1,15 @@
+// vite.config.ts
+import {defineConfig} from "file:///C:/Users/iffypixy/Desktop/faceitperf/apps/web/node_modules/.pnpm/vite@5.2.0/node_modules/vite/dist/node/index.js";
+import react from "file:///C:/Users/iffypixy/Desktop/faceitperf/apps/web/node_modules/.pnpm/@vitejs+plugin-react-swc@3.5.0_vite@5.2.0/node_modules/@vitejs/plugin-react-swc/index.mjs";
+import tsconfigPaths from "file:///C:/Users/iffypixy/Desktop/faceitperf/apps/web/node_modules/.pnpm/vite-tsconfig-paths@4.3.2_typescript@5.2.2_vite@5.2.0/node_modules/vite-tsconfig-paths/dist/index.mjs";
+import svgr from "file:///C:/Users/iffypixy/Desktop/faceitperf/apps/web/node_modules/.pnpm/vite-plugin-svgr@4.2.0_typescript@5.2.2_vite@5.2.0/node_modules/vite-plugin-svgr/dist/index.js";
+var vite_config_default = defineConfig({
+	plugins: [react(), tsconfigPaths(), svgr()],
+	resolve: {
+		alias: {
+			"@fonts": "/src/shared/assets/fonts",
+		},
+	},
+});
+export {vite_config_default as default};
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsidml0ZS5jb25maWcudHMiXSwKICAic291cmNlc0NvbnRlbnQiOiBbImNvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9kaXJuYW1lID0gXCJDOlxcXFxVc2Vyc1xcXFxpZmZ5cGl4eVxcXFxEZXNrdG9wXFxcXGZhY2VpdHBlcmZcXFxcYXBwc1xcXFx3ZWJcIjtjb25zdCBfX3ZpdGVfaW5qZWN0ZWRfb3JpZ2luYWxfZmlsZW5hbWUgPSBcIkM6XFxcXFVzZXJzXFxcXGlmZnlwaXh5XFxcXERlc2t0b3BcXFxcZmFjZWl0cGVyZlxcXFxhcHBzXFxcXHdlYlxcXFx2aXRlLmNvbmZpZy50c1wiO2NvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9pbXBvcnRfbWV0YV91cmwgPSBcImZpbGU6Ly8vQzovVXNlcnMvaWZmeXBpeHkvRGVza3RvcC9mYWNlaXRwZXJmL2FwcHMvd2ViL3ZpdGUuY29uZmlnLnRzXCI7aW1wb3J0IHtkZWZpbmVDb25maWd9IGZyb20gXCJ2aXRlXCI7XG5pbXBvcnQgcmVhY3QgZnJvbSBcIkB2aXRlanMvcGx1Z2luLXJlYWN0LXN3Y1wiO1xuaW1wb3J0IHRzY29uZmlnUGF0aHMgZnJvbSBcInZpdGUtdHNjb25maWctcGF0aHNcIjtcbmltcG9ydCBzdmdyIGZyb20gXCJ2aXRlLXBsdWdpbi1zdmdyXCI7XG5cbi8vIGh0dHBzOi8vdml0ZWpzLmRldi9jb25maWcvXG5leHBvcnQgZGVmYXVsdCBkZWZpbmVDb25maWcoe1xuICAgIHBsdWdpbnM6IFtyZWFjdCgpLCB0c2NvbmZpZ1BhdGhzKCksIHN2Z3IoKV0sXG4gICAgcmVzb2x2ZToge1xuICAgICAgICBhbGlhczoge1xuICAgICAgICAgICAgXCJAZm9udHNcIjogXCIvc3JjL3NoYXJlZC9hc3NldHMvZm9udHNcIixcbiAgICAgICAgfSxcbiAgICB9LFxufSk7XG4iXSwKICAibWFwcGluZ3MiOiAiO0FBQXVVLFNBQVEsb0JBQW1CO0FBQ2xXLE9BQU8sV0FBVztBQUNsQixPQUFPLG1CQUFtQjtBQUMxQixPQUFPLFVBQVU7QUFHakIsSUFBTyxzQkFBUSxhQUFhO0FBQUEsRUFDeEIsU0FBUyxDQUFDLE1BQU0sR0FBRyxjQUFjLEdBQUcsS0FBSyxDQUFDO0FBQUEsRUFDMUMsU0FBUztBQUFBLElBQ0wsT0FBTztBQUFBLE1BQ0gsVUFBVTtBQUFBLElBQ2Q7QUFBQSxFQUNKO0FBQ0osQ0FBQzsiLAogICJuYW1lcyI6IFtdCn0K

@@ -13,4 +13,7 @@ module.exports = {
 	],
 	parser: "@typescript-eslint/parser",
 	ignorePatterns: [".eslintrc.cjs"],
+	rules: {
+		"@typescript-eslint/no-explicit-any": "off",
+	},
 };
