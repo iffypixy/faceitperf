@@ -10,19 +10,15 @@ export const StatsVisualizor: React.FC<{
 	return (
 		<div className="flex flex-col space-y-52 -mx-22">
 			<div className="flex">
-				<Stat
-					id="rating"
-					value={+stats.rating.toFixed(2)}
-					approximate
-				/>
-				<Stat id="dpr" value={+stats.dpr.toFixed(2)} />
-				<Stat id="kast" value={+stats.kast.toFixed(1)} approximate />
+				<Stat id="rating" value={stats.rating} approximate />
+				<Stat id="dpr" value={stats.dpr} />
+				<Stat id="kast" value={stats.kast} approximate />
 			</div>
 
 			<div className="flex">
-				<Stat id="kd" value={+stats.kd.toFixed(2)} />
-				<Stat id="adr" value={+stats.adr.toFixed(1)} approximate />
-				<Stat id="kpr" value={+stats.kpr.toFixed(2)} />
+				<Stat id="kd" value={stats.kd} />
+				<Stat id="adr" value={stats.adr} approximate />
+				<Stat id="kpr" value={stats.kpr} />
 			</div>
 		</div>
 	);
@@ -49,6 +45,15 @@ const Stat: React.FC<{
 		kast: [0, 100],
 		kpr: [0.25, 1.1],
 		adr: [50, 110],
+	};
+
+	const format: Record<VisualizedStat, (n: number) => string> = {
+		kd: (n) => n.toFixed(2),
+		rating: (n) => n.toFixed(2),
+		dpr: (n) => n.toFixed(2),
+		kast: (n) => n.toFixed(1),
+		adr: (n) => n.toFixed(1),
+		kpr: (n) => n.toFixed(2),
 	};
 
 	const [MIN, MAX] = range[id];
@@ -106,7 +111,7 @@ const Stat: React.FC<{
 				</div>
 
 				<span className="text-paper-contrast font-bold text-60 xs:text-38">
-					{value}
+					{format[id](value)}
 				</span>
 			</div>
 
