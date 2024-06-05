@@ -112,6 +112,7 @@ export const getProfile = async (username: string, signal?: AbortSignal) => {
 
 	return {
 		profile: {
+			faceit: `https://www.faceit.com/en/players/${player.nickname}`,
 			username: player.nickname,
 			avatar: player.avatar,
 			currentForm,
@@ -122,6 +123,7 @@ export const getProfile = async (username: string, signal?: AbortSignal) => {
 				kills: +match["Kills"],
 				deaths: +match["Deaths"],
 				rating: calculateAverageStats([match]).rating,
+				faceit: `https://www.faceit.com/en/cs2/room/${match["Match Id"]}`,
 			})),
 			sessions: sessions.map((session) => ({
 				date: new Date(session[0]["Created At"]),

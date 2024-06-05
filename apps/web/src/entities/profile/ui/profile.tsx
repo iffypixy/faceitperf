@@ -36,19 +36,31 @@ export const Profile: React.FC = () => {
 		<div className="w-full max-w-[98rem] mx-auto flex flex-col space-y-56 bg-fixed-profile bg-profile rounded-6 border border-fixed-hltv/25 shadow-sm p-64 xs:p-44 animate-in zoom-in-75 slide-in-from-top-44 duration-500">
 			<div className="flex relative">
 				<div className="flex items-center space-x-24 overflow-hidden w-[80%]">
-					<img
-						src={profile?.avatar || noavatar}
-						alt="An avatar of a player"
-						className={cx("w-92 aspect-square rounded-8", {
-							"border-fixed-hltv border-2": Boolean(
-								profile?.avatar,
-							),
-						})}
-					/>
+					<a
+						href={profile?.faceit}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<img
+							src={profile?.avatar || noavatar}
+							alt="An avatar of a player"
+							className={cx("w-92 aspect-square rounded-8", {
+								"border-fixed-hltv border-2": Boolean(
+									profile?.avatar,
+								),
+							})}
+						/>
+					</a>
 
-					<h3 className="font-black text-fixed-hltv text-72 leading-[0.8] xs:text-32">
-						{profile?.username}
-					</h3>
+					<a
+						href={profile?.faceit}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<h3 className="font-black text-fixed-hltv text-72 leading-[0.8] xs:text-32">
+							{profile?.username}
+						</h3>
+					</a>
 				</div>
 
 				<span

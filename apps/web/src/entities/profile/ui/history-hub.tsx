@@ -83,18 +83,25 @@ export const HistoryHub: React.FC = () => {
 										</TableData>
 
 										<TableData className="w-[15%]">
-											{
+											<a
+												href={match.faceit}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-[#87a3bf]"
+											>
 												{
-													de_mirage: "mrg",
-													de_anubis: "anb",
-													de_inferno: "inf",
-													de_dust2: "d2",
-													de_overpass: "ovp",
-													de_nuke: "nuke",
-													de_vertigo: "vtg",
-													de_ancient: "anc",
-												}[match.map]
-											}
+													{
+														de_mirage: "mrg",
+														de_anubis: "anb",
+														de_inferno: "inf",
+														de_dust2: "d2",
+														de_overpass: "ovp",
+														de_nuke: "nuke",
+														de_vertigo: "vtg",
+														de_ancient: "anc",
+													}[match.map]
+												}
+											</a>
 										</TableData>
 
 										<TableData className="w-[20%]">
