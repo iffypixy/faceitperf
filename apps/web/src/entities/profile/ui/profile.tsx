@@ -44,11 +44,14 @@ export const Profile: React.FC = () => {
 						<img
 							src={profile?.avatar || noavatar}
 							alt="An avatar of a player"
-							className={cx("min-w-92 aspect-square rounded-8", {
-								"border-fixed-hltv border-2": Boolean(
-									profile?.avatar,
-								),
-							})}
+							className={cx(
+								"min-w-92 max-w-92 aspect-square rounded-8",
+								{
+									"border-fixed-hltv border-2": Boolean(
+										profile?.avatar,
+									),
+								},
+							)}
 						/>
 					</a>
 
