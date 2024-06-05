@@ -41,9 +41,9 @@ const Stat: React.FC<{
 	const range: Record<VisualizedStat, number[]> = {
 		rating: [0.5, 1.5],
 		kd: [0.5, 1.6],
-		dpr: [0.45, 1],
-		kast: [0, 100],
-		kpr: [0.25, 1.1],
+		dpr: [0.55, 0.85],
+		kast: [40, 90],
+		kpr: [0.5, 1],
 		adr: [50, 110],
 	};
 
