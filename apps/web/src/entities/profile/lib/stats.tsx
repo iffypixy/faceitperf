@@ -3,18 +3,21 @@ import {Match} from "@entities/match";
 export const calculateCurrentForm = (matches: Match[]) => {
 	const recent = () => {
 		const currentDate = new Date();
-		const threeMonthsAgo = new Date();
+		const twoWeeksAgo = new Date();
 
-		threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+		twoWeeksAgo.setDate(currentDate.getDate() - 14);
 
 		return matches.filter((match) => {
 			const date = new Date(match["Created At"]);
 
-			return date >= threeMonthsAgo;
+			return date >= twoWeeksAgo;
 		});
 	};
 
-	return calculateAverageStats(recent());
+	return {
+		stats: calculateAverageStats(recent()),
+		matches: recent().length,
+	};
 };
 
 export const calculateAverageStats = (matches: Match[]) => {
