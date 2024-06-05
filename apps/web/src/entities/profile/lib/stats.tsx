@@ -24,6 +24,26 @@ export const calculateAverageStats = (matches: Match[]) => {
 	const DMG_PER_KILL = 105;
 	const TRADE_PERCENT = 0.2;
 
+	const weight = matches.length;
+
+	if (weight === 0)
+		return {
+			kills: 0,
+			deaths: 0,
+			kd: 0,
+			dpr: 0,
+			kpr: 0,
+			avgk: 0,
+			adr: 0,
+			hs: 0,
+			hsp: 0,
+			apr: 0,
+			kast: 0,
+			impact: 0,
+			rating: 0,
+			weight,
+		};
+
 	const kills = matches
 		.map((match) => +match["Kills"])
 		.reduce((prev, kills) => prev + kills, 0);
@@ -32,24 +52,24 @@ export const calculateAverageStats = (matches: Match[]) => {
 		.map((match) => +match["Deaths"])
 		.reduce((prev, deaths) => prev + deaths, 0);
 
-	const kd = kills / deaths;
+	const kd = kills / deaths || 0;
 
 	const dpr =
 		matches
 			.map((match) => +match["Deaths"] / +match["Rounds"])
-			.reduce((prev, dpr) => prev + dpr, 0) / matches.length;
+			.reduce((prev, dpr) => prev + dpr, 0) / weight;
 
 	const kpr =
 		matches
 			.map((match) => +match["K/R Ratio"])
-			.reduce((prev, kpr) => prev + kpr, 0) / matches.length;
+			.reduce((prev, kpr) => prev + kpr, 0) / weight;
 
-	const avgk = kills / matches.length;
+	const avgk = kills / weight;
 
 	const adr =
 		matches
 			.map((match) => +match["K/R Ratio"] * DMG_PER_KILL)
-			.reduce((prev, adr) => prev + adr, 0) / matches.length;
+			.reduce((prev, adr) => prev + adr, 0) / weight;
 
 	const hs = matches
 		.map((match) => +match["Headshots"])
@@ -60,7 +80,7 @@ export const calculateAverageStats = (matches: Match[]) => {
 	const apr =
 		matches
 			.map((match) => +match["Assists"] / +match["Rounds"])
-			.reduce((prev, apr) => prev + apr, 0) / matches.length;
+			.reduce((prev, apr) => prev + apr, 0) / weight;
 
 	const kast =
 		matches
@@ -76,7 +96,7 @@ export const calculateAverageStats = (matches: Match[]) => {
 
 				return Math.min((sum / rounds) * 100, 100);
 			})
-			.reduce((prev, kast) => prev + kast, 0) / matches.length;
+			.reduce((prev, kast) => prev + kast, 0) / weight;
 
 	const impact = Math.max(2.13 * kpr + 0.42 * apr - 0.41, 0);
 
@@ -104,6 +124,6 @@ export const calculateAverageStats = (matches: Match[]) => {
 		kast,
 		impact,
 		rating,
-		weight: matches.length,
+		weight,
 	};
 };
