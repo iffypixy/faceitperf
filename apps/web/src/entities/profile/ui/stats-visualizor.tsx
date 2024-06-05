@@ -7,7 +7,7 @@ export const StatsVisualizor: React.FC<{
 	stats: Record<VisualizedStat, number>;
 }> = ({stats}) => {
 	return (
-		<div className="flex flex-col space-y-30 -mx-22">
+		<div className="flex flex-col space-y-52 -mx-22">
 			<div className="flex">
 				<Stat id="rating" value={+stats.rating.toFixed(2)} />
 				<Stat id="dpr" value={+stats.dpr.toFixed(2)} />
@@ -65,6 +65,10 @@ const Stat: React.FC<{
 	const translate = id === "dpr" ? 100 - scale() * 100 : scale() * 100;
 	const left = Math.min(Math.max(translate, 0), 100);
 
+	const poor = level() === (id === "dpr" ? 3 : 1);
+	const average = level() === 2;
+	const good = level() === (id === "dpr" ? 1 : 3);
+
 	return (
 		<div className="flex flex-col w-1/3 mx-22 xs:mx-14">
 			<div className="flex flex-col">
@@ -78,27 +82,62 @@ const Stat: React.FC<{
 			</div>
 
 			<div className="relative">
-				<div className="flex h-8 rounded-2 overflow-hidden">
-					<span
-						className={cx("bg-[#4b525a] w-1/3 h-full rounded-2", {
-							"bg-[#F53C3C]": level() === (id === "dpr" ? 3 : 1),
-						})}
-					/>
+				<div className="flex h-8 rounded-2">
+					<div className="w-1/3 h-full relative">
+						<span
+							className={cx(
+								"bg-[#4b525a] block w-full h-full rounded-2",
+								{
+									"bg-[#f53c3c] shadow-[0px_0px_15px_0px_#f53c3c]":
+										poor,
+								},
+							)}
+						/>
 
-					<span
-						className={cx("bg-[#5f666d] w-1/3 h-full rounded-2", {
-							"bg-[#e3ae08]": level() === 2,
-						})}
-					/>
-
-					<span
-						className={twMerge(
-							cx("bg-[#4b535c] w-1/3 h-full rounded-2", {
-								"bg-[#06ab18]":
-									level() === (id === "dpr" ? 1 : 3),
-							}),
+						{poor && (
+							<span className="uppercase absolute top-14 left-0 text-12 text-[#f53c3c]">
+								poor
+							</span>
 						)}
-					/>
+					</div>
+
+					<div className="w-1/3 h-full relative">
+						<span
+							className={cx(
+								"bg-[#5f666d] block w-full h-full rounded-2",
+								{
+									"bg-[#e3ae08] shadow-[0px_0px_15px_0px_#e3ae08]":
+										average,
+								},
+							)}
+						/>
+
+						{average && (
+							<span className="uppercase absolute top-14 left-1/2 -translate-x-1/2 text-12 text-[#e3ae08]">
+								okay
+							</span>
+						)}
+					</div>
+
+					<div className="w-1/3 h-full relative">
+						<span
+							className={twMerge(
+								cx(
+									"bg-[#4b535c] block w-full h-full rounded-2",
+									{
+										"bg-[#06ab18] shadow-[0px_0px_15px_0px_#06ab18]":
+											good,
+									},
+								),
+							)}
+						/>
+
+						{good && (
+							<span className="uppercase absolute top-14 right-0 text-12 text-[#06ab18]">
+								good
+							</span>
+						)}
+					</div>
 				</div>
 
 				<div

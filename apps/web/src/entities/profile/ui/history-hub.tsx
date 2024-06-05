@@ -74,7 +74,15 @@ export const HistoryHub: React.FC = () => {
 								const rating = +match.rating.toFixed(2);
 
 								return (
-									<TableRow key={idx}>
+									<TableRow
+										key={idx}
+										className={cx("border-r-4", {
+											"border-r-[#fc1d1d]":
+												match.result === 0,
+											"border-r-[#09c100]":
+												match.result === 1,
+										})}
+									>
 										<TableData className="w-[20%]">
 											{datefns.format(
 												new Date(match.date),
