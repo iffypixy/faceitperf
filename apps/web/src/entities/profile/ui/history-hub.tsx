@@ -67,11 +67,10 @@ export const HistoryHub: React.FC = () => {
 
 						<tbody>
 							{profile?.matches.map((match, idx) => {
-								const kd = +(
-									match.kills / match.deaths
-								).toFixed(2);
-
-								const rating = +match.rating.toFixed(2);
+								const kd = (match.kills / match.deaths).toFixed(
+									2,
+								);
+								const rating = match.rating.toFixed(2);
 
 								return (
 									<TableRow
@@ -120,11 +119,13 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[20%] font-semibold",
 												{
-													"text-[#fc1d1d]": kd < 0.95,
-													"text-[#09c100]": kd > 1.05,
+													"text-[#fc1d1d]":
+														+kd < 0.95,
+													"text-[#09c100]":
+														+kd > 1.05,
 													"text-[#929a9e]":
-														kd >= 0.95 &&
-														kd <= 1.05,
+														+kd >= 0.95 &&
+														+kd <= 1.05,
 												},
 											)}
 										>
@@ -136,12 +137,12 @@ export const HistoryHub: React.FC = () => {
 												"w-[25%] font-semibold",
 												{
 													"text-[#fc1d1d]":
-														rating < 0.95,
+														+rating < 0.95,
 													"text-[#09c100]":
-														rating > 1.05,
+														+rating > 1.05,
 													"text-[#929a9e]":
-														rating >= 0.95 &&
-														rating <= 1.05,
+														+rating >= 0.95 &&
+														+rating <= 1.05,
 												},
 											)}
 										>
@@ -178,9 +179,8 @@ export const HistoryHub: React.FC = () => {
 
 						<tbody>
 							{profile?.sessions.map((stats, idx) => {
-								const kd = +stats.kd.toFixed(2);
-
-								const rating = +stats.rating.toFixed(2);
+								const kd = stats.kd.toFixed(2);
+								const rating = stats.rating.toFixed(2);
 
 								return (
 									<TableRow key={idx}>
@@ -199,11 +199,13 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[25%] font-semibold",
 												{
-													"text-[#fc1d1d]": kd < 0.95,
-													"text-[#09c100]": kd > 1.05,
+													"text-[#fc1d1d]":
+														+kd < 0.95,
+													"text-[#09c100]":
+														+kd > 1.05,
 													"text-[#929a9e]":
-														kd >= 0.95 &&
-														kd <= 1.05,
+														+kd >= 0.95 &&
+														+kd <= 1.05,
 												},
 											)}
 										>
@@ -215,12 +217,12 @@ export const HistoryHub: React.FC = () => {
 												"w-[25%] font-semibold",
 												{
 													"text-[#fc1d1d]":
-														rating < 0.95,
+														+rating < 0.95,
 													"text-[#09c100]":
-														rating > 1.05,
+														+rating > 1.05,
 													"text-[#929a9e]":
-														rating >= 0.95 &&
-														rating <= 1.05,
+														+rating >= 0.95 &&
+														+rating <= 1.05,
 												},
 											)}
 										>

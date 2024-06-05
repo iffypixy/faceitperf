@@ -78,15 +78,17 @@ export const calculateAverageStats = (matches: Match[]) => {
 			})
 			.reduce((prev, kast) => prev + kast, 0) / matches.length;
 
-	const impact = 2.13 * kpr + 0.42 * apr - 0.41;
+	const impact = Math.max(2.13 * kpr + 0.42 * apr - 0.41, 0);
 
-	const rating =
+	const rating = Math.max(
 		0.0073 * kast +
-		0.3591 * kpr +
-		-0.5329 * dpr +
-		0.2372 * impact +
-		0.0032 * adr +
-		0.1587;
+			0.3591 * kpr +
+			-0.5329 * dpr +
+			0.2372 * impact +
+			0.0032 * adr +
+			0.1587,
+		0,
+	);
 
 	return {
 		kills,

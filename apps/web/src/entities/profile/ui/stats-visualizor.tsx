@@ -47,18 +47,20 @@ const Stat: React.FC<{
 		adr: [50, 110],
 	};
 
-	const format: Record<VisualizedStat, (n: number) => string> = {
-		kd: (n) => n.toFixed(2),
-		rating: (n) => n.toFixed(2),
-		dpr: (n) => n.toFixed(2),
-		kast: (n) => n.toFixed(1),
-		adr: (n) => n.toFixed(1),
-		kpr: (n) => n.toFixed(2),
+	const format: Record<VisualizedStat, string> = {
+		kd: value.toFixed(2),
+		rating: value.toFixed(2),
+		dpr: value.toFixed(2),
+		kast: value.toFixed(1),
+		adr: value.toFixed(1),
+		kpr: value.toFixed(2),
 	};
+
+	const adjusted = format[id];
 
 	const [MIN, MAX] = range[id];
 
-	const scale = () => (value - MIN) / (MAX - MIN);
+	const scale = () => (+adjusted - MIN) / (MAX - MIN);
 
 	const level = () => {
 		const diff = MAX - MIN;
@@ -66,12 +68,10 @@ const Stat: React.FC<{
 		const first = MIN + diff / 3;
 		const second = MIN + (2 * diff) / 3;
 
-		if (value <= first) return 1;
-		else if (value <= second) return 2;
+		if (+adjusted <= first) return 1;
+		else if (+adjusted <= second) return 2;
 		else return 3;
 	};
-
-	const name = map[id];
 
 	const translate = id === "dpr" ? 100 - scale() * 100 : scale() * 100;
 	const left = Math.min(Math.max(translate, 0), 100);
@@ -79,6 +79,8 @@ const Stat: React.FC<{
 	const poor = level() === (id === "dpr" ? 3 : 1);
 	const average = level() === 2;
 	const good = level() === (id === "dpr" ? 1 : 3);
+
+	const name = map[id];
 
 	return (
 		<div className="flex flex-col w-1/3 mx-22 xs:mx-14">
@@ -114,7 +116,7 @@ const Stat: React.FC<{
 				</div>
 
 				<span className="text-paper-contrast font-bold text-60 xs:text-38">
-					{format[id](value)}
+					{adjusted}
 				</span>
 			</div>
 
