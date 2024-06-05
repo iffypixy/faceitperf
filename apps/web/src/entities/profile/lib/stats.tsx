@@ -1,37 +1,20 @@
 import {Match} from "@entities/match";
 
-export const calculateCurrentForm = (sessions: Match[][]) => {
-	const recent = Math.min(5, sessions.length);
+export const calculateCurrentForm = (matches: Match[]) => {
+	const recent = () => {
+		const currentDate = new Date();
+		const threeMonthsAgo = new Date();
 
-	return sessions
-		.slice(0, recent)
-		.map(calculateAverageStats)
-		.reduce(
-			(prev, stats, _, {length}) => ({
-				kd: prev.kd + stats.kd / length,
-				rating: prev.rating + stats.rating / length,
-				impact: prev.impact + stats.impact / length,
-				kast: prev.kast + stats.kast / length,
-				dpr: prev.dpr + stats.dpr / length,
-				kpr: prev.kpr + stats.kpr / length,
-				adr: prev.adr + stats.adr / length,
-				avgk: prev.avgk + stats.avgk / length,
-				apr: prev.apr + stats.apr / length,
-				hsp: prev.hsp + stats.hsp / length,
-			}),
-			{
-				kd: 0,
-				rating: 0,
-				impact: 0,
-				kast: 0,
-				dpr: 0,
-				kpr: 0,
-				adr: 0,
-				avgk: 0,
-				apr: 0,
-				hsp: 0,
-			},
-		);
+		threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+
+		return matches.filter((match) => {
+			const date = new Date(match["Created At"]);
+
+			return date >= threeMonthsAgo;
+		});
+	};
+
+	return calculateAverageStats(recent());
 };
 
 export const calculateAverageStats = (matches: Match[]) => {

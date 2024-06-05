@@ -114,7 +114,7 @@ export const getProfile = async (username: string, signal?: AbortSignal) => {
 	const matches = await getAllMatches(player.player_id, signal);
 	const sessions = groupMatchesIntoSessions(matches);
 
-	const currentForm = calculateCurrentForm(sessions);
+	const currentForm = calculateCurrentForm(matches);
 
 	return {
 		profile: {
