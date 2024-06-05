@@ -98,7 +98,7 @@ const IndividualFormToggle: React.FC<{
 
 						setIsCurrentFormOpen(!isCurrentFormOpen);
 					}}
-					className="text-paper-contrast/60 uppercase text-12 cursor-pointer absolute right-0 top-0 select-none"
+					className="text-paper-contrast/60 uppercase text-12 cursor-pointer absolute right-0 top-0 select-none underline underline-offset-2"
 				>
 					{isCurrentFormOpen ? "Current form" : "Lifetime stats"}
 				</span>
