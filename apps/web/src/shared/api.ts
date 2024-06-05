@@ -122,7 +122,10 @@ export const getProfile = async (username: string, signal?: AbortSignal) => {
 			username: player.nickname,
 			avatar: player.avatar,
 			currentForm,
-			lifetimeStats: calculateAverageStats(matches),
+			lifetimeForm: {
+				stats: calculateAverageStats(matches),
+				matches: matches.length,
+			},
 			matches: matches.map((match) => ({
 				date: new Date(match["Created At"]),
 				map: match["Map"],

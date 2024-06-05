@@ -89,18 +89,21 @@ const Stat: React.FC<{
 					</span>
 
 					{approximate && (
-						<Tooltip delayDuration={250}>
+						<Tooltip>
 							<TooltipTrigger>
 								<Icon.Approx className="w-16 h-auto fill-paper-contrast/60 ml-8" />
 							</TooltipTrigger>
 
-							<TooltipContent>
+							<TooltipContent
+								className="max-w-[22rem] w-full"
+								sideOffset={12}
+							>
 								<div className="flex flex-col space-y-12">
-									<h6 className="text-16 font-bold">
+									<h6 className="text-16 font-bold text-paper-contrast">
 										Approximation
 									</h6>
 
-									<span className="text-12 text-paper-contrast/50">
+									<span className="text-12">
 										This value is an approximate estimate,
 										not a precise figure.
 									</span>

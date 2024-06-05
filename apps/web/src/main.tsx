@@ -14,7 +14,7 @@ const root = document.getElementById("root")!;
 createRoot(root).render(
 	<QueryClientProvider client={queryClient}>
 		<GaAnalytics>
-			<TooltipProvider>
+			<TooltipProvider delayDuration={50}>
 				<App />
 			</TooltipProvider>
 		</GaAnalytics>
