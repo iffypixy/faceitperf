@@ -18,15 +18,15 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 					</h1>
 
 					<span className="text-paper-contrast/75 text-16">
-						Get your{" "}
+						View your{" "}
 						<span className="text-fixed-faceit font-medium">
 							FACEIT CS2
 						</span>{" "}
-						performance in a{" "}
+						performance in an{" "}
 						<span className="text-fixed-hltv font-medium">
-							HLTV-like
+							HLTV-style
 						</span>{" "}
-						fashion.
+						format.
 					</span>
 				</div>
 
