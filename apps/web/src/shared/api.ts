@@ -1,12 +1,17 @@
 import {AxiosError} from "axios";
 
-import {calculateAverageStats, calculateCurrentForm} from "@entities/profile";
+import {
+	Player,
+	calculateAverageStats,
+	calculateCurrentForm,
+} from "@entities/profile";
 import {Match, groupMatchesIntoSessions} from "@entities/match";
 import {Dto, ReqWithPagination} from "@shared/lib/types";
 import {request} from "@shared/lib/request";
 
 const MAX_LIMIT = {
 	MATCHES: 100,
+	PLAYERS: 100,
 };
 
 interface ReqWithUsername {
@@ -18,33 +23,32 @@ type GetPlayerDto = Dto<
 	{
 		start: number;
 		end: number;
-		items: {
-			player_id: string;
-			nickname: string;
-			status: string;
-			games: {
-				name: string;
-				skill_level: string;
-			}[];
-			country: string;
-			verified: boolean;
-			avatar: string;
-		}[];
+		items: Player[];
 	}
 >;
 
 const getPlayer = async (req: GetPlayerDto["req"], signal?: AbortSignal) => {
-	const {
-		data: {items: players},
-	} = await request<GetPlayerDto["res"]>({
-		method: "GET",
-		url: "/search/players",
-		params: {
-			nickname: req.username,
-			game: "cs2",
-		},
-		signal,
-	});
+	let counter = 0;
+
+	const players: Player[] = [];
+
+	do {
+		const {
+			data: {items},
+		} = await request<GetPlayerDto["res"]>({
+			method: "GET",
+			url: "/search/players",
+			params: {
+				nickname: req.username,
+				game: "cs2",
+			},
+			signal,
+		});
+
+		players.push(...items);
+
+		counter++;
+	} while (counter * MAX_LIMIT.PLAYERS === players.length);
 
 	return players.find(
 		(p) => p.nickname.toLowerCase() === req.username.toLowerCase(),
@@ -126,6 +130,7 @@ export const getProfile = async (username: string, signal?: AbortSignal) => {
 				deaths: +match["Deaths"],
 				rating: calculateAverageStats([match]).rating,
 				faceit: `https://www.faceit.com/en/cs2/room/${match["Match Id"]}`,
+				result: +match["Result"],
 			})),
 			sessions: sessions.map((session) => ({
 				date: new Date(session[0]["Created At"]),
