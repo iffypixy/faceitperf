@@ -10,12 +10,14 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 		<Container>
 			<div className="flex flex-col space-y-72">
 				<div className="flex flex-col text-center items-center">
-					<h1 className="font-black text-52">
-						<span className="text-fixed-faceit">FACEIT</span>
-						<span className="text-fixed-hltv text-[6.8rem]">
-							perf
-						</span>
-					</h1>
+					<a href="/">
+						<h1 className="font-black text-52">
+							<span className="text-fixed-faceit">FACEIT</span>
+							<span className="text-fixed-hltv text-[6.8rem]">
+								perf
+							</span>
+						</h1>
+					</a>
 
 					<span className="text-paper-contrast/75 text-16">
 						View your{" "}
