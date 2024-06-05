@@ -17,12 +17,12 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 						</span>
 					</h1>
 
-					<span className="text-paper-contrast/75 text-18">
+					<span className="text-paper-contrast/75 text-16">
 						Get your{" "}
 						<span className="text-fixed-faceit font-medium">
 							FACEIT CS2
 						</span>{" "}
-						stats in a{" "}
+						performance in a{" "}
 						<span className="text-fixed-hltv font-medium">
 							HLTV-like
 						</span>{" "}

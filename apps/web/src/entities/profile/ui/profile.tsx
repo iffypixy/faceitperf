@@ -32,7 +32,7 @@ export const Profile: React.FC = () => {
 	if (!profile) return null;
 
 	return (
-		<div className="w-full max-w-[98rem] mx-auto flex flex-col space-y-56 bg-fixed-profile bg-profile rounded-6 border border-fixed-hltv/25 shadow-sm p-64 xs:p-44 animate-in zoom-in-75 slide-in-from-top-44 duration-500">
+		<div className="w-full max-w-[98rem] mx-auto flex flex-col space-y-68 bg-fixed-profile bg-profile rounded-6 border border-fixed-hltv/25 shadow-sm p-64 xs:p-44 animate-in zoom-in-75 slide-in-from-top-44 duration-500">
 			<div className="flex relative">
 				<div className="flex items-center space-x-30 overflow-hidden w-full">
 					<a
