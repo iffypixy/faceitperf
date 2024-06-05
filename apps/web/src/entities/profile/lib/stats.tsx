@@ -35,7 +35,7 @@ export const calculateCurrentForm = (sessions: Match[][]) => {
 };
 
 export const calculateAverageStats = (matches: Match[]) => {
-	const DMG_PER_KILL = 110;
+	const DMG_PER_KILL = 105;
 	const TRADE_PERCENT = 0.2;
 
 	const kills = matches
