@@ -42,7 +42,7 @@ export const HistoryHub: React.FC = () => {
 				<TabsContent value="matches">
 					<Table className="w-full">
 						<thead>
-							<TableRow>
+							<TableRow className="border-r-4 border-r-[#364250]">
 								<TableHeader className="w-[20%]">
 									Date
 								</TableHeader>
