@@ -1,4 +1,3 @@
-import {cx} from "class-variance-authority";
 import {useParams} from "wouter";
 
 import noavatar from "@shared/assets/avatar.webp";
@@ -42,16 +41,13 @@ export const Profile: React.FC = () => {
 						rel="noopener noreferrer"
 					>
 						<img
-							src={profile?.avatar || noavatar}
+							src={profile?.avatar}
 							alt="An avatar of a player"
-							className={cx(
-								"min-w-92 max-w-92 aspect-square rounded-8",
-								{
-									"border-fixed-hltv border-2": Boolean(
-										profile?.avatar,
-									),
-								},
-							)}
+							onError={(event) => {
+								event.currentTarget.src = noavatar;
+								event.currentTarget.dataset.placeholder = "1";
+							}}
+							className="min-w-92 max-w-92 aspect-square rounded-8 border-fixed-hltv border-2 data-[placeholder]:border-0"
 						/>
 					</a>
 

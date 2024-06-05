@@ -46,7 +46,9 @@ const getPlayer = async (req: GetPlayerDto["req"], signal?: AbortSignal) => {
 		signal,
 	});
 
-	return players[0];
+	return players.find(
+		(p) => p.nickname.toLowerCase() === req.username.toLowerCase(),
+	);
 };
 
 type GetMatchesDto = Dto<
