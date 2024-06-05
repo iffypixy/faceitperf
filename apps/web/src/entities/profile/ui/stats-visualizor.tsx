@@ -1,3 +1,4 @@
+import {Icon, Tooltip, TooltipContent, TooltipTrigger} from "@shared/ui";
 import {cx} from "class-variance-authority";
 import {twMerge} from "tailwind-merge";
 
@@ -9,14 +10,18 @@ export const StatsVisualizor: React.FC<{
 	return (
 		<div className="flex flex-col space-y-52 -mx-22">
 			<div className="flex">
-				<Stat id="rating" value={+stats.rating.toFixed(2)} />
+				<Stat
+					id="rating"
+					value={+stats.rating.toFixed(2)}
+					approximate
+				/>
 				<Stat id="dpr" value={+stats.dpr.toFixed(2)} />
-				<Stat id="kast" value={+stats.kast.toFixed(1)} />
+				<Stat id="kast" value={+stats.kast.toFixed(1)} approximate />
 			</div>
 
 			<div className="flex">
 				<Stat id="kd" value={+stats.kd.toFixed(2)} />
-				<Stat id="adr" value={+stats.adr.toFixed(1)} />
+				<Stat id="adr" value={+stats.adr.toFixed(1)} approximate />
 				<Stat id="kpr" value={+stats.kpr.toFixed(2)} />
 			</div>
 		</div>
@@ -26,7 +31,8 @@ export const StatsVisualizor: React.FC<{
 const Stat: React.FC<{
 	id: VisualizedStat;
 	value: number;
-}> = ({id, value}) => {
+	approximate?: boolean;
+}> = ({id, value, approximate}) => {
 	const map: Record<VisualizedStat, string> = {
 		rating: "Rating 2.0",
 		kd: "K/D",
@@ -72,9 +78,32 @@ const Stat: React.FC<{
 	return (
 		<div className="flex flex-col w-1/3 mx-22 xs:mx-14">
 			<div className="flex flex-col">
-				<span className="text-fixed-hltv/95 uppercase font-medium xs:text-14">
-					{name}
-				</span>
+				<div className="flex items-center">
+					<span className="text-fixed-hltv/95 uppercase font-medium xs:text-14">
+						{name}
+					</span>
+
+					{approximate && (
+						<Tooltip delayDuration={250}>
+							<TooltipTrigger>
+								<Icon.Approx className="w-16 h-auto fill-paper-contrast/60 ml-8" />
+							</TooltipTrigger>
+
+							<TooltipContent>
+								<div className="flex flex-col space-y-12">
+									<h6 className="text-16 font-bold">
+										Approximation
+									</h6>
+
+									<span className="text-12 text-paper-contrast/50">
+										This value is an approximate estimate,
+										not a precise figure.
+									</span>
+								</div>
+							</TooltipContent>
+						</Tooltip>
+					)}
+				</div>
 
 				<span className="text-paper-contrast font-bold text-60 xs:text-38">
 					{value}
