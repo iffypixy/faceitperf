@@ -49,7 +49,7 @@ export const Profile: React.FC = () => {
 								event.currentTarget.src = noavatar;
 								event.currentTarget.dataset.placeholder = "1";
 							}}
-							className="min-w-92 max-w-92 aspect-square rounded-8 border-fixed-hltv border data-[placeholder]:border-0"
+							className="min-w-92 max-w-92 aspect-square rounded-8 border-fixed-profile border-2 data-[placeholder]:border-0"
 						/>
 					</a>
 
