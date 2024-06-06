@@ -38,13 +38,13 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 			</div>
 		</Container>
 
-		<div className="absolute right-44 top-44 xs:hidden">
+		<div className="fixed right-44 top-44 xs:hidden md:absolute">
 			<a
 				href="https://github.com/iffypixy/faceitperf"
 				target="_blank"
 				rel="noopener noreferrer"
 			>
-				<Icon.GitHub className="w-52 h-auto fill-white cursor-pointer duration-700 animate-bounce" />
+				<Icon.GitHub className="w-52 h-auto fill-white cursor-pointer duration-500 ease-in-out hover:scale-125" />
 			</a>
 		</div>
 	</div>
