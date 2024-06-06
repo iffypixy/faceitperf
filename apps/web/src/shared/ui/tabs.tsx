@@ -11,7 +11,7 @@ export const TabsList = forwardRef<
 	<RTabs.List
 		ref={ref}
 		className={cx(
-			"inline-flex h-76 items-center justify-center rounded-12 p-12",
+			"inline-flex h-88 items-center justify-center rounded-12 p-12",
 			className,
 		)}
 		{...props}

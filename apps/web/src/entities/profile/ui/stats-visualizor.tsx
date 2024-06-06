@@ -86,7 +86,7 @@ const Stat: React.FC<{
 		<div className="flex flex-col w-1/3 mx-22 xs:mx-14">
 			<div className="flex flex-col">
 				<div className="flex items-center">
-					<span className="text-fixed-hltv/95 uppercase font-medium xs:text-14">
+					<span className="text-[#9ec8f1] uppercase font-medium xs:text-14">
 						{name}
 					</span>
 
