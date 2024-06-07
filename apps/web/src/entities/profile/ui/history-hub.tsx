@@ -29,7 +29,7 @@ export const HistoryHub: React.FC = () => {
 	return (
 		<div className="flex flex-col space-y-12 w-full max-w-[68rem] mx-auto">
 			<Tabs defaultValue="matches" className="flex flex-col space-y-16">
-				<TabsList className="w-full space-x-16 bg-fixed-profile border-fixed-hltv/25 border">
+				<TabsList className="w-full space-x-16 bg-fixed-profile border-fixed-hltv/25 border rounded-8">
 					<TabsTrigger value="matches" className="w-1/2">
 						Matches
 					</TabsTrigger>

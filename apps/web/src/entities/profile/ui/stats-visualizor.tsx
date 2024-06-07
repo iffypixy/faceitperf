@@ -1,6 +1,7 @@
-import {Icon, Tooltip, TooltipContent, TooltipTrigger} from "@shared/ui";
 import {cx} from "class-variance-authority";
 import {twMerge} from "tailwind-merge";
+
+import {Icon, Tooltip, TooltipContent, TooltipTrigger} from "@shared/ui";
 
 type VisualizedStat = "rating" | "kd" | "dpr" | "kpr" | "kast" | "adr";
 
@@ -8,7 +9,7 @@ export const StatsVisualizor: React.FC<{
 	stats: Record<VisualizedStat, number>;
 }> = ({stats}) => {
 	return (
-		<div className="flex flex-col space-y-52 -mx-22">
+		<div className="flex flex-col space-y-52 -mx-22 xs:-mx-14">
 			<div className="flex">
 				<Stat id="rating" value={stats.rating} approximate />
 				<Stat id="dpr" value={stats.dpr} />
@@ -86,7 +87,7 @@ const Stat: React.FC<{
 		<div className="flex flex-col w-1/3 mx-22 xs:mx-14">
 			<div className="flex flex-col">
 				<div className="flex items-center">
-					<span className="text-[#9ec8f1] uppercase font-medium xs:text-14">
+					<span className="text-[#9ec8f1] uppercase font-medium xs:text-12">
 						{name}
 					</span>
 
@@ -97,7 +98,7 @@ const Stat: React.FC<{
 							</TooltipTrigger>
 
 							<TooltipContent
-								className="max-w-[22rem] w-full"
+								className="max-w-[22rem] w-full p-16"
 								sideOffset={12}
 							>
 								<div className="flex flex-col space-y-12">

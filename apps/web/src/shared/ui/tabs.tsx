@@ -27,7 +27,7 @@ export const TabsTrigger = forwardRef<
 	<RTabs.Trigger
 		ref={ref}
 		className={cx(
-			"inline-flex items-center justify-center font-bold whitespace-nowrap h-full rounded-8 px-3 py-1 text-sm uppercase transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-fixed-hltv data-[state=active]:shadow",
+			"inline-flex items-center justify-center font-bold whitespace-nowrap h-full rounded-6 px-3 py-1 text-sm uppercase transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-fixed-hltv data-[state=active]:shadow",
 			className,
 		)}
 		{...props}

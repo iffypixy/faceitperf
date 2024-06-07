@@ -16,7 +16,7 @@ export const TooltipContent = forwardRef<
 			ref={ref}
 			sideOffset={sideOffset}
 			className={cx(
-				"z-50 bg-paper p-12 border-2 text-12 border-paper-contrast/15 opacity-95 rounded-6 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-paper-contrast/60 animate-in fade-in-0 zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+				"z-50 bg-paper p-8 border-2 text-12 border-paper-contrast/15 opacity-95 rounded-6 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-paper-contrast/60 animate-in fade-in-0 zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
 				className,
 			)}
 			{...props}
