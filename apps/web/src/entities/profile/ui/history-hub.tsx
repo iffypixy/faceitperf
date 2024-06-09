@@ -91,7 +91,7 @@ export const HistoryHub: React.FC = () => {
 
 										<TableData className="w-[15%]">
 											<a
-												href={match.faceit}
+												href={`/match/${match.id}`}
 												target="_blank"
 												rel="noopener noreferrer"
 												className="text-[#87a3bf]"
@@ -119,11 +119,11 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[20%] font-semibold",
 												{
-													"text-[#fc1d1d]":
+													"!text-[#fc1d1d]":
 														+kd < 0.95,
-													"text-[#09c100]":
+													"!text-[#09c100]":
 														+kd > 1.05,
-													"text-[#929a9e]":
+													"!text-[#929a9e]":
 														+kd >= 0.95 &&
 														+kd <= 1.05,
 												},
@@ -136,11 +136,11 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[25%] font-semibold",
 												{
-													"text-[#fc1d1d]":
+													"!text-[#fc1d1d]":
 														+rating < 0.95,
-													"text-[#09c100]":
+													"!text-[#09c100]":
 														+rating > 1.05,
-													"text-[#929a9e]":
+													"!text-[#929a9e]":
 														+rating >= 0.95 &&
 														+rating <= 1.05,
 												},
@@ -199,11 +199,11 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[25%] font-semibold",
 												{
-													"text-[#fc1d1d]":
+													"!text-[#fc1d1d]":
 														+kd < 0.95,
-													"text-[#09c100]":
+													"!text-[#09c100]":
 														+kd > 1.05,
-													"text-[#929a9e]":
+													"!text-[#929a9e]":
 														+kd >= 0.95 &&
 														+kd <= 1.05,
 												},
@@ -216,11 +216,11 @@ export const HistoryHub: React.FC = () => {
 											className={cx(
 												"w-[25%] font-semibold",
 												{
-													"text-[#fc1d1d]":
+													"!text-[#fc1d1d]":
 														+rating < 0.95,
-													"text-[#09c100]":
+													"!text-[#09c100]":
 														+rating > 1.05,
-													"text-[#929a9e]":
+													"!text-[#929a9e]":
 														+rating >= 0.95 &&
 														+rating <= 1.05,
 												},

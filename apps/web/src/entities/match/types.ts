@@ -32,3 +32,14 @@ export interface Match {
 	"Updated At": string;
 	Winner: string;
 }
+
+export interface GameStats {
+	Assists: string;
+	Kills: string;
+	Deaths: string;
+	Headshots: string;
+	"Headshots %": string;
+	"K/D Ratio": string;
+	"K/R Ratio": string;
+	Rounds: string;
+}
