@@ -411,6 +411,7 @@ export type GetMatchStatsDto = Dto<
 						Headshots: string;
 						Result: string;
 						"K/D Ratio": string;
+						ADR: string;
 					};
 				}[];
 			}[];

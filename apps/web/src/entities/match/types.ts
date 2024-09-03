@@ -31,6 +31,7 @@ export interface Match {
 	"Triple Kills": string;
 	"Updated At": string;
 	Winner: string;
+	ADR: string;
 }
 
 export interface GameStats {
@@ -41,5 +42,6 @@ export interface GameStats {
 	"Headshots %": string;
 	"K/D Ratio": string;
 	"K/R Ratio": string;
+	ADR: string;
 	Rounds: string;
 }
