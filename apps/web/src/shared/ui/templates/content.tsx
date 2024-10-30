@@ -72,10 +72,12 @@ export const SearchForm: React.FC = () => {
 				event.preventDefault();
 
 				if (username) {
-					if (isValidFaceitUsername(username)) {
+					const id = username.trim();
+
+					if (isValidFaceitUsername(id)) {
 						navigate(`/@/${username}`);
-					} else if (isValidSteamProfileUrl(username)) {
-						const steamId = await extractSteamId(username);
+					} else if (isValidSteamProfileUrl(id)) {
+						const steamId = await extractSteamId(id);
 
 						if (steamId) {
 							const faceitUsername =
