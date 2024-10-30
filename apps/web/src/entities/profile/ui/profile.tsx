@@ -31,7 +31,7 @@ export const Profile: React.FC = () => {
 	if (isError)
 		return (
 			<h3 className="text-center text-22 text-paper-contrast/75">
-				Unfortunately, this player was not found. :c
+				Sorry, the player was not found 😔
 			</h3>
 		);
 

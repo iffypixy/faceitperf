@@ -1,7 +1,14 @@
 import {useState} from "react";
 import {useLocation, useParams} from "wouter";
+import toast from "react-hot-toast";
 
 import {Container, Icon} from "@shared/ui";
+import {
+	extractSteamId,
+	isValidSteamProfileUrl,
+	loadFaceitUsernameBySteamId,
+} from "@shared/lib/steam";
+import {isValidFaceitUsername} from "@shared/lib/faceit";
 
 export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 	children,
@@ -19,13 +26,13 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
 						</h1>
 					</a>
 
-					<span className="text-paper-contrast/75 text-16">
+					<span className="text-paper-contrast/80 text-18">
 						View your{" "}
-						<span className="text-fixed-faceit font-medium">
+						<span className="text-fixed-faceit font-bold">
 							FACEIT CS2
 						</span>{" "}
 						performance in an{" "}
-						<span className="text-fixed-hltv font-medium">
+						<span className="text-fixed-hltv font-bold">
 							HLTV-style
 						</span>{" "}
 						format.
@@ -61,11 +68,30 @@ export const SearchForm: React.FC = () => {
 
 	return (
 		<form
-			onSubmit={(event) => {
+			onSubmit={async (event) => {
 				event.preventDefault();
 
 				if (username) {
-					navigate(`/@/${username}`);
+					if (isValidFaceitUsername(username)) {
+						navigate(`/@/${username}`);
+					} else if (isValidSteamProfileUrl(username)) {
+						const steamId = await extractSteamId(username);
+
+						if (steamId) {
+							const faceitUsername =
+								await loadFaceitUsernameBySteamId(steamId);
+
+							if (faceitUsername) {
+								navigate(`/@/${faceitUsername}`);
+							} else {
+								toast.error(
+									"Sorry, the player was not found 😔",
+								);
+							}
+						}
+					} else {
+						toast.error("Provide valid username 🙏");
+					}
 				}
 			}}
 			className="flex items-center justify-center"
@@ -76,7 +102,8 @@ export const SearchForm: React.FC = () => {
 					setUsername(event.currentTarget.value);
 				}}
 				placeholder="s1mple"
-				className="text-32 bg-fixed-faceit/5 border-fixed-faceit border-4 outline-none rounded-12 w-[44rem] h-[8rem] py-40 px-32"
+				autoFocus
+				className="text-32 bg-fixed-faceit/5 border-fixed-faceit border-4 outline-none rounded-12 w-[54rem] h-[8rem] py-40 px-32"
 			/>
 		</form>
 	);

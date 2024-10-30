@@ -83,3 +83,39 @@
 		local("Unbounded"),
 		url("@fonts/Unbounded/Unbounded-ExtraBold.woff2") format("woff2");
 }
+
+/* @font-face {
+    font-family: "BricolageGrotesque";
+    font-weight: 300;
+    src:
+        local("BricolageGrotesque"),
+        url("@fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2")
+            format("woff2");
+}
+
+@font-face {
+    font-family: "BricolageGrotesque";
+    font-weight: 400;
+    src:
+        local("BricolageGrotesque"),
+        url("@fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2")
+            format("woff2");
+}
+
+@font-face {
+    font-family: "BricolageGrotesque";
+    font-weight: 500;
+    src:
+        local("BricolageGrotesque"),
+        url("@fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2")
+            format("woff2");
+}
+
+@font-face {
+    font-family: "BricolageGrotesque";
+    font-weight: 800;
+    src:
+        local("BricolageGrotesque"),
+        url("@fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
+            format("woff2");
+} */

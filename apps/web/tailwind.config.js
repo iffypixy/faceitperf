@@ -37,6 +37,7 @@ export default {
 		},
 		fontFamily: {
 			unbounded: '"Unbounded", sans-serif',
+			bricolagegrotesque: '"BricolageGrotesque", sans-serif',
 		},
 		backgroundImage: {
 			profile: "linear-gradient(136deg, #1b1f23, #3a4755)",
