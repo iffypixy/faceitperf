@@ -504,11 +504,11 @@ export const getPlayerDetails = async (playerId: GetPlayerDetailsDto["req"]) =>
 export const loadMatch = async (matchId: string) => {
 	const [match, veto, stats] = await Promise.all([
 		getMatch(matchId),
-		getVetoProcess(matchId),
+		getVetoProcess(matchId).catch(() => null),
 		getMatchStats(matchId),
 	]);
 
-	if (!match || !veto || !stats) throw new AxiosError("No match found");
+	if (!match || !stats) throw new AxiosError("No match found");
 
 	const countries = {
 		team1: await Promise.all(

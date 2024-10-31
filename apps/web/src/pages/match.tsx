@@ -192,39 +192,47 @@ export const MatchPage: React.FC = () => {
 									Best of {match?.bo}
 								</div>
 
-								<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 text-14 space-y-6 list-decimal">
-									{match?.veto
-										.find(
-											(process) =>
-												process.entity_type === "map",
-										)
-										?.entities.map((entity, idx) => (
-											<li
-												key={idx}
-												className="ml-18 break-words"
-											>
-												{`Team ${
-													{
-														faction1:
-															match.team1.name,
-														faction2:
-															match.team2.name,
-													}[entity.selected_by]
-												} ${{pick: "picked", drop: "removed"}[entity.status]} ${
-													{
-														de_mirage: "Mirage",
-														de_anubis: "Anubis",
-														de_dust2: "Dust 2",
-														de_vertigo: "Vertigo",
-														de_inferno: "Inferno",
-														de_nuke: "Nuke",
-														de_ancient: "Ancient",
-													}[entity.guid]
-												}
+								{match?.veto && (
+									<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 text-14 space-y-6 list-decimal">
+										{match.veto
+											.find(
+												(process) =>
+													process.entity_type ===
+													"map",
+											)
+											?.entities.map((entity, idx) => (
+												<li
+													key={idx}
+													className="ml-18 break-words"
+												>
+													{`Team ${
+														{
+															faction1:
+																match.team1
+																	.name,
+															faction2:
+																match.team2
+																	.name,
+														}[entity.selected_by]
+													} ${{pick: "picked", drop: "removed"}[entity.status]} ${
+														{
+															de_mirage: "Mirage",
+															de_anubis: "Anubis",
+															de_dust2: "Dust 2",
+															de_vertigo:
+																"Vertigo",
+															de_inferno:
+																"Inferno",
+															de_nuke: "Nuke",
+															de_ancient:
+																"Ancient",
+														}[entity.guid]
+													}
                                                 `}
-											</li>
-										))}
-								</ul>
+												</li>
+											))}
+									</ul>
+								)}
 
 								<div className="flex flex-col rounded-4 overflow-hidden">
 									<div className="flex items-center justify-center relative">
@@ -336,32 +344,36 @@ export const MatchPage: React.FC = () => {
 							</h5>
 
 							<div className="w-full flex flex-col space-y-12 text-[#929a9e]">
-								<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 space-y-6 list-decimal text-14">
-									{match?.veto
-										.find(
-											(process) =>
-												process.entity_type ===
-												"location",
-										)
-										?.entities.map((entity, idx) => (
-											<li
-												key={idx}
-												className="ml-18 break-words"
-											>
-												{`Team ${
-													{
-														faction1:
-															match.team1.name,
-														faction2:
-															match.team2.name,
-													}[entity.selected_by]
-												} ${{pick: "picked", drop: "removed"}[entity.status]} ${
-													entity.guid
-												}
+								{match?.veto && (
+									<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 space-y-6 list-decimal text-14">
+										{match.veto
+											.find(
+												(process) =>
+													process.entity_type ===
+													"location",
+											)
+											?.entities.map((entity, idx) => (
+												<li
+													key={idx}
+													className="ml-18 break-words"
+												>
+													{`Team ${
+														{
+															faction1:
+																match.team1
+																	.name,
+															faction2:
+																match.team2
+																	.name,
+														}[entity.selected_by]
+													} ${{pick: "picked", drop: "removed"}[entity.status]} ${
+														entity.guid
+													}
                                                 `}
-											</li>
-										))}
-								</ul>
+												</li>
+											))}
+									</ul>
+								)}
 
 								<div className="flex space-x-14 items-center rounded-4 bg-[#2D3844] overflow-hidden p-18">
 									<img
