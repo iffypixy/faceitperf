@@ -32,6 +32,7 @@ export interface Match {
 	"Updated At": string;
 	Winner: string;
 	ADR: string;
+	"Match Finished At": number;
 }
 
 export interface GameStats {

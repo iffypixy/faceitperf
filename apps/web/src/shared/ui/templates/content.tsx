@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useLocation, useParams} from "wouter";
 import toast from "react-hot-toast";
 
@@ -63,6 +63,10 @@ export const SearchForm: React.FC = () => {
 	};
 
 	const [username, setUsername] = useState(initialUsername || "");
+
+	useEffect(() => {
+		setUsername(initialUsername);
+	}, [initialUsername]);
 
 	const [, navigate] = useLocation();
 

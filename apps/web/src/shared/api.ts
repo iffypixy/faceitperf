@@ -58,6 +58,7 @@ const getPlayer = async (req: GetPlayerDto["req"], signal?: AbortSignal) => {
 type GetMatchesDto = Dto<
 	ReqWithPagination & {
 		playerId: string;
+		to?: number;
 	},
 	{
 		start: number;
@@ -69,6 +70,8 @@ type GetMatchesDto = Dto<
 >;
 
 const getMatches = async (req: GetMatchesDto["req"], signal?: AbortSignal) => {
+	const offset = req.skip || 0;
+
 	const {
 		data: {items: matches},
 	} = await request<GetMatchesDto["res"]>({
@@ -76,7 +79,8 @@ const getMatches = async (req: GetMatchesDto["req"], signal?: AbortSignal) => {
 		url: `/players/${req.playerId}/games/cs2/stats`,
 		params: {
 			limit: req.limit || MAX_LIMIT.MATCHES,
-			offset: req.skip || 0,
+			offset: req.to ? undefined : Math.min(offset, 200),
+			to: offset > 200 ? req.to : undefined,
 		},
 		signal,
 	});
@@ -90,10 +94,16 @@ const getAllMatches = async (playerId: string, signal?: AbortSignal) => {
 	const matches: Match[] = [];
 
 	do {
+		const lastMatch = matches[matches.length - 1];
+
 		const loaded = await getMatches(
 			{
 				playerId,
 				skip: matches.length,
+				to:
+					matches.length > 200 && lastMatch
+						? lastMatch["Match Finished At"]
+						: undefined,
 			},
 			signal,
 		);
