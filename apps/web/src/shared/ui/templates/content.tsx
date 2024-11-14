@@ -65,7 +65,7 @@ export const SearchForm: React.FC = () => {
 	const [username, setUsername] = useState(initialUsername || "");
 
 	useEffect(() => {
-		setUsername(initialUsername);
+		setUsername(initialUsername || "");
 	}, [initialUsername]);
 
 	const [, navigate] = useLocation();
