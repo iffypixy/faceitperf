@@ -106,6 +106,7 @@ export const HistoryHub: React.FC = () => {
 														de_nuke: "nuke",
 														de_vertigo: "vtg",
 														de_ancient: "anc",
+														de_train: "trn",
 													}[match.map]
 												}
 											</a>

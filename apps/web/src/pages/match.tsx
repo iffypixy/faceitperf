@@ -226,6 +226,7 @@ export const MatchPage: React.FC = () => {
 															de_nuke: "Nuke",
 															de_ancient:
 																"Ancient",
+															de_train: "Train",
 														}[entity.guid]
 													}
                                                 `}
