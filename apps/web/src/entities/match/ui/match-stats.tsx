@@ -55,7 +55,7 @@ export const MatchStats: React.FC<MatchStatsProps> = ({team}) => (
 					<Data className="w-[52.5%] !justify-start !px-16">
 						<div className="flex items-center space-x-6">
 							<img
-								src={`https://flagcdn.com/${player.country}.svg`}
+								src={`https://flagcdn.com/${player.country.toLowerCase()}.svg`}
 								alt={player.country}
 								className="w-24 border rounded-2 border-[#000]"
 							/>
