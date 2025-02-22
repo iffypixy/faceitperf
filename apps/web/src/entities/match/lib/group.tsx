@@ -1,7 +1,7 @@
 import {Match} from "../types";
 
 export const groupMatchesIntoSessions = (matches: Match[]) => {
-	const SESSION_INTERVAL_HOURS = 10;
+	const SESSION_INTERVAL_HOURS = 4;
 	const MATCH_DURATION = 0.65;
 
 	const sessions: Match[][] = [];
