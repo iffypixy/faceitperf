@@ -12,5 +12,6 @@
 		"husky": "^8",
 		"lint-staged": "^15.2.5",
 		"prettier": "^3.3.0"
-	}
+	},
+	"packageManager": "pnpm@10.12.1"
 }
