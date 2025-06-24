@@ -1,6 +1,7 @@
 {
 	"name": "faceitperf",
 	"version": "0.0.1",
+	"private": true,
 	"scripts": {
 		"format": "prettier --write \"**/*.{js,ts,jsx,tsx,mjs,cjs,json,css,scss,sass,html}\""
 	},
