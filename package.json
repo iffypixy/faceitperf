@@ -8,11 +8,11 @@
 	"author": "Ansat Euler <iffypixy@gmail.com>",
 	"license": "MIT",
 	"devDependencies": {
-		"@commitlint/cli": "^19.3.0",
-		"@commitlint/config-conventional": "^19.2.2",
-		"husky": "^8",
-		"lint-staged": "^15.2.5",
-		"prettier": "^3.3.0"
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"husky": "^8.0.3",
+		"lint-staged": "^15.5.2",
+		"prettier": "^3.6.2"
 	},
 	"packageManager": "pnpm@10.12.1"
 }
