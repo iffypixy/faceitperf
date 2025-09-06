@@ -1,9 +1,7 @@
-import {Dispatch, SetStateAction} from "react";
-
 interface MapSelectProps {
 	maps: {name: string; value: number}[];
 	activeMap: number;
-	setActiveMap: Dispatch<SetStateAction<number>>;
+	setActiveMap: (map: string) => void
 }
 
 export const MapSelect: React.FC<MapSelectProps> = ({
@@ -15,7 +13,7 @@ export const MapSelect: React.FC<MapSelectProps> = ({
 		{maps.map((m) => (
 			<button
 				className={activeMap == m.value ? "font-bold" : ""}
-				onClick={() => setActiveMap(m.value)}
+				onClick={() => setActiveMap(`${m.value}`)}
 			>
 				{
 					{
