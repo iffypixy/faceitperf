@@ -1,4 +1,4 @@
-import {Link, useParams} from "wouter";
+import {Link, useParams, useSearchParams} from "wouter";
 import * as datefns from "date-fns";
 import {cx} from "class-variance-authority";
 import {twMerge} from "tailwind-merge";
@@ -12,13 +12,9 @@ import {
 import {calculateAverageStats} from "@entities/profile";
 import {Loader} from "@shared/ui/loader";
 import {Avatar, Center, Container, Fullscreen} from "@shared/ui";
-import {useState} from "react";
 
 /*
 	TODO
-	- [x] scores in header should be bo3 score, not rounds (i.e. 2-1, not 13-5)
-	- [x] all maps cards should be visible below veto
-	- [x] stats section should have option to click on map to look at specific leaderboards (e.g. All Maps, Nuke, Inferno, Mirage)
 	- [] bonus: ability to view stats for 'all maps'
 	- [] bonus: time should be for overall series, not first map
 	- [] bonus: veto option 7. should be "<MAP> left over"
@@ -31,9 +27,11 @@ import {useState} from "react";
 
 export const MatchPage: React.FC = () => {
 	const {matchId} = useParams() as {matchId: string};
+	const [searchParams, setSearchParams] = useSearchParams();
 
 	const {match, isLoading, isError} = useMatch(matchId);
-	const [activeMap, setActiveMap] = useState(0); //TODO - move this to url so that map stats become shareable
+
+	const activeMap = +searchParams.get('map')! > 0 ? +searchParams.get('map')! : 0
 
 	if (isLoading)
 		return (
@@ -466,7 +464,7 @@ export const MatchPage: React.FC = () => {
 											.slice(0, stats.length) ?? []
 									}
 									activeMap={activeMap}
-									setActiveMap={setActiveMap}
+									setActiveMap={(map: string) => setSearchParams({'map': map})}
 								/>
 							)}
 
