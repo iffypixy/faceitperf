@@ -16,16 +16,6 @@ import {Avatar, Center, Container, Fullscreen} from "@shared/ui";
 import {Score} from "types/score";
 import {formatDateDifference} from "@entities/match/lib/date";
 
-/*
-	TODO
-	- [] bonus: ability to view stats for 'all maps'
-	- [] added bonus - ability to select "side" to view stats based off if they're T or CT
-	- [] added bonus - have half scores in map card be coloured based off side
-	- [] added bonus - cleanup "Server" section
-	- [] added bonus - pick banner on map card
-	- [] added bonus - demo download links below server section
-*/
-
 export const MatchPage: React.FC = () => {
 	const {matchId} = useParams() as {matchId: string};
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -293,51 +283,78 @@ export const MatchPage: React.FC = () => {
 						</div>
 
 						<div className="w-1/2 flex flex-col space-y-16">
+							{match?.veto?.find(
+								(process) => process.entity_type === "location",
+							) && (
+								<>
+									<h5 className="text-[#929a9e] text-20 font-bold">
+										Server
+									</h5>
+
+									<div className="w-full flex flex-col space-y-12 text-[#929a9e]">
+										<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 space-y-6 list-decimal text-14">
+											{match.veto
+												.find(
+													(process) =>
+														process.entity_type ===
+														"location",
+												)
+												?.entities.map(
+													(entity, idx) => (
+														<li
+															key={idx}
+															className="ml-18 break-words"
+														>
+															{`Team ${
+																{
+																	faction1:
+																		match
+																			.team1
+																			.name,
+																	faction2:
+																		match
+																			.team2
+																			.name,
+																}[
+																	entity
+																		.selected_by
+																]
+															} ${{pick: "picked", drop: "removed"}[entity.status]} ${
+																entity.guid
+															}
+                                                `}
+														</li>
+													),
+												)}
+										</ul>
+
+										<div className="flex space-x-14 items-center rounded-4 bg-[#2D3844] overflow-hidden p-18">
+											<img
+												src={match?.server.image.lg}
+												alt="Server location country"
+												className="w-72 h-auto rounded-2"
+											/>
+
+											<span>{match?.server.name}</span>
+										</div>
+									</div>
+								</>
+							)}
+
 							<h5 className="text-[#929a9e] text-20 font-bold">
-								Server
+								Rewatch
 							</h5>
 
-							<div className="w-full flex flex-col space-y-12 text-[#929a9e]">
-								{match?.veto && (
-									<ul className="w-full flex flex-col bg-[#2D3844] p-18 rounded-4 space-y-6 list-decimal text-14">
-										{match.veto
-											.find(
-												(process) =>
-													process.entity_type ===
-													"location",
-											)
-											?.entities.map((entity, idx) => (
-												<li
-													key={idx}
-													className="ml-18 break-words"
-												>
-													{`Team ${
-														{
-															faction1:
-																match.team1
-																	.name,
-															faction2:
-																match.team2
-																	.name,
-														}[entity.selected_by]
-													} ${{pick: "picked", drop: "removed"}[entity.status]} ${
-														entity.guid
-													}
-                                                `}
-												</li>
-											))}
-									</ul>
-								)}
-
-								<div className="flex space-x-14 items-center rounded-4 bg-[#2D3844] overflow-hidden p-18">
-									<img
-										src={match?.server.image.lg}
-										alt="Server location country"
-										className="w-72 h-auto rounded-2"
-									/>
-
-									<span>{match?.server.name}</span>
-								</div>
+							<div className="w-full flex flex-col text-[#929a9e] bg-[#2D3844] rounded-4 text-14">
+								<a
+									href={`https://www.faceit.com/en/cs2/room/${match?.id}`}
+									target="_blank"
+									className="break-words hover:bg-[#45515f] w-full h-full"
+								>
+									<div className="p-18">
+										Go to Matchroom
+									</div>
+								</a>
 							</div>
 						</div>
 					</div>
