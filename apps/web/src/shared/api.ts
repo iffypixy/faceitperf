@@ -305,7 +305,7 @@ export const getMatch = async (matchId: GetMatchDto["req"]) => {
 
 	return {
 		id: match.match_id,
-		startedAt: new Date(match.started_at * 1000),
+		startedAt: match.scheduled_at ? new Date(match.scheduled_at * 1000) : new Date(match.started_at * 1000),
 		finishedAt: new Date(match.finished_at * 1000),
 		bo: match.best_of,
 		team1: match.teams.faction1,
