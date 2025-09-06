@@ -13,12 +13,12 @@ import {
 import {calculateAverageStats} from "@entities/profile";
 import {Loader} from "@shared/ui/loader";
 import {Avatar, Center, Container, Fullscreen} from "@shared/ui";
-import { Score } from "types/score";
+import {Score} from "types/score";
+import {formatDateDifference} from "@entities/match/lib/date";
 
 /*
 	TODO
 	- [] bonus: ability to view stats for 'all maps'
-	- [] bonus: time should be for overall series, not first map
 	- [] bonus: veto option 7. should be "<MAP> left over"
 	- [] added bonus - ability to select "side" to view stats based off if they're T or CT
 	- [] added bonus - have half scores in map card be coloured based off side
@@ -26,8 +26,6 @@ import { Score } from "types/score";
 	- [] added bonus - pick banner on map card
 	- [] added bonus - demo download links below server section
 */
-
-
 
 export const MatchPage: React.FC = () => {
 	const {matchId} = useParams() as {matchId: string};
@@ -164,9 +162,9 @@ export const MatchPage: React.FC = () => {
 
 								<span className="text-[#929a9e] text-12">
 									{match &&
-										datefns.formatDistanceStrict(
-											match.finishedAt,
+										formatDateDifference(
 											match.startedAt,
+											match.finishedAt,
 										)}
 								</span>
 							</div>
@@ -272,7 +270,10 @@ export const MatchPage: React.FC = () => {
 										team1Name={match.team1.name}
 										team2Avatar={match.team2.avatar}
 										team2Name={match.team2.name}
-										isOvertime={match.stats[i] && match.stats[i].isOvertime}
+										isOvertime={
+											match.stats[i] &&
+											match.stats[i].isOvertime
+										}
 									/>
 								))}
 							</div>

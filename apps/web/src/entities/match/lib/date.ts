@@ -20,3 +20,9 @@ export const formatMatchDate = (date: Date) => {
 
 	return `${day} of ${monthYear}`;
 };
+
+export const formatDateDifference = (startedAt: Date, finishedAt: Date) => {
+	const diff = datefns.intervalToDuration({start: startedAt, end: finishedAt})
+
+	return `${diff.hours ? `${diff.hours} hour${diff.hours > 1 ? 's' : ''}, ` : ""}${diff.minutes ?? 0} minute${diff.minutes && diff.minutes != 1 ? 's' : ''}`;
+};
