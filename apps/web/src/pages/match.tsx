@@ -19,7 +19,6 @@ import {formatDateDifference} from "@entities/match/lib/date";
 /*
 	TODO
 	- [] bonus: ability to view stats for 'all maps'
-	- [] bonus: veto option 7. should be "<MAP> left over"
 	- [] added bonus - ability to select "side" to view stats based off if they're T or CT
 	- [] added bonus - have half scores in map card be coloured based off side
 	- [] added bonus - cleanup "Server" section
@@ -223,21 +222,9 @@ export const MatchPage: React.FC = () => {
 													process.entity_type ===
 													"map",
 											)
-											?.entities.map((entity, idx) => (
-												<li
-													key={idx}
-													className="ml-18 break-words"
-												>
-													{`Team ${
-														{
-															faction1:
-																match.team1
-																	.name,
-															faction2:
-																match.team2
-																	.name,
-														}[entity.selected_by]
-													} ${{pick: "picked", drop: "removed"}[entity.status]} ${
+											?.entities.map(
+												(entity, idx, entities) => {
+													const mapName = `${
 														{
 															de_mirage: "Mirage",
 															de_anubis: "Anubis",
@@ -253,10 +240,36 @@ export const MatchPage: React.FC = () => {
 															de_overpass:
 																"Overpass",
 														}[entity.guid]
-													}
+													}`;
+
+													return (
+														<li
+															key={idx}
+															className="ml-18 break-words"
+														>
+															{idx ===
+															entities.length - 1
+																? `${mapName} was left over`
+																: `Team ${
+																		{
+																			faction1:
+																				match
+																					.team1
+																					.name,
+																			faction2:
+																				match
+																					.team2
+																					.name,
+																		}[
+																			entity
+																				.selected_by
+																		]
+																	} ${{pick: "picked", drop: "removed"}[entity.status]} ${mapName}
                                                 `}
-												</li>
-											))}
+														</li>
+													);
+												},
+											)}
 									</ul>
 								)}
 
