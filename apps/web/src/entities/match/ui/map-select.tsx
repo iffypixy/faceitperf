@@ -10,8 +10,9 @@ export const MapSelect: React.FC<MapSelectProps> = ({
 	setActiveMap,
 }) => (
 	<div className="flex flex-row bg-[#232d38] text-14 xs:text-12 text-[#929a9e] px-16 items-center space-x-18 py-12">
-		{maps.map((m) => (
+		{maps.map((m, i) => (
 			<button
+				key={i}
 				className={activeMap == m.value ? "font-bold" : ""}
 				onClick={() => setActiveMap(`${m.value}`)}
 			>
