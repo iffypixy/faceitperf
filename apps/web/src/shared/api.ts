@@ -315,6 +315,10 @@ export const getMatch = async (matchId: GetMatchDto["req"]) => {
 			team1: match.results.winner === "faction1",
 			team2: match.results.winner === "faction2",
 		},
+		score: {
+			team1: match.results.score.faction1,
+			team2: match.results.score.faction2,
+		},
 		demo: match.demo_url[0],
 		server: {
 			name: server,
@@ -327,6 +331,20 @@ export const getMatch = async (matchId: GetMatchDto["req"]) => {
 				)?.image_lg,
 			},
 		},
+		maps: match.voting.map?.pick.map((m) => {
+			return {
+				name: m,
+				image: {
+					sm: match.voting.map?.entities.find(
+						(entity) => entity.guid === m,
+					)?.image_sm,
+					lg: match.voting.map?.entities.find(
+						(entity) => entity.guid === m,
+					)?.image_lg,
+				},
+			}
+		}),
+		// TODO - remove below
 		map: {
 			name: map,
 			image: {
@@ -437,33 +455,35 @@ export const getMatchStats = async (matchId: GetMatchStatsDto["req"]) => {
 		method: "GET",
 	});
 
-	const team1 = rounds[0].teams[0];
-	const team2 = rounds[0].teams[1];
+	return rounds.map((r) => {
+		const team1 = r.teams[0];
+		const team2 = r.teams[1];
 
-	return {
-		score: [
-			{
-				teamId: team1.team_id,
-				firstHalfScore: team1.team_stats["First Half Score"],
-				secondHalfScore: team1.team_stats["Second Half Score"],
-				score: team1.team_stats["Final Score"],
-				overtimeScore: team1.team_stats["Overtime score"],
-			},
-			{
-				teamId: team2.team_id,
-				firstHalfScore: team2.team_stats["First Half Score"],
-				secondHalfScore: team2.team_stats["Second Half Score"],
-				score: team2.team_stats["Final Score"],
-				overtimeScore: team2.team_stats["Overtime score"],
-			},
-		],
-		isOvertime:
-			+team1.team_stats["Overtime score"] ||
-			+team2.team_stats["Overtime score"],
-		team1: team1.players,
-		team2: team2.players,
-		rounds: +rounds[0].round_stats.Rounds,
-	};
+		return {
+			score: [
+				{
+					teamId: team1.team_id,
+					firstHalfScore: team1.team_stats["First Half Score"],
+					secondHalfScore: team1.team_stats["Second Half Score"],
+					score: team1.team_stats["Final Score"],
+					overtimeScore: team1.team_stats["Overtime score"],
+				},
+				{
+					teamId: team2.team_id,
+					firstHalfScore: team2.team_stats["First Half Score"],
+					secondHalfScore: team2.team_stats["Second Half Score"],
+					score: team2.team_stats["Final Score"],
+					overtimeScore: team2.team_stats["Overtime score"],
+				},
+			],
+			isOvertime:
+				+team1.team_stats["Overtime score"] > 0 ||
+				+team2.team_stats["Overtime score"] > 0,
+			team1: team1.players,
+			team2: team2.players,
+			rounds: +r.round_stats.Rounds,
+		};
+	});
 };
 
 type GetPlayerDetailsDto = Dto<

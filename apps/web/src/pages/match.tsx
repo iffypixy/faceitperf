@@ -3,15 +3,37 @@ import * as datefns from "date-fns";
 import {cx} from "class-variance-authority";
 import {twMerge} from "tailwind-merge";
 
-import {formatMatchDate, useMatch, MatchStats} from "@entities/match";
+import {
+	formatMatchDate,
+	useMatch,
+	MatchStats,
+	MapSelect,
+} from "@entities/match";
 import {calculateAverageStats} from "@entities/profile";
 import {Loader} from "@shared/ui/loader";
 import {Avatar, Center, Container, Fullscreen} from "@shared/ui";
+import {useState} from "react";
+
+/*
+	TODO
+	- [x] scores in header should be bo3 score, not rounds (i.e. 2-1, not 13-5)
+	- [x] all maps cards should be visible below veto
+	- [x] stats section should have option to click on map to look at specific leaderboards (e.g. All Maps, Nuke, Inferno, Mirage)
+	- [] bonus: ability to view stats for 'all maps'
+	- [] bonus: time should be for overall series, not first map
+	- [] bonus: veto option 7. should be "<MAP> left over"
+	- [] added bonus - ability to select "side" to view stats based off if they're T or CT
+	- [] added bonus - have half scores in map card be coloured based off side
+	- [] added bonus - cleanup "Server" section
+	- [] added bonus - pick banner on map card
+	- [] added bonus - demo download links below server section
+*/
 
 export const MatchPage: React.FC = () => {
 	const {matchId} = useParams() as {matchId: string};
 
 	const {match, isLoading, isError} = useMatch(matchId);
+	const [activeMap, setActiveMap] = useState(0); //TODO - move this to url so that map stats become shareable
 
 	if (isLoading)
 		return (
@@ -34,54 +56,50 @@ export const MatchPage: React.FC = () => {
 	if (!match) return;
 
 	const score = {
-		team1: match?.stats.score.find(
-			(s) => s.teamId === match.team1.faction_id,
+		team1: match?.stats.map((s) =>
+			s.score.find((s) => s.teamId === match.team1.faction_id),
 		),
-		team2: match?.stats.score.find(
-			(s) => s.teamId === match.team2.faction_id,
+		team2: match?.stats.map((s) =>
+			s.score.find((s) => s.teamId === match.team2.faction_id),
 		),
 	};
 
-	const stats = {
+	const stats = match?.stats.map((m) => ({
 		team1: match?.team1.roster
 			.filter((player) =>
-				match?.stats.team1.some(
-					(p) => p.player_id === player.player_id,
-				),
+				m.team1.some((p) => p.player_id === player.player_id),
 			)
 			.map((player) => ({
 				id: player.player_id,
 				username: player.nickname,
 				stats: calculateAverageStats([
 					{
-						...match.stats.team1.find(
+						...m.team1.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
-						Rounds: String(match.stats.rounds),
+						Rounds: String(m.rounds),
 					},
 				]),
 			}))
 			.sort((a, b) => b.stats.rating - a.stats.rating),
 		team2: match?.team2.roster
 			.filter((player) =>
-				match?.stats.team2.some(
-					(p) => p.player_id === player.player_id,
-				),
+				m.team2.some((p) => p.player_id === player.player_id),
 			)
 			.map((player) => ({
 				id: player.player_id,
 				username: player.nickname,
 				stats: calculateAverageStats([
 					{
-						...match.stats.team2.find(
+						...m.team2.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
-						Rounds: String(match.stats.rounds),
+						Rounds: String(m.rounds),
 					},
 				]),
 			}))
 			.sort((a, b) => b.stats.rating - a.stats.rating),
-	};
+	}));
 
 	return (
 		<div className="flex flex-col">
@@ -123,7 +141,9 @@ export const MatchPage: React.FC = () => {
 								)}
 							>
 								<span className="text-20">
-									{score.team1?.score}
+									{match?.bo === 3
+										? match.score.team1
+										: score.team1[0]?.score}
 								</span>
 							</span>
 						</div>
@@ -175,7 +195,9 @@ export const MatchPage: React.FC = () => {
 								)}
 							>
 								<span className="text-20">
-									{score.team2?.score}
+									{match?.bo === 3
+										? match.score.team2
+										: score.team2[0]?.score}
 								</span>
 							</span>
 						</div>
@@ -227,6 +249,8 @@ export const MatchPage: React.FC = () => {
 															de_ancient:
 																"Ancient",
 															de_train: "Train",
+															de_overpass:
+																"Overpass",
 														}[entity.guid]
 													}
                                                 `}
@@ -235,107 +259,143 @@ export const MatchPage: React.FC = () => {
 									</ul>
 								)}
 
-								<div className="flex flex-col rounded-4 overflow-hidden">
-									<div className="flex items-center justify-center relative">
-										<img
-											src={`https://hltv.org/img/static/maps/${match?.map.name?.slice(3)}.png`}
-											alt="Map"
-											className="w-full h-auto"
-										/>
+								{match.maps?.map((m, i) => {
+									const team1Score = score.team1[i];
+									const team2Score = score.team2[i];
+									const isMapPlayed =
+										team1Score || team2Score;
 
-										{match && (
-											<span className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 text-[#fff] font-bold text-14">
-												{
-													{
-														de_mirage: "Mirage",
-														de_anubis: "Anubis",
-														de_dust2: "Dust 2",
-														de_vertigo: "Vertigo",
-														de_inferno: "Inferno",
-														de_nuke: "Nuke",
-														de_ancient: "Ancient",
-														de_train: "Train",
-														de_cbble: "Cobblestone",
-													}[match.map.name!]
-												}
-											</span>
-										)}
-									</div>
+									return (
+										<div className="flex flex-col rounded-4 overflow-hidden">
+											<div className="flex items-center justify-center relative">
+												<img
+													src={`https://hltv.org/img/static/maps/${m.name?.slice(3)}.png`}
+													alt="Map"
+													className="w-full h-auto"
+												/>
 
-									<div className="flex bg-[#2D3844] justify-between items-center p-18">
-										<div className="w-1/3 flex items-start space-x-12 overflow-hidden">
-											<Avatar
-												src={match?.team1.avatar}
-												alt="First team's avatar"
-												className="min-w-32 max-w-32 h-auto rounded-full"
-											/>
-
-											<div className="flex flex-col items-start overflow-hidden">
-												<span className="w-full overflow-hidden text-ellipsis text-[#929a9e] font-bold text-12">
-													{match?.team1.name}
-												</span>
-
-												<span
-													className={cx(
-														"font-bold text-[#b9bdbf] !text-14",
+												{match && (
+													<span className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 text-[#fff] font-bold text-14">
 														{
-															"!text-[#09c100]":
-																match?.winner
-																	.team1,
-															"!text-[#fc1d1d]":
-																match?.winner
-																	.team2,
-														},
-													)}
-												>
-													{score.team1?.score}
-												</span>
-											</div>
-										</div>
-
-										<div className="w-1/3 mt-auto overflow-hidden flex justify-center">
-											<span className="text-[#929a9e] font-normal text-12">
-												({score?.team1?.firstHalfScore}:
-												{score?.team2?.firstHalfScore};{" "}
-												{score?.team1?.secondHalfScore}:
-												{score?.team2?.secondHalfScore}){" "}
-												{match?.stats.isOvertime
-													? `(${score?.team1?.overtimeScore}:${score?.team2?.overtimeScore})`
-													: null}
-											</span>
-										</div>
-
-										<div className="w-1/3 flex items-start space-x-12 overflow-hidden">
-											<div className="flex flex-1 flex-col items-end overflow-hidden">
-												<span className="w-full overflow-hidden text-ellipsis text-[#929a9e] font-bold text-12">
-													{match?.team2.name}
-												</span>
-
-												<span
-													className={cx(
-														"font-bold text-[#b9bdbf] !text-14",
-														{
-															"!text-[#09c100]":
-																match?.winner
-																	.team2,
-															"!text-[#fc1d1d]":
-																match?.winner
-																	.team1,
-														},
-													)}
-												>
-													{score.team2?.score}
-												</span>
+															{
+																de_mirage:
+																	"Mirage",
+																de_anubis:
+																	"Anubis",
+																de_dust2:
+																	"Dust 2",
+																de_vertigo:
+																	"Vertigo",
+																de_inferno:
+																	"Inferno",
+																de_nuke: "Nuke",
+																de_ancient:
+																	"Ancient",
+																de_train:
+																	"Train",
+																de_cbble:
+																	"Cobblestone",
+																de_overpass:
+																	"Overpass",
+															}[m.name!]
+														}
+													</span>
+												)}
 											</div>
 
-											<Avatar
-												src={match?.team2.avatar}
-												alt="Second team's avatar"
-												className="min-w-32 max-w-32 h-auto rounded-full"
-											/>
+											<div className="flex bg-[#2D3844] justify-between items-center p-18">
+												<div className="w-1/3 flex items-start space-x-12 overflow-hidden">
+													<Avatar
+														src={
+															match?.team1.avatar
+														}
+														alt="First team's avatar"
+														className="min-w-32 max-w-32 h-auto rounded-full"
+													/>
+
+													<div className="flex flex-col items-start overflow-hidden">
+														<span className="w-full overflow-hidden text-ellipsis text-[#929a9e] font-bold text-12">
+															{match?.team1.name}
+														</span>
+
+														<span
+															className={cx(
+																"font-bold text-[#b9bdbf] !text-14",
+																isMapPlayed && {
+																	"!text-[#09c100]":
+																		(team2Score?.score ??
+																			0) >
+																		(team1Score?.score ??
+																			0),
+																	"!text-[#fc1d1d]":
+																		(team1Score?.score ??
+																			0) >
+																		(team2Score?.score ??
+																			0),
+																},
+															)}
+														>
+															{isMapPlayed
+																? team1Score?.score
+																: "-"}
+														</span>
+													</div>
+												</div>
+
+												<div className="w-1/3 mt-auto overflow-hidden flex justify-center">
+													{isMapPlayed && (
+														<span className="text-[#929a9e] font-normal text-12">
+															{`(${team1Score?.firstHalfScore}:${team2Score?.firstHalfScore}; ${team1Score?.secondHalfScore}:${team2Score?.secondHalfScore})${
+																match?.stats[i]
+																	.isOvertime
+																	? ` (${team1Score?.overtimeScore}:${team2Score?.overtimeScore})`
+																	: ""
+															}`}
+														</span>
+													)}
+												</div>
+
+												<div className="w-1/3 flex items-start space-x-12 overflow-hidden">
+													<div className="flex flex-1 flex-col items-end overflow-hidden">
+														<span className="w-full overflow-hidden text-ellipsis text-[#929a9e] font-bold text-12 text-end">
+															{match?.team2.name}
+														</span>
+
+														<span
+															className={cx(
+																"font-bold text-[#b9bdbf] !text-14",
+																{
+																	"!text-[#09c100]":
+																		(team1Score?.score ??
+																			0) >
+																		(team2Score?.score ??
+																			0),
+																	"!text-[#fc1d1d]":
+																		(team2Score?.score ??
+																			0) >
+																		(team1Score?.score ??
+																			0),
+																},
+															)}
+														>
+															{isMapPlayed
+																? team2Score?.score
+																: "-"}
+														</span>
+													</div>
+
+													<Avatar
+														src={
+															match?.team2.avatar
+														}
+														alt="Second team's avatar"
+														className="min-w-32 max-w-32 h-auto rounded-full"
+													/>
+												</div>
+											</div>
 										</div>
-									</div>
-								</div>
+									);
+								})}
 							</div>
 						</div>
 
@@ -391,48 +451,71 @@ export const MatchPage: React.FC = () => {
 
 					<div className="flex flex-col space-y-16">
 						<h5 className="text-[#929a9e] font-bold text-20">
-							Stats
+							Match Stats
 						</h5>
 
 						<div className="flex flex-col space-y-20">
-							{match && stats.team1 && (
+							{match.bo === 3 && (
+								<MapSelect
+									maps={
+										match.maps
+											?.map((m, i) => ({
+												name: m.name,
+												value: i,
+											}))
+											.slice(0, stats.length) ?? []
+									}
+									activeMap={activeMap}
+									setActiveMap={setActiveMap}
+								/>
+							)}
+
+							{match && stats[activeMap].team1 && (
 								<MatchStats
 									team={{
 										avatar: match?.team1.avatar,
 										name: match?.team1.name,
-										roster: stats.team1?.map((player) => ({
-											id: player.id,
-											username: player.username,
-											kills: player.stats.kills,
-											deaths: player.stats.deaths,
-											adr: player.stats.adr,
-											kast: player.stats.kast,
-											rating: player.stats.rating,
-											country: match.countries.team1.find(
-												(p) => p.id === player.id,
-											)!.country,
-										})),
+										roster: stats[activeMap].team1?.map(
+											(player) => ({
+												id: player.id,
+												username: player.username,
+												kills: player.stats.kills,
+												deaths: player.stats.deaths,
+												adr: player.stats.adr,
+												kast: player.stats.kast,
+												rating: player.stats.rating,
+												country:
+													match.countries.team1.find(
+														(p) =>
+															p.id === player.id,
+													)!.country,
+											}),
+										),
 									}}
 								/>
 							)}
 
-							{match && stats.team2 && (
+							{match && stats[activeMap].team2 && (
 								<MatchStats
 									team={{
 										avatar: match?.team2.avatar,
 										name: match?.team2.name,
-										roster: stats.team2?.map((player) => ({
-											id: player.id,
-											username: player.username,
-											kills: player.stats.kills,
-											deaths: player.stats.deaths,
-											adr: player.stats.adr,
-											kast: player.stats.kast,
-											rating: player.stats.rating,
-											country: match.countries.team2.find(
-												(p) => p.id === player.id,
-											)!.country,
-										})),
+										roster: stats[activeMap].team2?.map(
+											(player) => ({
+												id: player.id,
+												username: player.username,
+												kills: player.stats.kills,
+												deaths: player.stats.deaths,
+												adr: player.stats.adr,
+												kast: player.stats.kast,
+												rating: player.stats.rating,
+												country:
+													match.countries.team2.find(
+														(p) =>
+															p.id === player.id,
+													)!.country,
+											}),
+										),
 									}}
 								/>
 							)}
