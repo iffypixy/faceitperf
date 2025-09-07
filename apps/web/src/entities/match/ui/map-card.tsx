@@ -26,7 +26,7 @@ export const MapCard: React.FC<MapCardProps> = ({
 	const isMapPlayed = team1Score || team2Score;
 
 	return (
-		<div className="flex flex-col rounded-4 overflow-hidden">
+		<div className={`flex flex-col rounded-4 overflow-hidden ${!isMapPlayed && 'opacity-30'}`}>
 			<div className="flex items-center justify-center relative">
 				<img
 					src={`https://hltv.org/img/static/maps/${mapName.slice(3)}.png`}
@@ -70,11 +70,11 @@ export const MapCard: React.FC<MapCardProps> = ({
 								"font-bold text-[#b9bdbf] !text-14",
 								isMapPlayed && {
 									"!text-[#09c100]":
-										(team2Score?.score ?? 0) >
-										(team1Score?.score ?? 0),
+										(team1Score?.score ? +team1Score?.score : 0) >
+										(team2Score?.score ? +team2Score?.score : 0),
 									"!text-[#fc1d1d]":
-										(team1Score?.score ?? 0) >
-										(team2Score?.score ?? 0),
+										(team2Score?.score ? +team2Score?.score : 0) >
+										(team1Score?.score ? +team1Score?.score : 0),
 								},
 							)}
 						>
@@ -104,11 +104,11 @@ export const MapCard: React.FC<MapCardProps> = ({
 						<span
 							className={cx("font-bold text-[#b9bdbf] !text-14", {
 								"!text-[#09c100]":
-									(team1Score?.score ?? 0) >
-									(team2Score?.score ?? 0),
+									(team2Score?.score ? +team2Score?.score : 0) >
+									(team1Score?.score ? +team1Score?.score : 0),
 								"!text-[#fc1d1d]":
-									(team2Score?.score ?? 0) >
-									(team1Score?.score ?? 0),
+									(team1Score?.score ? +team1Score?.score : 0) >
+									(team2Score?.score ? +team2Score?.score : 0),
 							})}
 						>
 							{isMapPlayed ? team2Score?.score : "-"}
