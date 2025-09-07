@@ -4,3 +4,6 @@ export * from "./tabs";
 export * from "./icons";
 export * from "./tooltip";
 export * from "./avatar";
+export * from "./select";
+export * from "./dropdown";
+export * from "./dialog";

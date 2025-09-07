@@ -1,5 +1,5 @@
-import {cx} from "class-variance-authority";
+import { cn } from "@shared/lib/cn";
 
 export const Fullscreen: React.FC<React.ComponentProps<"div">> = (props) => (
-	<div {...props} className={cx("w-screen h-screen", props.className)} />
+	<div {...props} className={cn("w-screen h-screen", props.className)} />
 );
