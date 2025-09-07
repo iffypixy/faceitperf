@@ -1,116 +1,132 @@
-import {useEffect, useState} from "react";
-import {useLocation, useParams} from "wouter";
-import toast from "react-hot-toast";
+import { CircleQuestionMark, GiftIcon, SendIcon } from "lucide-react";
+import { useState } from "react";
+import { Link } from "wouter";
 
-import {Container, Icon} from "@shared/ui";
 import {
-	extractSteamId,
-	isValidSteamProfileUrl,
-	loadFaceitUsernameBySteamId,
-} from "@shared/lib/steam";
-import {isValidFaceitUsername} from "@shared/lib/faceit";
+	Container,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	GitHubIcon,
+} from "@shared/ui";
+import ScreenshotProfile from "@shared/assets/images/screenshots/profile.webp";
 
-export const ContentTemplate: React.FC<React.PropsWithChildren> = ({
-	children,
-}) => (
-	<div className="w-full min-h-screen py-44">
-		<Container>
-			<div className="flex flex-col space-y-72">
-				<div className="flex flex-col text-center items-center">
-					<a href="/">
-						<h1 className="font-black text-52">
-							<span className="text-fixed-faceit">FACEIT</span>
-							<span className="text-fixed-hltv text-[6.8rem]">
-								perf
-							</span>
-						</h1>
+export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children }) => (
+	<div className="fixed inset-0 grid grid-rows-[auto,1fr] overflow-auto">
+		<header className="bg-background-light shadow-sm shadow-background z-10 py-4">
+			<Container>
+				<div className="flex items-center justify-between">
+					<a
+						href="https://github.com/iffypixy/faceitperf"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<GitHubIcon className="size-8 fill-background-foreground" />
 					</a>
 
-					<span className="text-paper-contrast/80 text-18">
-						View your{" "}
-						<span className="text-fixed-faceit font-bold">
-							FACEIT CS2
-						</span>{" "}
-						performance in an{" "}
-						<span className="text-fixed-hltv font-bold">
-							HLTV-style
-						</span>{" "}
-						format.
-					</span>
+					<Link to="/">
+						<Logo />
+					</Link>
+
+					<HelpButton />
 				</div>
+			</Container>
+		</header>
 
-				<SearchForm />
-
-				{children}
-			</div>
-		</Container>
-
-		<div className="fixed right-44 top-44 xs:hidden md:absolute">
-			<a
-				href="https://github.com/iffypixy/faceitperf"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				<Icon.GitHub className="w-52 h-auto fill-white cursor-pointer duration-500 ease-in-out hover:scale-125" />
-			</a>
-		</div>
+		<main className="overflow-auto py-24">{children}</main>
 	</div>
 );
 
-export const SearchForm: React.FC = () => {
-	const {username: initialUsername} = useParams() as {
-		username?: string;
-	};
-
-	const [username, setUsername] = useState(initialUsername || "");
-
-	useEffect(() => {
-		setUsername(initialUsername || "");
-	}, [initialUsername]);
-
-	const [, navigate] = useLocation();
+const HelpButton: React.FC = () => {
+	const [showChangelog, setShowChangelog] = useState(false);
 
 	return (
-		<form
-			onSubmit={async (event) => {
-				event.preventDefault();
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button title="Help" className="rounded-full p-2 bg-background outline-none">
+						<CircleQuestionMark className="size-6" />
+					</button>
+				</DropdownMenuTrigger>
 
-				if (username) {
-					const id = username.trim();
+				<DropdownMenuContent>
+					<DropdownMenuItem onClick={() => setShowChangelog(true)}>
+						<GiftIcon className="size-4" /> What's new?
+					</DropdownMenuItem>
 
-					if (isValidFaceitUsername(id)) {
-						navigate(`/@/${username}`);
-					} else if (isValidSteamProfileUrl(id)) {
-						const steamId = await extractSteamId(id);
+					<a href="https://t.me/iffypixy" target="_blank" rel="noopener noreferrer">
+						<DropdownMenuItem>
+							<SendIcon className="size-4" /> Contact me
+						</DropdownMenuItem>
+					</a>
+				</DropdownMenuContent>
+			</DropdownMenu>
 
-						if (steamId) {
-							const faceitUsername =
-								await loadFaceitUsernameBySteamId(steamId);
-
-							if (faceitUsername) {
-								navigate(`/@/${faceitUsername}`);
-							} else {
-								toast.error(
-									"Sorry, the player was not found 😔",
-								);
-							}
-						}
-					} else {
-						toast.error("Provide valid username 🙏");
-					}
-				}
-			}}
-			className="flex items-center justify-center"
-		>
-			<input
-				value={username}
-				onChange={(event) => {
-					setUsername(event.currentTarget.value);
-				}}
-				placeholder="s1mple"
-				autoFocus
-				className="text-32 bg-fixed-faceit/5 border-fixed-faceit border-4 outline-none rounded-12 w-[54rem] h-[8rem] py-40 px-32"
-			/>
-		</form>
+			{showChangelog && <ChangelogDialog open={showChangelog} onOpenChange={setShowChangelog} />}
+		</>
 	);
 };
+
+interface ChangelogEntry {
+	title: string;
+	description: string;
+	image: string;
+	date: string;
+}
+
+const Changelog: ChangelogEntry[] = [
+	{
+		title: "Better stats, fresh look, more control",
+		description:
+			"Your performance stats now follow improved HLTV-based formulas for a more realistic picture of how you play. The interface has been refreshed with a cleaner look, and you can now explore your data more freely with new filters for time range, map, and game version. Of course, tons of bug fixes :) Much more to come, stay tuned!",
+		image: ScreenshotProfile,
+		date: "2025-11-14T12:00:00+01:00",
+	},
+];
+
+const ChangelogDialog: React.FC<{
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}> = ({ open, onOpenChange }) => {
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="max-w-[480px]">
+				<DialogHeader>
+					<DialogTitle className="flex flex-row items-center">
+						<GiftIcon className="size-6 me-2" /> What's new?
+					</DialogTitle>
+				</DialogHeader>
+
+				<div className="grid gap-8 overflow-y-auto">
+					{Changelog.map((x, index) => (
+						<div key={index} className="flex flex-col gap-8">
+							<img
+								src={x.image}
+								alt={x.title}
+								className="max-w-full border border-background-light rounded-sm p-2"
+							/>
+							<div className="flex flex-col gap-2">
+								<h5 className="text-xl font-medium">{x.title}</h5>
+								<p className="text-muted-foreground">{x.description}</p>
+							</div>
+						</div>
+					))}
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+const Logo: React.FC = () => (
+	<h3 className="font-extrabold text-4xl text-center leading-none">
+		<span className="text-brand-faceit">FACEIT</span>
+		<span className="text-hltv text-[1.25em]">
+			<span className="text-brand-hltv">perf</span>
+		</span>
+	</h3>
+);

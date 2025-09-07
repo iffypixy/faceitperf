@@ -1,27 +1,63 @@
-import {forwardRef} from "react";
-import * as RTooltip from "@radix-ui/react-tooltip";
-import {cx} from "class-variance-authority";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
-export const TooltipProvider = RTooltip.Provider;
-export const Tooltip = RTooltip.Root;
-export const TooltipTrigger = RTooltip.Trigger;
-export const TooltipPortal = RTooltip.Portal;
+import { cn } from "@shared/lib/cn";
 
-export const TooltipContent = forwardRef<
-	React.ElementRef<typeof RTooltip.Content>,
-	React.ComponentPropsWithoutRef<typeof RTooltip.Content>
->(({className, sideOffset = 4, ...props}, ref) => (
-	<RTooltip.Portal>
-		<RTooltip.Content
-			ref={ref}
-			sideOffset={sideOffset}
-			className={cx(
-				"z-50 bg-paper p-8 border-2 text-12 border-paper-contrast/15 opacity-95 rounded-6 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-paper-contrast/60 animate-in fade-in-0 zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-				className,
-			)}
+function TooltipProvider({
+	delayDuration = 0,
+	...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+	return (
+		<TooltipPrimitive.Provider
+			data-slot="tooltip-provider"
+			delayDuration={delayDuration}
 			{...props}
 		/>
-	</RTooltip.Portal>
-));
+	);
+}
 
-TooltipContent.displayName = RTooltip.Content.displayName;
+function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+	return (
+		<TooltipProvider>
+			<TooltipPrimitive.Root data-slot="tooltip" {...props} />
+		</TooltipProvider>
+	);
+}
+
+function TooltipTrigger({
+	className,
+	...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+	return (
+		<TooltipPrimitive.Trigger
+			data-slot="tooltip-trigger"
+			className={cn("cursor-help", className)}
+			{...props}
+		/>
+	);
+}
+
+function TooltipContent({
+	className,
+	sideOffset = 0,
+	children,
+	...props
+}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+	return (
+		<TooltipPrimitive.Portal>
+			<TooltipPrimitive.Content
+				data-slot="tooltip-content"
+				sideOffset={sideOffset}
+				className={cn(
+					"bg-background-light text-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-sm px-3 py-1.5 text-xs text-balance",
+					className,
+				)}
+				{...props}
+			>
+				{children}
+				<TooltipPrimitive.Arrow className="bg-background-light fill-background-light z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+			</TooltipPrimitive.Content>
+		</TooltipPrimitive.Portal>
+	);
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

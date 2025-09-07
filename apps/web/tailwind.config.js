@@ -4,52 +4,38 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				fixed: {
+				background: {
+					DEFAULT: "#090909",
+					light: "#1a1c20",
+					foreground: "#e4e4e7",
+				},
+				muted: {
+					DEFAULT: "#27272a",
+					foreground: "#a1a1aa",
+				},
+				brand: {
 					faceit: "#ff5500",
 					hltv: "#2b6ea4",
-					profile: "#2b343d",
 				},
-				paper: {
-					DEFAULT: "#212121",
-					contrast: "#ffffff",
+				primary: {
+					DEFAULT: "#2A3641",
+					foreground: "#9ec8f1",
 				},
+				border: "#4b535c",
+				error: "#fb7185",
+			},
+			backgroundImage: {
+				"card-gradient": "linear-gradient(136deg, #1b1f23, #3a4755)",
+				"faceit-hltv-gradient": "linear-gradient(to right, #ff5500, #2b6ea4)",
 			},
 		},
 		screens: {
-			xl: {max: "1400px"},
-			lg: {max: "1280px"},
-			md: {max: "1012px"},
-			sm: {max: "768px"},
-			xs: {max: "544px"},
-		},
-		spacing: mapToRem([
-			0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34,
-			36, 38, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84, 88, 92, 96,
-			100, 116, 132, 148, 164, 180, 196, 260, 324, 388,
-		]),
-		fontSize: mapToRem([
-			0, 8, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34,
-			36, 38, 40, 44, 48, 52, 56, 60, 72, 84,
-		]),
-		borderRadius: {
-			...mapToRem([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32]),
-			full: "99999px",
-		},
-		fontFamily: {
-			unbounded: '"Unbounded", sans-serif',
-			bricolagegrotesque: '"BricolageGrotesque", sans-serif',
-		},
-		backgroundImage: {
-			profile: "linear-gradient(136deg, #1b1f23, #3a4755)",
+			xl: { max: "1536px" },
+			lg: { max: "1280px" },
+			md: { max: "1024px" },
+			sm: { max: "768px" },
+			xs: { max: "480px" },
 		},
 	},
 	plugins: [require("tailwindcss-animate")],
 };
-
-function mapToRem(sizes) {
-	return sizes.reduce((prev, size) => {
-		prev[size] = `${size / 10}rem`;
-
-		return prev;
-	}, {});
-}
