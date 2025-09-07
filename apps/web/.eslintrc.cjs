@@ -15,5 +15,6 @@ module.exports = {
 	ignorePatterns: [".eslintrc.cjs"],
 	rules: {
 		"@typescript-eslint/no-explicit-any": "off",
+		"no-constant-condition": "off",
 	},
 };

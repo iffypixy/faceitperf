@@ -5,27 +5,7 @@
 @layer base {
 	html {
 		box-sizing: border-box;
-		font-size: 62.5%;
-
-		@media screen(xl) {
-			font-size: 55%;
-		}
-
-		@media screen(lg) {
-			font-size: 50%;
-		}
-
-		@media screen(md) {
-			font-size: 45%;
-		}
-
-		@media screen(sm) {
-			font-size: 40%;
-		}
-
-		@media screen(xs) {
-			font-size: 35%;
-		}
+		font-size: clamp(0.5rem, 1.5vw, 1rem);
 	}
 
 	*,
@@ -37,85 +17,76 @@
 	}
 
 	body {
-		@apply text-16;
-		@apply font-unbounded;
-		@apply bg-paper;
-		@apply text-paper-contrast;
+		font-family: "BricolageGrotesque", sans-serif;
+		background-image: url("@assets/images/grid.svg");
+		@apply text-base;
+		@apply bg-background;
+		@apply text-background-foreground;
+	}
+}
+
+@layer utilities {
+	.text-shadow {
+		text-shadow: 0 0 16px rgb(0 0 0 / 0.6);
+	}
+
+	.blur-xs {
+		filter: blur(1px);
 	}
 }
 
 @font-face {
-	font-family: "Unbounded";
+	font-family: "BricolageGrotesque";
+	font-weight: 200;
+	src:
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraLight.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "BricolageGrotesque";
+	font-weight: 300;
+	src:
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "BricolageGrotesque";
 	font-weight: 400;
 	src:
-		local("Unbounded"),
-		url("@fonts/Unbounded/Unbounded-Regular.woff2") format("woff2");
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
 }
 
 @font-face {
-	font-family: "Unbounded";
+	font-family: "BricolageGrotesque";
 	font-weight: 500;
 	src:
-		local("Unbounded"),
-		url("@fonts/Unbounded/Unbounded-Medium.woff2") format("woff2");
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
 }
 
 @font-face {
-	font-family: "Unbounded";
+	font-family: "BricolageGrotesque";
 	font-weight: 600;
 	src:
-		local("Unbounded"),
-		url("@fonts/Unbounded/Unbounded-SemiBold.woff2") format("woff2");
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2") format("woff2");
 }
 
 @font-face {
-	font-family: "Unbounded";
+	font-family: "BricolageGrotesque";
 	font-weight: 700;
 	src:
-		local("Unbounded"),
-		url("@fonts/Unbounded/Unbounded-Bold.woff2") format("woff2");
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
 }
 
 @font-face {
-	font-family: "Unbounded";
-	font-weight: 900;
+	font-family: "BricolageGrotesque";
+	font-weight: 800;
 	src:
-		local("Unbounded"),
-		url("@fonts/Unbounded/Unbounded-ExtraBold.woff2") format("woff2");
+		local("BricolageGrotesque"),
+		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2") format("woff2");
 }
-
-/* @font-face {
-    font-family: "BricolageGrotesque";
-    font-weight: 300;
-    src:
-        local("BricolageGrotesque"),
-        url("@fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2")
-            format("woff2");
-}
-
-@font-face {
-    font-family: "BricolageGrotesque";
-    font-weight: 400;
-    src:
-        local("BricolageGrotesque"),
-        url("@fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2")
-            format("woff2");
-}
-
-@font-face {
-    font-family: "BricolageGrotesque";
-    font-weight: 500;
-    src:
-        local("BricolageGrotesque"),
-        url("@fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2")
-            format("woff2");
-}
-
-@font-face {
-    font-family: "BricolageGrotesque";
-    font-weight: 800;
-    src:
-        local("BricolageGrotesque"),
-        url("@fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
-            format("woff2");
-} */

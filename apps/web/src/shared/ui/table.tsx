@@ -1,69 +1,97 @@
-import {cx} from "class-variance-authority";
-import {twMerge} from "tailwind-merge";
+import { cn } from "@shared/lib/cn";
 
-export const Table: React.FC<React.ComponentPropsWithoutRef<"table">> = ({
-	className,
-	...props
-}) => {
+function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (
-		<table
-			className={cx(
-				"bg-fixed-profile bg-profile rounded-4 overflow-hidden",
-				className,
-			)}
+		<div data-slot="table-container" className="relative w-full overflow-x-auto">
+			<table
+				data-slot="table"
+				className={cn(
+					"w-full caption-bottom bg-background border-collapse border-spacing-0 overflow-hidden",
+					className,
+				)}
+				{...props}
+			/>
+		</div>
+	);
+}
+
+function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+	return (
+		<thead
+			data-slot="table-header"
+			className={cn("[&_tr]:border-b bg-background-light", className)}
 			{...props}
 		/>
 	);
-};
+}
 
-export const TableRow: React.FC<React.ComponentPropsWithoutRef<"tr">> = ({
-	className,
-	...props
-}) => {
+function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
+	return (
+		<tbody
+			data-slot="table-body"
+			className={cn("[&_tr:last-child]:border-0", className)}
+			{...props}
+		/>
+	);
+}
+
+function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
+	return (
+		<tfoot
+			data-slot="table-footer"
+			className={cn("bg-muted/25 border-t font-medium [&>tr]:last:border-b-0", className)}
+			{...props}
+		/>
+	);
+}
+
+function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	return (
 		<tr
-			className={twMerge(
-				cx(
-					"flex bg-[#364250] border-t border-[#495867] last:border-b-0 first:bg-[#35404e] even:bg-[#2d3844]",
-					className,
-				),
-			)}
-			{...props}
-		/>
-	);
-};
-
-export const TableHeader: React.FC<React.ComponentPropsWithoutRef<"th">> = ({
-	className,
-	children,
-	...props
-}) => {
-	return (
-		<th
-			className={twMerge(
-				cx(
-					"border-l border-[#495867] first:border-l-0 py-16 px-8 text-center font-bold text-16 break-all",
-					className,
-				),
-			)}
-			{...props}
-		>
-			<span className="text-[#929a9e]">{children}</span>
-		</th>
-	);
-};
-
-export const TableData: React.FC<React.ComponentPropsWithoutRef<"td">> = ({
-	className,
-	...props
-}) => {
-	return (
-		<td
-			className={cx(
-				"border-l border-[#495867] first:border-l-0 py-12 px-4 text-center font-normal text-[#929a9e] text-14 break-all",
+			data-slot="table-row"
+			className={cn(
+				"hover:bg-muted/25 data-[state=selected]:bg-muted transition-colors odd:bg-background-light/50 even:bg-background-light border-b border-border",
 				className,
 			)}
 			{...props}
 		/>
 	);
-};
+}
+
+function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+	return (
+		<th
+			data-slot="table-head"
+			className={cn(
+				"text-background-foreground h-12 px-2 text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				className,
+			)}
+			{...props}
+		/>
+	);
+}
+
+function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+	return (
+		<td
+			data-slot="table-cell"
+			className={cn(
+				"p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				className,
+			)}
+			{...props}
+		/>
+	);
+}
+
+function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
+	return (
+		<caption
+			data-slot="table-caption"
+			className={cn("text-muted-foreground mt-4 text-sm", className)}
+			{...props}
+		/>
+	);
+}
+
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };
