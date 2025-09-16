@@ -23,7 +23,7 @@ export const MatchPage: React.FC = () => {
 	const {match, isLoading, isError} = useMatch(matchId);
 
 	const activeMap =
-		+searchParams.get("map")! > 0 ? +searchParams.get("map")! : 0;
+		+searchParams.get("map")! > 0 ? +searchParams.get("map")! : null;
 
 	if (isLoading)
 		return (
@@ -54,42 +54,93 @@ export const MatchPage: React.FC = () => {
 		),
 	};
 
+	const isBo1 = match.bo === 1;
+	const team1Dict: Record<string, {name: string; stats: any}[]> = {};
+	const team2Dict: Record<string, {name: string; stats: any}[]> = {};
+
 	const stats = match?.stats.map((m) => ({
 		team1: match?.team1.roster
 			.filter((player) =>
 				m.team1.some((p) => p.player_id === player.player_id),
 			)
-			.map((player) => ({
-				id: player.player_id,
-				username: player.nickname,
-				stats: calculateAverageStats([
-					{
+			.map((player) => {
+				(team1Dict[player.player_id] ??= []).push({
+					name: player.nickname,
+					stats: {
 						...m.team1.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
 						Rounds: String(m.rounds),
 					},
-				]),
-			}))
+				});
+
+				return {
+					id: player.player_id,
+					username: player.nickname,
+					stats: calculateAverageStats([
+						{
+							...m.team1.find(
+								(p) => p.player_id === player.player_id,
+							)!.player_stats,
+							Rounds: String(m.rounds),
+						},
+					]),
+				};
+			})
 			.sort((a, b) => b.stats.rating - a.stats.rating),
 		team2: match?.team2.roster
 			.filter((player) =>
 				m.team2.some((p) => p.player_id === player.player_id),
 			)
-			.map((player) => ({
-				id: player.player_id,
-				username: player.nickname,
-				stats: calculateAverageStats([
-					{
+			.map((player) => {
+				(team2Dict[player.player_id] ??= []).push({
+					name: player.nickname,
+					stats: {
 						...m.team2.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
 						Rounds: String(m.rounds),
 					},
-				]),
-			}))
+				});
+
+				return {
+					id: player.player_id,
+					username: player.nickname,
+					stats: calculateAverageStats([
+						{
+							...m.team2.find(
+								(p) => p.player_id === player.player_id,
+							)!.player_stats,
+							Rounds: String(m.rounds),
+						},
+					]),
+				};
+			})
 			.sort((a, b) => b.stats.rating - a.stats.rating),
 	}));
+
+	if (!isBo1) {
+		stats.unshift({
+			team1: Object.keys(team1Dict)
+				.map((playerId) => ({
+					id: playerId,
+					username: team1Dict[playerId][0].name,
+					stats: calculateAverageStats(
+						team1Dict[playerId].flatMap((x) => x.stats),
+					),
+				}))
+				.sort((a, b) => b.stats.rating - a.stats.rating),
+			team2: Object.keys(team2Dict)
+				.map((playerId) => ({
+					id: playerId,
+					username: team2Dict[playerId][0].name,
+					stats: calculateAverageStats(
+						team2Dict[playerId].flatMap((x) => x.stats),
+					),
+				}))
+				.sort((a, b) => b.stats.rating - a.stats.rating),
+		});
+	}
 
 	return (
 		<div className="flex flex-col">
@@ -351,9 +402,7 @@ export const MatchPage: React.FC = () => {
 									target="_blank"
 									className="break-words hover:bg-[#45515f] w-full h-full"
 								>
-									<div className="p-18">
-										Go to Matchroom
-									</div>
+									<div className="p-18">Go to Matchroom</div>
 								</a>
 							</div>
 						</div>
@@ -365,69 +414,65 @@ export const MatchPage: React.FC = () => {
 						</h5>
 
 						<div className="flex flex-col space-y-20">
-							{match.bo === 3 && (
+							{!isBo1 && (
 								<MapSelect
 									maps={
 										match.maps
 											?.map((m, i) => ({
 												name: m.name,
-												value: i,
+												value: i + 1,
 											}))
-											.slice(0, stats.length) ?? []
+											.slice(0, stats.length - 1) ?? []
 									}
 									activeMap={activeMap}
-									setActiveMap={(map: string) =>
-										setSearchParams({map: map})
+									setActiveMap={(map) =>
+										setSearchParams(map ? {map: map} : {})
 									}
 								/>
 							)}
 
-							{match && stats[activeMap].team1 && (
+							{match && stats[activeMap ?? 0].team1 && (
 								<MatchStats
 									team={{
 										avatar: match?.team1.avatar,
 										name: match?.team1.name,
-										roster: stats[activeMap].team1?.map(
-											(player) => ({
-												id: player.id,
-												username: player.username,
-												kills: player.stats.kills,
-												deaths: player.stats.deaths,
-												adr: player.stats.adr,
-												kast: player.stats.kast,
-												rating: player.stats.rating,
-												country:
-													match.countries.team1.find(
-														(p) =>
-															p.id === player.id,
-													)!.country,
-											}),
-										),
+										roster: stats[
+											activeMap ?? 0
+										].team1?.map((player) => ({
+											id: player.id,
+											username: player.username,
+											kills: player.stats.kills,
+											deaths: player.stats.deaths,
+											adr: player.stats.adr,
+											kast: player.stats.kast,
+											rating: player.stats.rating,
+											country: match.countries.team1.find(
+												(p) => p.id === player.id,
+											)!.country,
+										})),
 									}}
 								/>
 							)}
 
-							{match && stats[activeMap].team2 && (
+							{match && stats[activeMap ?? 0].team2 && (
 								<MatchStats
 									team={{
 										avatar: match?.team2.avatar,
 										name: match?.team2.name,
-										roster: stats[activeMap].team2?.map(
-											(player) => ({
-												id: player.id,
-												username: player.username,
-												kills: player.stats.kills,
-												deaths: player.stats.deaths,
-												adr: player.stats.adr,
-												kast: player.stats.kast,
-												rating: player.stats.rating,
-												country:
-													match.countries.team2.find(
-														(p) =>
-															p.id === player.id,
-													)!.country,
-											}),
-										),
+										roster: stats[
+											activeMap ?? 0
+										].team2?.map((player) => ({
+											id: player.id,
+											username: player.username,
+											kills: player.stats.kills,
+											deaths: player.stats.deaths,
+											adr: player.stats.adr,
+											kast: player.stats.kast,
+											rating: player.stats.rating,
+											country: match.countries.team2.find(
+												(p) => p.id === player.id,
+											)!.country,
+										})),
 									}}
 								/>
 							)}
