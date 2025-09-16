@@ -9,6 +9,7 @@ import {
 	MatchStats,
 	MapSelect,
 	MapCard,
+	GameStats,
 } from "@entities/match";
 import {calculateAverageStats} from "@entities/profile";
 import {Loader} from "@shared/ui/loader";
@@ -55,8 +56,9 @@ export const MatchPage: React.FC = () => {
 	};
 
 	const isBo1 = match.bo === 1;
-	const team1Dict: Record<string, {name: string; stats: any}[]> = {};
-	const team2Dict: Record<string, {name: string; stats: any}[]> = {};
+
+	const team1Dict: Record<string, {name: string; stats: GameStats[]}> = {};
+	const team2Dict: Record<string, {name: string; stats: GameStats[]}> = {};
 
 	const stats = match?.stats.map((m) => ({
 		team1: match?.team1.roster
@@ -64,15 +66,17 @@ export const MatchPage: React.FC = () => {
 				m.team1.some((p) => p.player_id === player.player_id),
 			)
 			.map((player) => {
-				(team1Dict[player.player_id] ??= []).push({
-					name: player.nickname,
-					stats: {
+				if (!isBo1) {
+					(team1Dict[player.player_id] ??= {
+						name: player.nickname,
+						stats: [],
+					}).stats.push({
 						...m.team1.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
 						Rounds: String(m.rounds),
-					},
-				});
+					});
+				}
 
 				return {
 					id: player.player_id,
@@ -93,15 +97,17 @@ export const MatchPage: React.FC = () => {
 				m.team2.some((p) => p.player_id === player.player_id),
 			)
 			.map((player) => {
-				(team2Dict[player.player_id] ??= []).push({
-					name: player.nickname,
-					stats: {
+				if (!isBo1) {
+					(team2Dict[player.player_id] ??= {
+						name: player.nickname,
+						stats: [],
+					}).stats.push({
 						...m.team2.find(
 							(p) => p.player_id === player.player_id,
 						)!.player_stats,
 						Rounds: String(m.rounds),
-					},
-				});
+					});
+				}
 
 				return {
 					id: player.player_id,
@@ -124,18 +130,18 @@ export const MatchPage: React.FC = () => {
 			team1: Object.keys(team1Dict)
 				.map((playerId) => ({
 					id: playerId,
-					username: team1Dict[playerId][0].name,
+					username: team1Dict[playerId].name,
 					stats: calculateAverageStats(
-						team1Dict[playerId].flatMap((x) => x.stats),
+						team1Dict[playerId].stats.flat(),
 					),
 				}))
 				.sort((a, b) => b.stats.rating - a.stats.rating),
 			team2: Object.keys(team2Dict)
 				.map((playerId) => ({
 					id: playerId,
-					username: team2Dict[playerId][0].name,
+					username: team2Dict[playerId].name,
 					stats: calculateAverageStats(
-						team2Dict[playerId].flatMap((x) => x.stats),
+						team2Dict[playerId].stats.flat(),
 					),
 				}))
 				.sort((a, b) => b.stats.rating - a.stats.rating),
