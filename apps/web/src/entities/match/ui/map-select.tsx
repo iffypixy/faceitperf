@@ -1,7 +1,7 @@
 interface MapSelectProps {
 	maps: {name: string; value: number}[];
-	activeMap: number;
-	setActiveMap: (map: string) => void
+	activeMap: number | null;
+	setActiveMap: (map: string | null) => void;
 }
 
 export const MapSelect: React.FC<MapSelectProps> = ({
@@ -10,10 +10,16 @@ export const MapSelect: React.FC<MapSelectProps> = ({
 	setActiveMap,
 }) => (
 	<div className="flex flex-row bg-[#232d38] text-14 xs:text-12 text-[#929a9e] px-16 items-center space-x-18 py-12">
+		<button
+			className={activeMap === null ? "font-bold" : ""}
+			onClick={() => setActiveMap(null)}
+		>
+			All maps
+		</button>
 		{maps.map((m, i) => (
 			<button
 				key={i}
-				className={activeMap == m.value ? "font-bold" : ""}
+				className={activeMap === m.value ? "font-bold" : ""}
 				onClick={() => setActiveMap(`${m.value}`)}
 			>
 				{
