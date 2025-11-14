@@ -199,7 +199,10 @@ $RECYCLE.BIN/
 
 #################### Custom.gitignore ####################
 
-# build 
+# build
 build
 prod
 dist
+
+# Python
+venv
