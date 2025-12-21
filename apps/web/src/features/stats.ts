@@ -1,4 +1,4 @@
-import { clamp } from "@shared/lib/numbers";
+import { clamp, divide } from "@shared/lib/numbers";
 
 export interface PlayerPerformance {
 	kills: number;
@@ -128,10 +128,6 @@ export function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 		firepower,
 		mkpr,
 	};
-}
-
-function divide(a: number, b: number) {
-	return a / (b || 1);
 }
 
 function estimateAdr(kpr: number, apr: number): number {
