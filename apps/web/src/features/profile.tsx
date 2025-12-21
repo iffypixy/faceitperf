@@ -12,7 +12,15 @@ import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { match, P } from "ts-pattern";
 import { addMonths, format, getYear, isAfter, isToday, isYesterday, parseISO } from "date-fns";
-import { AsteriskIcon, CircleAlert, InfoIcon, ShieldUserIcon, XIcon } from "lucide-react";
+import {
+	AsteriskIcon,
+	ChevronDownIcon,
+	ChevronUpIcon,
+	CircleAlert,
+	InfoIcon,
+	ShieldUserIcon,
+	XIcon,
+} from "lucide-react";
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 
 import {
@@ -39,7 +47,7 @@ import {
 } from "@shared/ui";
 import { api, faceitApi, FaceitQueryLimit } from "@shared/api";
 import { Spinner } from "@shared/ui/loader";
-import { clamp } from "@shared/lib/numbers";
+import { clamp, divide } from "@shared/lib/numbers";
 import { Button } from "@shared/ui/button";
 import { assert } from "@shared/lib/assert";
 import { cn } from "@shared/lib/cn";
@@ -591,26 +599,143 @@ export const RatingColumnHead: React.FC = () => (
 	</div>
 );
 
-const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => (
-	<Table className="rounded-sm">
-		<TableHeader>
-			<TableRow className="[&>th]:text-center">
-				<TableHead className="w-[30%]">Datetime</TableHead>
-				<TableHead className="w-[10%]">Map</TableHead>
-				<TableHead className="w-[15%]">Score</TableHead>
-				<TableHead className="w-[15%]">K—D</TableHead>
-				<TableHead className="w-[15%]">K/D</TableHead>
-				<TableHead className="w-[15%]">
-					<RatingColumnHead />
-				</TableHead>
-			</TableRow>
-		</TableHeader>
+type SortDirection = "asc" | "desc";
 
-		<TableBody>
-			{!maps ? <TableSkeleton /> : maps.map((map, index) => <MapRow key={index} map={map} />)}
-		</TableBody>
-	</Table>
+const SortableTableHead: React.FC<{
+	direction: SortDirection | null;
+	onClick: () => void;
+	children: ReactNode;
+	className?: string;
+}> = ({ direction, onClick, children, className }) => (
+	<TableHead className={cn("cursor-pointer select-none", className)} onClick={onClick}>
+		<div className="flex items-center justify-center gap-1">
+			{children}
+
+			{match(direction)
+				.with("asc", () => <ChevronUpIcon className="size-4" />)
+				.with("desc", () => <ChevronDownIcon className="size-4" />)
+				.otherwise(() => null)}
+		</div>
+	</TableHead>
 );
+
+type TableSortState<T> = {
+	column: T;
+	direction: SortDirection;
+};
+
+function useTableSortState<T>(initialState: TableSortState<T>) {
+	const [state, setState] = useState(initialState);
+
+	const toggle = useCallback((column: T) => {
+		setState((prev) => {
+			if (prev.column !== column) return { column, direction: "desc" };
+			return { column, direction: prev.direction === "asc" ? "desc" : "asc" };
+		});
+	}, []);
+
+	const register = useCallback(
+		(column: T) => {
+			return {
+				onClick: () => toggle(column),
+				direction: state.column === column ? state.direction : null,
+			};
+		},
+		[state, toggle],
+	);
+
+	return { sortState: state, register };
+}
+
+type MapSortColumn = "datetime" | "map" | "score" | "kd-diff" | "kd" | "rating";
+
+const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
+	const { sortState, register } = useTableSortState<MapSortColumn>({
+		column: "datetime",
+		direction: "desc",
+	});
+
+	const sortedMaps = useMemo(() => {
+		if (!maps) return null;
+
+		return [...maps].sort((a, b) => {
+			const direction = match(sortState.direction)
+				.with("asc", () => 1)
+				.with("desc", () => -1)
+				.exhaustive();
+
+			const diff = match(sortState.column)
+				.with("datetime", () => {
+					const dateA = new Date(a["Created At"]);
+					const dateB = new Date(b["Created At"]);
+					return dateA.getTime() - dateB.getTime();
+				})
+				.with("map", () => {
+					const mapA = a["Map"];
+					const mapB = b["Map"];
+					return mapA.localeCompare(mapB);
+				})
+				.with("score", () => {
+					const roundsA = Number(a["Rounds"]);
+					const roundsB = Number(b["Rounds"]);
+					return roundsA - roundsB;
+				})
+				.with("kd-diff", () => {
+					const sumA = Number(a["Kills"]) + Number(a["Deaths"]);
+					const sumB = Number(b["Kills"]) + Number(b["Deaths"]);
+					return sumA - sumB;
+				})
+				.with("kd", () => {
+					const kdA = divide(Number(a["Kills"]), Number(a["Deaths"]));
+					const kdB = divide(Number(b["Kills"]), Number(b["Deaths"]));
+					return kdA - kdB;
+				})
+				.with("rating", () => {
+					const perfA = aggregatePlayerPerformance([a]);
+					const perfB = aggregatePlayerPerformance([b]);
+					return perfA.rating - perfB.rating;
+				})
+				.exhaustive();
+
+			return diff * direction;
+		});
+	}, [maps, sortState]);
+
+	return (
+		<Table className="rounded-sm">
+			<TableHeader>
+				<TableRow className="[&>th]:text-center">
+					<SortableTableHead className="w-[30%]" {...register("datetime")}>
+						Datetime
+					</SortableTableHead>
+					<SortableTableHead className="w-[10%]" {...register("map")}>
+						Map
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("score")}>
+						Score
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+						K—D
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("kd")}>
+						K/D
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("rating")}>
+						<RatingColumnHead />
+					</SortableTableHead>
+				</TableRow>
+			</TableHeader>
+
+			<TableBody>
+				{sortedMaps ? (
+					sortedMaps.map((map, index) => <MapRow key={index} map={map} />)
+				) : (
+					<TableSkeleton />
+				)}
+			</TableBody>
+		</Table>
+	);
+};
 
 export const PerformanceColor: Record<Level, string> = {
 	good: "#09c100",
@@ -691,30 +816,86 @@ function matchUrl(matchId: string) {
 	return `/matches/${matchId}`;
 }
 
-const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sessions }) => (
-	<Table className="rounded-sm">
-		<TableHeader>
-			<TableRow className="[&>th]:text-center">
-				<TableHead className="w-[30%]">Datetime</TableHead>
-				<TableHead className="w-[10%]">Maps</TableHead>
-				<TableHead className="w-[15%]">W/L</TableHead>
-				<TableHead className="w-[15%]">K—D</TableHead>
-				<TableHead className="w-[15%]">K/D</TableHead>
-				<TableHead className="w-[15%]">
-					<RatingColumnHead />
-				</TableHead>
-			</TableRow>
-		</TableHeader>
+type SessionSortColumn = "datetime" | "maps" | "wins" | "kd-diff" | "kd" | "rating";
 
-		<TableBody>
-			{!sessions ? (
-				<TableSkeleton />
-			) : (
-				sessions.map((session, index) => <SessionRow key={index} session={session} />)
-			)}
-		</TableBody>
-	</Table>
-);
+const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sessions }) => {
+	const { sortState, register } = useTableSortState<SessionSortColumn>({
+		column: "datetime",
+		direction: "desc",
+	});
+
+	const sortedSessions = useMemo(() => {
+		if (!sessions) return null;
+
+		return [...sessions].sort((a, b) => {
+			const direction = match(sortState.direction)
+				.with("asc", () => 1)
+				.with("desc", () => -1)
+				.exhaustive();
+
+			const perfA = aggregatePlayerPerformance(a);
+			const perfB = aggregatePlayerPerformance(b);
+
+			const diff = match(sortState.column)
+				.with("datetime", () => {
+					const dateA = new Date(a[0]["Created At"]);
+					const dateB = new Date(b[0]["Created At"]);
+					return dateA.getTime() - dateB.getTime();
+				})
+				.with("maps", () => a.length - b.length)
+				.with("wins", () => {
+					const winsA = a.filter((m) => m.Result === "1").length;
+					const winsB = b.filter((m) => m.Result === "1").length;
+					return winsA - winsB;
+				})
+				.with("kd-diff", () => {
+					const sumA = perfA.kills + perfA.deaths;
+					const sumB = perfB.kills + perfB.deaths;
+					return sumA - sumB;
+				})
+				.with("kd", () => perfA.kd - perfB.kd)
+				.with("rating", () => perfA.rating - perfB.rating)
+				.exhaustive();
+
+			return diff * direction;
+		});
+	}, [sortState, sessions]);
+
+	return (
+		<Table className="rounded-sm">
+			<TableHeader>
+				<TableRow className="[&>th]:text-center">
+					<SortableTableHead className="w-[30%]" {...register("datetime")}>
+						Datetime
+					</SortableTableHead>
+					<SortableTableHead className="w-[10%]" {...register("maps")}>
+						Maps
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("wins")}>
+						W/L
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+						K—D
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("kd")}>
+						K/D
+					</SortableTableHead>
+					<SortableTableHead className="w-[15%]" {...register("rating")}>
+						<RatingColumnHead />
+					</SortableTableHead>
+				</TableRow>
+			</TableHeader>
+
+			<TableBody>
+				{sortedSessions ? (
+					sortedSessions.map((session, index) => <SessionRow key={index} session={session} />)
+				) : (
+					<TableSkeleton />
+				)}
+			</TableBody>
+		</Table>
+	);
+};
 
 const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 	const performance = usePlayerPerformance(session);
