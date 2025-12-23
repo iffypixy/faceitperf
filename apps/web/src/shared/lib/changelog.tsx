@@ -10,6 +10,7 @@ import {
 import { GiftIcon } from "lucide-react";
 
 import ScreenshotProfile from "@shared/assets/images/screenshots/profile.webp";
+import ScreenshotSortableTables from "@shared/assets/images/screenshots/sortable-tables.webp";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/ui";
 
 const ChangelogContext = createContext<{
@@ -24,11 +25,17 @@ const Changelog: Array<{
 	date: string;
 }> = [
 	{
+		title: "Find your best and worst maps instantly",
+		description: "Click any column to sort your maps and sessions however you want.",
+		image: ScreenshotSortableTables,
+		date: "2025-12-23T18:30:38.709Z",
+	},
+	{
 		title: "Smarter stats, cleaner look, more control",
 		description:
 			"Calculations are now more accurate, the UI has received a major overhaul, and you can explore your stats with new time, map, and version filters.",
 		image: ScreenshotProfile,
-		date: "2025-11-14T12:00:00+01:00",
+		date: "2025-11-14T11:00:00.000Z",
 	},
 ];
 
@@ -85,7 +92,7 @@ export const ChangelogDialog: React.FC<{
 							<img
 								src={x.image}
 								alt={x.title}
-								className="max-w-full border border-background-light rounded-sm p-2"
+								className="max-w-full border border-background-light rounded-sm p-0.5"
 							/>
 							<div className="flex flex-col gap-2">
 								<h5 className="text-xl font-medium">{x.title}</h5>
