@@ -7,6 +7,7 @@ import { PostHogProvider } from "@posthog/react";
 
 import { queryClient } from "@shared/lib/query";
 import { Env } from "@shared/env";
+import { ChangelogProvider } from "@shared/lib/changelog";
 import { App } from "./app";
 import "./index.css";
 
@@ -29,7 +30,9 @@ createRoot(root).render(
 	<QueryClientProvider client={queryClient}>
 		<PostHogProvider client={posthog}>
 			<GoogleAnalytics>
-				<App />
+				<ChangelogProvider>
+					<App />
+				</ChangelogProvider>
 			</GoogleAnalytics>
 		</PostHogProvider>
 	</QueryClientProvider>,
