@@ -67,7 +67,7 @@ const HelpButton: React.FC = () => {
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			{showChangelog && <ChangelogDialog open={showChangelog} onOpenChange={setShowChangelog} />}
+			<ChangelogDialog open={showChangelog} onOpenChange={setShowChangelog} />
 		</>
 	);
 };
