@@ -1120,8 +1120,8 @@ function homeUrl() {
 }
 
 const RegExps = {
-	FaceitUrl: /^https?:\/\/(www\.)?faceit\.com\/en\/players\/([a-zA-Z0-9_-]{1,24})\/?$/,
-	FaceitUsername: /^[a-zA-Z0-9_-]{1,24}$/,
+	FaceitUrl: /^https?:\/\/(www\.)?faceit\.com\/en\/players\/([a-zA-Z0-9_ -]{1,24})\/?$/,
+	FaceitUsername: /^[a-zA-Z0-9_ -]{1,24}$/,
 	SteamUrlWithSteamId: /https?:\/\/steamcommunity\.com\/profiles\/(\d{17})/,
 	SteamUrlWithCustomId: /https?:\/\/steamcommunity\.com\/id\/([\w\d_-]+)/,
 	SteamUrl: /^https?:\/\/steamcommunity\.com\/(id|profiles)\/([a-zA-Z0-9_-]+)\/?$/,
@@ -1140,13 +1140,21 @@ function parseInput(input: string): PlayerInput {
 		return { kind: "steam-id", id: input };
 	} else if (RegExps.FaceitUsername.test(input)) {
 		return { kind: "faceit-username", username: input };
-	} else if (RegExps.FaceitUrl.test(input)) {
-		return { kind: "faceit-url", url: input };
+	} else if (RegExps.FaceitUrl.test(safeDecodeURIComponent(input))) {
+		return { kind: "faceit-url", url: safeDecodeURIComponent(input) };
 	} else if (RegExps.SteamUrl.test(input)) {
 		return { kind: "steam-url", url: input };
 	}
 
 	return { kind: "invalid" };
+}
+
+function safeDecodeURIComponent(x: string): string {
+	try {
+		return decodeURIComponent(x);
+	} catch {
+		return x;
+	}
 }
 
 function playerByInput(input: string, opts?: { signal?: AbortSignal }) {
