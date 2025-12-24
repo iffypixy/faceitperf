@@ -18,7 +18,7 @@ import {
 	ChevronUpIcon,
 	CircleAlert,
 	InfoIcon,
-	ShieldUserIcon,
+	SnowflakeIcon,
 	XIcon,
 } from "lucide-react";
 import { createQueryKeys } from "@lukemorales/query-key-factory";
@@ -1067,7 +1067,8 @@ const ProfileSearchForm: React.FC<{
 			)}
 		>
 			<div className="relative">
-				<ShieldUserIcon
+				{/* Use SnowflakeIcon by 2026, switch back to ShieldUserIcon after */}
+				<SnowflakeIcon
 					className={cn(
 						"absolute left-4 top-1/2 -translate-y-1/2 size-8 hidden",
 						isInitialSearch && "block group-focus-within:hidden",
