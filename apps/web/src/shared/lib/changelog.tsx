@@ -86,9 +86,9 @@ export const ChangelogDialog: React.FC<{
 					</DialogTitle>
 				</DialogHeader>
 
-				<div className="grid gap-8 overflow-y-auto">
+				<div className="grid gap-8 overflow-y-auto mt-4">
 					{Changelog.map((x, index) => (
-						<div key={index} className="flex flex-col gap-8">
+						<div key={index} className="flex flex-col gap-4">
 							<img
 								src={x.image}
 								alt={x.title}
