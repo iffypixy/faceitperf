@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider } from "@tanstack/react-query";
 import ReactGA from "react-ga4";
@@ -7,7 +6,6 @@ import { PostHogProvider } from "@posthog/react";
 
 import { queryClient } from "@shared/lib/query";
 import { Env } from "@shared/env";
-import { ChangelogProvider } from "@shared/lib/changelog";
 import { App } from "./app";
 import "./index.css";
 
@@ -16,24 +14,14 @@ posthog.init(Env.VITE_PUBLIC_POSTHOG_KEY, {
 	defaults: "2025-05-24",
 });
 
-const GoogleAnalytics: React.FC<React.PropsWithChildren> = ({ children }) => {
-	useEffect(() => {
-		ReactGA.initialize(Env.VITE_GA_MEASUREMENT_ID);
-		ReactGA.send({ hitType: "pageview" });
-	}, []);
-
-	return children;
-};
+ReactGA.initialize(Env.VITE_GA_MEASUREMENT_ID);
+ReactGA.send({ hitType: "pageview" });
 
 const root = document.getElementById("root")!;
 createRoot(root).render(
 	<QueryClientProvider client={queryClient}>
 		<PostHogProvider client={posthog}>
-			<GoogleAnalytics>
-				<ChangelogProvider>
-					<App />
-				</ChangelogProvider>
-			</GoogleAnalytics>
+			<App />
 		</PostHogProvider>
 	</QueryClientProvider>,
 );
