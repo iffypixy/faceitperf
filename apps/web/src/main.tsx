@@ -4,7 +4,7 @@ import ReactGA from "react-ga4";
 import posthog from "posthog-js";
 import { PostHogProvider } from "@posthog/react";
 
-import { ChangelogProvider } from "@shared/lib/changelog";
+import { ChangelogProvider } from "@features/changelog";
 import { queryClient } from "@shared/lib/query";
 import { Env } from "@shared/env";
 import { App } from "./app";
