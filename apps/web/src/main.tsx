@@ -8,7 +8,7 @@ import { ChangelogProvider } from "@shared/lib/changelog";
 import { queryClient } from "@shared/lib/query";
 import { Env } from "@shared/env";
 import { App } from "./app";
-import "./index.css";
+import "./globals.css";
 
 posthog.init(Env.VITE_PUBLIC_POSTHOG_KEY, {
 	api_host: Env.VITE_PUBLIC_POSTHOG_HOST,
