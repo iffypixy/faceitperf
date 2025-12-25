@@ -20,7 +20,8 @@
 	font-weight: 200;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraLight.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraLight.woff2")
+			format("woff2");
 }
 
 @font-face {
@@ -28,7 +29,7 @@
 	font-weight: 300;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2") format("woff2");
 }
 
 @font-face {
@@ -36,7 +37,7 @@
 	font-weight: 400;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
 }
 
 @font-face {
@@ -44,7 +45,7 @@
 	font-weight: 500;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
 }
 
 @font-face {
@@ -52,7 +53,8 @@
 	font-weight: 600;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2")
+			format("woff2");
 }
 
 @font-face {
@@ -60,7 +62,7 @@
 	font-weight: 700;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
 }
 
 @font-face {
@@ -68,7 +70,8 @@
 	font-weight: 800;
 	src:
 		local("BricolageGrotesque"),
-		url("@assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2") format("woff2");
+		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
+			format("woff2");
 }
 
 @theme inline {
@@ -110,7 +113,7 @@
 
 	body {
 		font-family: "BricolageGrotesque", sans-serif;
-		background-image: url("@assets/images/grid.svg");
+		background-image: url("~/shared/assets/images/grid.svg");
 		@apply text-base;
 		@apply bg-background;
 		@apply text-foreground;
