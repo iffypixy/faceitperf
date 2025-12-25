@@ -7,7 +7,7 @@ import { PostHogProvider } from "@posthog/react";
 import { ChangelogProvider } from "@features/changelog";
 import { queryClient } from "@shared/lib/query";
 import { Env } from "@shared/env";
-import { App } from "./app";
+import { Routes } from "@pages/routes";
 import "./globals.css";
 
 posthog.init(Env.VITE_PUBLIC_POSTHOG_KEY, {
@@ -23,7 +23,7 @@ createRoot(root).render(
 	<QueryClientProvider client={queryClient}>
 		<PostHogProvider client={posthog}>
 			<ChangelogProvider>
-				<App />
+				<Routes />
 			</ChangelogProvider>
 		</PostHogProvider>
 	</QueryClientProvider>,
