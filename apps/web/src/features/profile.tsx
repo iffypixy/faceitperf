@@ -44,18 +44,18 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@shared/ui";
-import { api, faceitApi, FaceitQueryLimit } from "@shared/api";
-import { Spinner } from "@shared/ui/loader";
-import { clamp, divide } from "@shared/lib/numbers";
-import { Button } from "@shared/ui/button";
-import { assert } from "@shared/lib/assert";
-import { cn } from "@shared/lib/cn";
-import { tc } from "@shared/lib/tc";
-import { Env } from "@shared/env";
-import { computePlayerPerformance, type PlayerPerformance, type MapStats } from "@features/stats";
-import { type Map, Maps, MapAlias, MapLabel } from "@entities/map";
-import { useDocumentTitle } from "@shared/lib/use-document-title";
+} from "~/shared/ui";
+import { api, faceitApi, FaceitQueryLimit } from "~/shared/api";
+import { Spinner } from "~/shared/ui/loader";
+import { clamp, divide } from "~/shared/lib/numbers";
+import { Button } from "~/shared/ui/button";
+import { assert } from "~/shared/lib/assert";
+import { cn } from "~/shared/lib/cn";
+import { tc } from "~/shared/lib/tc";
+import { Env } from "~/shared/env";
+import { computePlayerPerformance, type PlayerPerformance, type MapStats } from "~/features/stats";
+import { type Map, Maps, MapAlias, MapLabel } from "~/entities/map";
+import { useDocumentTitle } from "~/shared/lib/use-document-title";
 
 const Heading: React.FC = () => (
 	<h1 className="text-3xl text-center">

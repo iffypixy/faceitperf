@@ -5,8 +5,8 @@ import { match } from "ts-pattern";
 import { useQuery } from "@tanstack/react-query";
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 
-import { api, faceitApi } from "@shared/api";
-import { Spinner } from "@shared/ui/loader";
+import { api, faceitApi } from "~/shared/api";
+import { Spinner } from "~/shared/ui/loader";
 import {
 	Avatar,
 	AvatarFallback,
@@ -20,10 +20,10 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@shared/ui";
-import { toSignedString } from "@shared/lib/numbers";
-import { cn } from "@shared/lib/cn";
-import type { PlayerPerformance } from "@features/stats";
+} from "~/shared/ui";
+import { toSignedString } from "~/shared/lib/numbers";
+import { cn } from "~/shared/lib/cn";
+import type { PlayerPerformance } from "~/features/stats";
 import {
 	aggregatePlayerPerformance,
 	flagUrl,
@@ -32,9 +32,9 @@ import {
 	type PlayerMapStatsInput,
 	RatingColumnHead,
 	roundMetricValue,
-} from "@features/profile";
-import { MapLabel, type Map } from "@entities/map";
-import { useDocumentTitle } from "@shared/lib/use-document-title";
+} from "~/features/profile";
+import { MapLabel, type Map } from "~/entities/map";
+import { useDocumentTitle } from "~/shared/lib/use-document-title";
 
 export const MatchPage: React.FC = () => {
 	const { matchId } = useParams<{ matchId: string }>();

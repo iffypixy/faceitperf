@@ -1,4 +1,4 @@
-import { clamp, divide } from "@shared/lib/numbers";
+import { clamp, divide } from "~/shared/lib/numbers";
 
 export interface PlayerPerformance {
 	kills: number;

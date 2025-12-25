@@ -9,9 +9,9 @@ import {
 } from "react";
 import { GiftIcon } from "lucide-react";
 
-import ScreenshotProfile from "@shared/assets/images/screenshots/profile.webp";
-import ScreenshotSortableTables from "@shared/assets/images/screenshots/sortable-tables.webp";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/ui";
+import ScreenshotProfile from "~/shared/assets/images/screenshots/profile.webp";
+import ScreenshotSortableTables from "~/shared/assets/images/screenshots/sortable-tables.webp";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/shared/ui";
 
 const ChangelogContext = createContext<{
 	hasRead: boolean;

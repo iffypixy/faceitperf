@@ -4,11 +4,11 @@ import ReactGA from "react-ga4";
 import posthog from "posthog-js";
 import { PostHogProvider } from "@posthog/react";
 
-import { ChangelogProvider } from "@features/changelog";
-import { queryClient } from "@shared/lib/query";
-import { Env } from "@shared/env";
-import { Routes } from "@pages/routes";
-import "./globals.css";
+import { ChangelogProvider } from "~/features/changelog";
+import { queryClient } from "~/shared/lib/query";
+import { Env } from "~/shared/env";
+import { Routes } from "~/pages/routes";
+import "~/globals.css";
 
 posthog.init(Env.VITE_PUBLIC_POSTHOG_KEY, {
 	api_host: Env.VITE_PUBLIC_POSTHOG_HOST,

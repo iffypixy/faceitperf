@@ -10,8 +10,8 @@ import {
 	DropdownMenuTrigger,
 	GitHubIcon,
 	Button,
-} from "@shared/ui";
-import { ChangelogDialog, useChangelog } from "@features/changelog";
+} from "~/shared/ui";
+import { ChangelogDialog, useChangelog } from "~/features/changelog";
 
 export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children }) => (
 	<div className="fixed inset-0 grid grid-rows-[auto_1fr] overflow-auto">
