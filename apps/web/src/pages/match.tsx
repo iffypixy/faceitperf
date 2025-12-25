@@ -34,7 +34,7 @@ import {
 	roundMetricValue,
 } from "@features/profile";
 import { MapLabel, type Map } from "@entities/map";
-import { PageTitle } from "@shared/lib/title";
+import { useDocumentTitle } from "@shared/lib/use-document-title";
 
 export const MatchPage: React.FC = () => {
 	const { matchId } = useParams<{ matchId: string }>();
@@ -43,10 +43,10 @@ export const MatchPage: React.FC = () => {
 	useVetoProcessQuery(matchId);
 	useStatsQuery(matchId);
 
+	useDocumentTitle("Match");
+
 	return (
 		<ContentTemplate>
-			<PageTitle title="Match" />
-
 			{match(query)
 				.with({ status: "pending" }, () => <Spinner />)
 				.with({ status: "error" }, () => (
