@@ -55,7 +55,7 @@ import { tc } from "@shared/lib/tc";
 import { Env } from "@shared/env";
 import { computePlayerPerformance, type PlayerPerformance, type MapStats } from "@features/stats";
 import { type Map, Maps, MapAlias, MapLabel } from "@entities/map";
-import { PageTitle } from "@shared/lib/title";
+import { useDocumentTitle } from "@shared/lib/use-document-title";
 
 const Heading: React.FC = () => (
 	<h1 className="text-3xl text-center">
@@ -67,10 +67,10 @@ const Heading: React.FC = () => (
 export const ProfileSearch: React.FC = () => {
 	const { username } = useParams<{ username: string }>();
 
+	useDocumentTitle(username ?? "Home");
+
 	return (
 		<ContentTemplate>
-			<PageTitle title={`${username ?? "Home"}`} />
-
 			<Container>
 				<div className="flex flex-col gap-16">
 					<div className="flex flex-col items-center gap-4">
