@@ -84,7 +84,7 @@ export const MatchPage: React.FC = () => {
 					return (
 						<Container>
 							<div className="flex flex-col gap-8">
-								<div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center bg-background-light p-8">
+								<div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center bg-card p-8">
 									<TeamScoreCard
 										avatar={faction1.avatar}
 										name={faction1.name}
@@ -283,7 +283,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 								</div>
 
 								<InfoBlock>
-									<div className="grid grid-cols-[minmax(0,1fr),auto,minmax(0,1fr)] items-end gap-4">
+									<div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4">
 										<TeamMapResult
 											avatar={team1.avatar}
 											name={team1.name}
@@ -333,7 +333,7 @@ const TeamMapResult: React.FC<{
 
 	return (
 		<div
-			className={cn("grid grid-cols-[auto,1fr] items-start gap-4", reverse && "text-right ml-auto")}
+			className={cn("grid grid-cols-[auto_1fr] items-start gap-4", reverse && "text-right ml-auto")}
 		>
 			<PlayerAvatar src={avatar} alt={name} className={cn("w-8", reverse && "order-2")} />
 			<div className="flex flex-col overflow-hidden">
@@ -403,10 +403,10 @@ const ServerVeto: React.FC<{ matchId: string; team1: string; team2: string }> = 
 };
 
 const InfoBlock: React.FC<{ children: ReactNode }> = ({ children }) => (
-	<div className="p-4 bg-background-light rounded-sm">{children}</div>
+	<div className="p-4 bg-card rounded-xs">{children}</div>
 );
 
-const ErrorMessage: React.FC = () => <p className="text-error">Data unavailable.</p>;
+const ErrorMessage: React.FC = () => <p className="text-destructive">Data unavailable.</p>;
 
 const queryKeys = createQueryKeys("match", {
 	matchById: (matchId: string) => ["match", matchId],
@@ -622,7 +622,7 @@ const PlayerAvatar: React.FC<{
 	alt: string;
 	className?: string;
 }> = ({ src, alt, className }) => (
-	<Avatar className={cn("w-16 h-auto rounded-sm", className)}>
+	<Avatar className={cn("w-16 h-auto rounded-xs", className)}>
 		<AvatarImage src={src} alt={alt} />
 		<AvatarFallback>?</AvatarFallback>
 	</Avatar>

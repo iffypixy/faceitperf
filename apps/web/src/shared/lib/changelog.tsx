@@ -92,7 +92,7 @@ export const ChangelogDialog: React.FC<{
 							<img
 								src={x.image}
 								alt={x.title}
-								className="max-w-full border border-background-light rounded-sm p-0.5"
+								className="max-w-full border border-card rounded-xs p-0.5"
 							/>
 							<div className="flex flex-col gap-2">
 								<h5 className="text-xl font-medium">{x.title}</h5>

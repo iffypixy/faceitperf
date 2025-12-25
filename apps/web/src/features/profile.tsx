@@ -59,8 +59,8 @@ import { PageTitle } from "@shared/lib/title";
 
 const Heading: React.FC = () => (
 	<h1 className="text-3xl text-center">
-		Your <span className="text-brand-faceit font-medium">FACEIT</span> stats,{" "}
-		<span className="text-brand-hltv font-medium">HLTV</span> style.
+		Your <span className="text-faceit font-medium">FACEIT</span> stats,{" "}
+		<span className="text-hltv font-medium">HLTV</span> style.
 	</h1>
 );
 
@@ -150,7 +150,7 @@ const Profile: React.FC<{
 
 	if (mapsQuery.isError)
 		return (
-			<p role="alert" className="text-error text-xl inline-flex items-center mx-auto">
+			<p role="alert" className="text-destructive text-xl inline-flex items-center mx-auto">
 				<CircleAlert className="h-5 w-5 me-2" />
 				We couldn't load the maps. Try refreshing?
 			</p>
@@ -250,7 +250,7 @@ const FilterGroup: React.FC<{
 	);
 
 	return (
-		<div className="grid grid-cols-[12rem,8rem,6rem] items-center bg-background-light gap-8 p-4 rounded-sm sm:grid-cols-3">
+		<div className="grid grid-cols-[12rem_8rem_6rem] items-center bg-card gap-8 p-4 rounded-xs max-sm:grid-cols-3">
 			<div className="flex flex-col">
 				<p className="text-muted-foreground text-sm uppercase">Time</p>
 
@@ -337,15 +337,15 @@ const PlayerCard: React.FC<{
 	const performance = usePlayerPerformance(maps ?? []);
 
 	return (
-		<div className="grid grid-cols-[auto,1fr] bg-primary rounded-sm xs:grid-cols-1">
+		<div className="grid grid-cols-[auto_1fr] bg-primary rounded-xs max-xs:grid-cols-1">
 			<a
 				href={playerFaceitUrl(player.nickname)}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="aspect-square h-[24rem] relative rounded-l-sm overflow-hidden border border-primary xs:h-[16rem] xs:aspect-auto"
+				className="aspect-square h-96 relative rounded-l-sm overflow-hidden border border-primary max-xs:h-64 max-xs:aspect-auto"
 			>
 				<div
-					className="size-full bg-cover bg-center before:absolute before:inset-0 before:bg-background/50 blur-xs"
+					className="size-full bg-cover bg-center before:absolute before:inset-0 before:bg-background/50"
 					style={{ backgroundImage: `url(${player.avatar})` }}
 				/>
 
@@ -357,14 +357,14 @@ const PlayerCard: React.FC<{
 						<img
 							src={flagUrl(player.country)}
 							alt={player.country}
-							className="border border-background-light w-7"
+							className="border border-card w-7"
 						/>
 						{player.nickname}
 					</h4>
 				</div>
 			</a>
 
-			<div className="h-[24rem] p-12">
+			<div className="h-96 p-12">
 				{maps ? <MetricBox performance={performance} /> : <MetricBoxSkeleton />}
 			</div>
 		</div>
@@ -407,10 +407,10 @@ const MetricBoxSkeleton: React.FC = () => (
 
 const MetricSkeleton: React.FC = () => (
 	<div className="flex flex-col w-1/3 gap-4 animate-pulse">
-		<div className="h-5 w-20 bg-muted-foreground/25 rounded-sm" />
+		<div className="h-5 w-20 bg-muted-foreground/25 rounded-xs" />
 		<div className="flex flex-col gap-2">
-			<div className="h-12 w-24 bg-muted-foreground/25 rounded-sm" />
-			<div className="h-5 w-full bg-muted-foreground/25 rounded-sm" />
+			<div className="h-12 w-24 bg-muted-foreground/25 rounded-xs" />
+			<div className="h-5 w-full bg-muted-foreground/25 rounded-xs" />
 		</div>
 	</div>
 );
@@ -505,9 +505,9 @@ const Metric: React.FC<{
 
 			<div className="flex flex-col gap-2">
 				<span className="font-bold text-5xl">{roundedValueStr}</span>
-				<div className="h-2 relative bg-border rounded-sm">
+				<div className="h-2 relative bg-border rounded-xs">
 					<span
-						className="absolute top-0 w-1/3 h-full rounded-sm"
+						className="absolute top-0 w-1/3 h-full rounded-xs"
 						style={{
 							boxShadow: `0 0 10px 0 ${LevelColor[level]}`,
 							backgroundColor: LevelColor[level],
@@ -521,7 +521,7 @@ const Metric: React.FC<{
 						}}
 					/>
 					<span
-						className="w-0.5 h-3 rounded-sm bg-background-foreground absolute -top-0.5"
+						className="w-0.5 h-3 rounded-xs bg-foreground absolute -top-0.5"
 						style={{
 							left: `${normalizedValue * 100}%`,
 						}}
@@ -564,7 +564,7 @@ const MapHistory: React.FC<{
 
 	return (
 		<Tabs defaultValue="maps" className="w-full flex items-center mx-auto gap-2">
-			<TabsList className="w-full gap-2 bg-background-light">
+			<TabsList className="w-full gap-2 bg-card">
 				<TabsTrigger value="maps">Maps {mapCountLabel}</TabsTrigger>
 
 				<TabsTrigger value="sessions">
@@ -702,7 +702,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
 	}, [maps, sortState]);
 
 	return (
-		<Table className="rounded-sm">
+		<Table className="rounded-xs">
 			<TableHeader>
 				<TableRow className="[&>th]:text-center">
 					<SortableTableHead className="w-[30%]" {...register("datetime")}>
@@ -862,7 +862,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sess
 	}, [sortState, sessions]);
 
 	return (
-		<Table className="rounded-sm">
+		<Table className="rounded-xs">
 			<TableHeader>
 				<TableRow className="[&>th]:text-center">
 					<SortableTableHead className="w-[30%]" {...register("datetime")}>
@@ -942,22 +942,22 @@ const TableSkeleton: React.FC = () =>
 	Array.from({ length: 10 }).map((_, index) => (
 		<TableRow key={index} className="[&>td]:h-10">
 			<TableCell className="w-[30%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-28 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-28 mx-auto animate-pulse" />
 			</TableCell>
 			<TableCell className="w-[10%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-12 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-16 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-16 mx-auto animate-pulse" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-16 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-16 mx-auto animate-pulse" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-12 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-sm w-12 mx-auto animate-pulse" />
+				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
 			</TableCell>
 		</TableRow>
 	));
@@ -1062,8 +1062,9 @@ const ProfileSearchForm: React.FC<{
 		<form
 			onSubmit={handleSubmit}
 			className={cn(
-				"flex flex-col gap-2 group transition-[width] w-[54rem] duration-300 ease-out xs:w-full",
-				isInitialSearch && "w-[24rem] focus-within:w-[54rem] xs:w-[24rem] xs:focus-within:w-full",
+				"flex flex-col gap-2 group transition-[width] w-216 duration-300 ease-out max-xs:w-full",
+				isInitialSearch &&
+					"w-[24rem] focus-within:w-216 max-xs:w-[24rem] max-xs:focus-within:w-full",
 			)}
 		>
 			<div className="relative">
@@ -1083,13 +1084,13 @@ const ProfileSearchForm: React.FC<{
 					placeholder="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
 					aria-label="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
 					className={cn(
-						"w-full text-2xl bg-background border-2 rounded-sm border-background-foreground pl-4 pr-56 py-4 focus-visible:outline outline-offset-2 outline-background-foreground",
+						"w-full text-2xl bg-background border-2 rounded-xs border-foreground pl-4 pr-56 py-4 focus-visible:outline-solid outline-offset-2 outline-foreground",
 						isInitialSearch && "pl-14 pr-14 group-focus-within:pl-4 group-focus-within:pr-4",
 					)}
 				/>
 				<div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
 					<Button type="button" variant="icon" onMouseDown={onReset} aria-label="Clear input">
-						<XIcon className="size-8 text-muted-foreground" />
+						<XIcon className="size-8" />
 					</Button>
 					<Button
 						type="submit"
@@ -1103,7 +1104,7 @@ const ProfileSearchForm: React.FC<{
 			</div>
 
 			{query.error && (
-				<p role="alert" className="text-error inline-flex items-center text-left">
+				<p role="alert" className="text-destructive inline-flex items-center text-left">
 					<CircleAlert className="h-5 w-5 me-2" />
 					{query.error.message}
 				</p>

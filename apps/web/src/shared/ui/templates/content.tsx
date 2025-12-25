@@ -9,12 +9,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 	GitHubIcon,
+	Button,
 } from "@shared/ui";
 import { ChangelogDialog, useChangelog } from "@shared/lib/changelog";
 
 export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children }) => (
-	<div className="fixed inset-0 grid grid-rows-[auto,1fr] overflow-auto">
-		<header className="bg-background-light shadow-sm shadow-background z-10 py-4">
+	<div className="fixed inset-0 grid grid-rows-[auto_1fr] overflow-auto">
+		<header className="bg-card shadow-xs shadow-background z-10 py-4">
 			<Container>
 				<div className="flex items-center justify-between">
 					<a
@@ -22,7 +23,7 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children })
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						<GitHubIcon className="size-8 fill-background-foreground" />
+						<GitHubIcon className="size-8 fill-foreground" />
 					</a>
 
 					<Link to="/">
@@ -46,10 +47,10 @@ const HelpButton: React.FC = () => {
 		<>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<button title="Help" className="rounded-full p-2 bg-background outline-none relative">
+					<Button variant="icon" title="Help" className="rounded-full p-2 bg-background relative">
 						<CircleQuestionMark className="size-6" />
 						{!hasRead && <NotificationDot />}
-					</button>
+					</Button>
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent>
@@ -74,17 +75,15 @@ const NotificationDot: React.FC = () => (
 	<>
 		<div
 			aria-hidden
-			className="absolute rounded-full size-3 bg-brand-faceit right-0 top-0 animate-ping"
+			className="absolute rounded-full size-3 bg-faceit right-0 top-0 animate-ping"
 		/>
-		<div aria-hidden className="absolute rounded-full size-3 bg-brand-faceit right-0 top-0" />
+		<div aria-hidden className="absolute rounded-full size-3 bg-faceit right-0 top-0" />
 	</>
 );
 
 const Logo: React.FC = () => (
 	<h3 className="font-extrabold text-4xl text-center leading-none">
-		<span className="text-brand-faceit">FACEIT</span>
-		<span className="text-hltv text-[1.25em]">
-			<span className="text-brand-hltv">perf</span>
-		</span>
+		<span className="text-faceit">FACEIT</span>
+		<span className="text-hltv text-[1.25em]">perf </span>
 	</h3>
 );

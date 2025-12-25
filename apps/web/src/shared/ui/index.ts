@@ -7,3 +7,4 @@ export * from "./avatar";
 export * from "./select";
 export * from "./dropdown";
 export * from "./dialog";
+export * from "./button";
