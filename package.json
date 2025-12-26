@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"typecheck": "pnpm --filter web typecheck",
+		"typecheck": "pnpm --filter web --filter rating run typecheck",
 		"lint": "biome check ."
 	},
 	"author": "Ansat Euler <iffypixy@gmail.com>",
