@@ -1,0 +1,9 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"extends": "//",
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	}
+}
