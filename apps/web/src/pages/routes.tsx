@@ -1,7 +1,6 @@
 import { Route, Switch } from "wouter";
-
-import { MatchPage } from "./match";
 import { ProfileSearch } from "~/features/profile";
+import { MatchPage } from "./match";
 
 export const Routes: React.FC = () => (
 	<Switch>

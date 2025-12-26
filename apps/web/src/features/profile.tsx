@@ -1,16 +1,5 @@
-import React, {
-	CSSProperties,
-	FormEvent,
-	ReactNode,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import { useLocation, useParams } from "wouter";
+import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useQuery } from "@tanstack/react-query";
-import { match, P } from "ts-pattern";
 import { addMonths, format, getYear, isAfter, isToday, isYesterday, parseISO } from "date-fns";
 import {
 	AsteriskIcon,
@@ -21,8 +10,28 @@ import {
 	SnowflakeIcon,
 	XIcon,
 } from "lucide-react";
-import { createQueryKeys } from "@lukemorales/query-key-factory";
-
+import type React from "react";
+import {
+	type CSSProperties,
+	type FormEvent,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { match, P } from "ts-pattern";
+import { useLocation, useParams } from "wouter";
+import { MapAlias, type MapId, MapLabel, Maps } from "~/entities/map";
+import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
+import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
+import { Env } from "~/shared/env";
+import { assert } from "~/shared/lib/assert";
+import { cn } from "~/shared/lib/cn";
+import { clamp, divide } from "~/shared/lib/numbers";
+import { tc } from "~/shared/lib/tc";
+import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
 	Container,
 	ContentTemplate,
@@ -45,17 +54,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "~/shared/ui";
-import { api, faceitApi, FaceitQueryLimit } from "~/shared/api";
-import { Spinner } from "~/shared/ui/loader";
-import { clamp, divide } from "~/shared/lib/numbers";
 import { Button } from "~/shared/ui/button";
-import { assert } from "~/shared/lib/assert";
-import { cn } from "~/shared/lib/cn";
-import { tc } from "~/shared/lib/tc";
-import { Env } from "~/shared/env";
-import { computePlayerPerformance, type PlayerPerformance, type MapStats } from "~/features/stats";
-import { type Map, Maps, MapAlias, MapLabel } from "~/entities/map";
-import { useDocumentTitle } from "~/shared/lib/use-document-title";
+import { Spinner } from "~/shared/ui/loader";
 
 const Heading: React.FC = () => (
 	<h1 className="text-3xl text-center">
@@ -120,7 +120,7 @@ function timeFilterValues(startDate: Date | null): TimeFilterValue[] {
 	return res;
 }
 
-type MapFilterValue = "all" | Map;
+type MapFilterValue = "all" | MapId;
 
 const GameVersions = ["cs2", "csgo"] as const;
 type GameVersion = (typeof GameVersions)[number];
@@ -243,7 +243,7 @@ const FilterGroup: React.FC<{
 		(valueStr: string) => {
 			// Convert to number if it represents a year; otherwise keep as string.
 			const valueNumber = Number(valueStr);
-			const value = !isNaN(valueNumber) ? valueNumber : valueStr;
+			const value = !Number.isNaN(valueNumber) ? valueNumber : valueStr;
 			onTimeChange(value as TimeFilterValue);
 		},
 		[onTimeChange],
@@ -671,23 +671,23 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
 					return dateA.getTime() - dateB.getTime();
 				})
 				.with("map", () => {
-					const mapA = a["Map"];
-					const mapB = b["Map"];
+					const mapA = a.Map;
+					const mapB = b.Map;
 					return mapA.localeCompare(mapB);
 				})
 				.with("score", () => {
-					const roundsA = Number(a["Rounds"]);
-					const roundsB = Number(b["Rounds"]);
+					const roundsA = Number(a.Rounds);
+					const roundsB = Number(b.Rounds);
 					return roundsA - roundsB;
 				})
 				.with("kd-diff", () => {
-					const sumA = Number(a["Kills"]) + Number(a["Deaths"]);
-					const sumB = Number(b["Kills"]) + Number(b["Deaths"]);
+					const sumA = Number(a.Kills) + Number(a.Deaths);
+					const sumB = Number(b.Kills) + Number(b.Deaths);
 					return sumA - sumB;
 				})
 				.with("kd", () => {
-					const kdA = divide(Number(a["Kills"]), Number(a["Deaths"]));
-					const kdB = divide(Number(b["Kills"]), Number(b["Deaths"]));
+					const kdA = divide(Number(a.Kills), Number(a.Deaths));
+					const kdB = divide(Number(b.Kills), Number(b.Deaths));
 					return kdA - kdB;
 				})
 				.with("rating", () => {
@@ -790,15 +790,15 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 			</TableCell>
 
 			<TableCell className="w-[10%] text-muted-foreground">
-				{MapAlias[map["Map"] as Map] ?? "???"}
+				{MapAlias[map.Map as MapId] ?? "???"}
 			</TableCell>
 
 			<TableCell className="w-[15%]" style={{ color: scoreColor }}>
-				{map["Score"]}
+				{map.Score}
 			</TableCell>
 
 			<TableCell className="w-[15%]">
-				{map["Kills"]}—{map["Deaths"]}
+				{map.Kills}—{map.Deaths}
 			</TableCell>
 
 			<TableCell className="w-[15%]">

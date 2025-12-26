@@ -212,7 +212,7 @@ function formatDate(date: Date) {
 }
 
 async function main() {
-	// await collectPlayers();
+	await collectPlayers();
 	await collectStats();
 	process.exit(0);
 }
