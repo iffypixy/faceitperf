@@ -3,7 +3,8 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"format": "prettier --write \"**/*.{js,ts,jsx,tsx,mjs,cjs,json,css,scss,sass,html}\""
+		"typecheck": "pnpm --filter web typecheck",
+		"lint": "biome check ."
 	},
 	"author": "Ansat Euler <iffypixy@gmail.com>",
 	"license": "MIT",
