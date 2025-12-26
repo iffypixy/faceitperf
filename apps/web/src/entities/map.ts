@@ -20,9 +20,9 @@ export const Maps = [
 	"de_tuscan",
 	"de_season",
 ] as const;
-export type Map = (typeof Maps)[number];
+export type MapId = (typeof Maps)[number];
 
-export const MapLabel: Record<Map, string> = {
+export const MapLabel: Record<MapId, string> = {
 	de_mirage: "Mirage",
 	de_anubis: "Anubis",
 	de_inferno: "Inferno",
@@ -45,7 +45,7 @@ export const MapLabel: Record<Map, string> = {
 	de_tuscan: "Tuscan",
 };
 
-export const MapAlias: Record<Map, string> = {
+export const MapAlias: Record<MapId, string> = {
 	de_mirage: "mrg",
 	de_anubis: "anb",
 	de_inferno: "inf",

@@ -21,7 +21,7 @@
 	src:
 		local("BricolageGrotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraLight.woff2")
-			format("woff2");
+		format("woff2");
 }
 
 @font-face {
@@ -54,7 +54,7 @@
 	src:
 		local("BricolageGrotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2")
-			format("woff2");
+		format("woff2");
 }
 
 @font-face {
@@ -71,7 +71,7 @@
 	src:
 		local("BricolageGrotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
-			format("woff2");
+		format("woff2");
 }
 
 @theme inline {

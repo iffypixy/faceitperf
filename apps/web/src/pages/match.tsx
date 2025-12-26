@@ -1,12 +1,25 @@
-import { ReactNode, useMemo, useState } from "react";
-import { useParams } from "wouter";
-import { format, formatDistanceStrict } from "date-fns";
-import { match } from "ts-pattern";
-import { useQuery } from "@tanstack/react-query";
 import { createQueryKeys } from "@lukemorales/query-key-factory";
-
+import { useQuery } from "@tanstack/react-query";
+import { format, formatDistanceStrict } from "date-fns";
+import { type ReactNode, useMemo, useState } from "react";
+import { match } from "ts-pattern";
+import { useParams } from "wouter";
+import { type MapId, MapLabel } from "~/entities/map";
+import {
+	aggregatePlayerPerformance,
+	flagUrl,
+	Performance,
+	PerformanceColor,
+	type PlayerMapStatsInput,
+	RatingColumnHead,
+	roundMetricValue,
+} from "~/features/profile";
+import type { PlayerPerformance } from "~/features/stats";
 import { api, faceitApi } from "~/shared/api";
-import { Spinner } from "~/shared/ui/loader";
+import { assert } from "~/shared/lib/assert";
+import { cn } from "~/shared/lib/cn";
+import { toSignedString } from "~/shared/lib/numbers";
+import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
 	Avatar,
 	AvatarFallback,
@@ -21,20 +34,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/shared/ui";
-import { toSignedString } from "~/shared/lib/numbers";
-import { cn } from "~/shared/lib/cn";
-import type { PlayerPerformance } from "~/features/stats";
-import {
-	aggregatePlayerPerformance,
-	flagUrl,
-	Performance,
-	PerformanceColor,
-	type PlayerMapStatsInput,
-	RatingColumnHead,
-	roundMetricValue,
-} from "~/features/profile";
-import { MapLabel, type Map } from "~/entities/map";
-import { useDocumentTitle } from "~/shared/lib/use-document-title";
+import { Spinner } from "~/shared/ui/loader";
 
 export const MatchPage: React.FC = () => {
 	const { matchId } = useParams<{ matchId: string }>();
@@ -227,7 +227,7 @@ const MapVeto: React.FC<{ matchId: string; team1: string; team2: string }> = ({
 									.with("pick", () => "picked")
 									.exhaustive();
 
-								const map = MapLabel[x.guid as Map] ?? "???";
+								const map = MapLabel[x.guid as MapId] ?? "???";
 								const text =
 									index === length - 1 ? `${map} was left over` : `${team} ${action} ${map}`;
 
@@ -268,7 +268,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 		.with({ status: "success" }, (x) => (
 			<ul>
 				{x.data.rounds.map((x, index) => {
-					const map = (x.round_stats.Map ?? "tba") as Map;
+					const map = (x.round_stats.Map ?? "tba") as MapId;
 					const stats1 = x.teams.find((x) => x.team_id === team1.id)?.team_stats;
 					const stats2 = x.teams.find((x) => x.team_id === team2.id)?.team_stats;
 
@@ -315,7 +315,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 		.exhaustive();
 };
 
-function mapImageUrl(map: Map): string {
+function mapImageUrl(map: MapId): string {
 	return `https://hltv.org/img/static/maps/${map.slice(3)}.png`;
 }
 
@@ -460,7 +460,9 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 			if (!playerByIdMap.has(p.player_id))
 				playerByIdMap.set(p.player_id, { nickname: p.nickname, stats: [] });
 
-			const player = playerByIdMap.get(p.player_id)!;
+			const player = playerByIdMap.get(p.player_id);
+			assert(player);
+
 			player.stats.push({ ...p.player_stats, Rounds: map.round_stats.Rounds });
 		}
 	}
@@ -472,7 +474,7 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 	}));
 }
 
-type MapFilterValue = "all" | Map;
+type MapFilterValue = "all" | MapId;
 
 const MatchStats: React.FC<{
 	matchId: string;
@@ -489,7 +491,7 @@ const MatchStats: React.FC<{
 		.with({ status: "success" }, (x) => {
 			const mapFilterValues: MapFilterValue[] = [
 				"all",
-				...x.data.rounds.map((x) => x.round_stats.Map as Map),
+				...x.data.rounds.map((x) => x.round_stats.Map as MapId),
 			];
 
 			const rounds = match(mapFilter)
@@ -500,12 +502,12 @@ const MatchStats: React.FC<{
 				<div className="flex flex-col gap-2">
 					<InfoBlock>
 						<ul className="flex items-center gap-4">
-							{mapFilterValues.map((x, index) => (
+							{mapFilterValues.map((x) => (
 								<li
-									key={index}
+									key={x}
 									className={cn("text-primary-foreground", x === mapFilter && "font-bold")}
 								>
-									<button onClick={() => setMapFilter(x)}>
+									<button type="button" onClick={() => setMapFilter(x)}>
 										{x === "all" ? "All maps" : MapLabel[x]}
 									</button>
 								</li>
@@ -798,7 +800,7 @@ async function fetchVetoProcess(matchId: string) {
 interface MatchStats {
 	rounds: {
 		best_of: string;
-		competition_id: any;
+		competition_id: unknown;
 		game_id: string;
 		game_mode: string;
 		match_id: string;
@@ -867,12 +869,12 @@ interface Player {
 			game_player_name: string;
 			game_profile_id: string;
 			region: string;
-			regions: any;
+			regions: unknown;
 			skill_level: number;
 			skill_level_label: string;
 		}
 	>;
-	infractions: any;
+	infractions: unknown;
 	membership_type: string;
 	memberships: string[];
 	new_steam_id: string;

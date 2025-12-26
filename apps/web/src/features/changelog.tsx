@@ -1,13 +1,13 @@
+import { GiftIcon } from "lucide-react";
 import {
 	createContext,
-	PropsWithChildren,
+	type PropsWithChildren,
 	useCallback,
 	useContext,
 	useEffect,
 	useMemo,
 	useState,
 } from "react";
-import { GiftIcon } from "lucide-react";
 
 import ScreenshotProfile from "~/shared/assets/images/screenshots/profile.webp";
 import ScreenshotSortableTables from "~/shared/assets/images/screenshots/sortable-tables.webp";

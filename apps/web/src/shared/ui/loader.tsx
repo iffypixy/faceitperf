@@ -1,4 +1,4 @@
-import { type LucideProps, LoaderIcon } from "lucide-react";
+import { LoaderIcon, type LucideProps } from "lucide-react";
 
 import { cn } from "~/shared/lib/cn";
 import { Center } from "./templates";
