@@ -147,6 +147,12 @@ const Profile: React.FC<{
 	const playerQuery = usePlayerQuery(username.trim());
 	const mapsQuery = useMapsQuery(playerQuery.data?.player_id ?? null, filter.version);
 
+	useEffect(() => {
+		if (!playerQuery.data) return;
+		const { player_id, nickname, avatar } = playerQuery.data;
+		addToPlayerHistory({ id: player_id, nickname, avatar });
+	}, [playerQuery.data]);
+
 	const filteredMaps = useMemo(() => {
 		if (!mapsQuery.data) return null;
 		return filterMaps(mapsQuery.data, filter);
@@ -1041,12 +1047,6 @@ const ProfileSearchForm: React.FC<{
 
 			const { data, isSuccess } = await query.refetch();
 			if (!isSuccess) return;
-
-			addToPlayerHistory({
-				id: data.player_id,
-				nickname: data.nickname,
-				avatar: data.avatar,
-			});
 
 			navigate(playerUrl(data.nickname));
 
