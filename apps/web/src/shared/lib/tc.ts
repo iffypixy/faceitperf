@@ -1,13 +1,19 @@
-type AwaitedReturn<T> = T extends PromiseLike<infer U> ? U : T;
+export type Result<T> = [null, T] | [Error, null];
 
-export async function tc<T>(
-	promise: Promise<T>,
-): Promise<[null, AwaitedReturn<T>] | [Error, null]> {
+export function tc<TReturn>(f: () => Promise<TReturn>): Promise<Result<TReturn>>;
+export function tc<TReturn>(f: () => TReturn): Result<TReturn>;
+
+export function tc<TReturn>(f: () => TReturn | Promise<TReturn>) {
 	try {
-		const data = await promise;
-		return [null, data as AwaitedReturn<T>];
-	} catch (err) {
-		return [normalizeError(err), null];
+		const res = f();
+
+		if (res instanceof Promise) {
+			return res.then((res) => [null, res]).catch((error) => [normalizeError(error), null]);
+		}
+
+		return [null, res];
+	} catch (error) {
+		return [normalizeError(error), null];
 	}
 }
 

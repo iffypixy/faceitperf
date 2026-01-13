@@ -1240,7 +1240,7 @@ function playerByInput(input: string, opts?: { signal?: AbortSignal }) {
 				})
 				.exhaustive();
 
-			const [err, player] = await tc(fetchPlayer(username, opts));
+			const [err, player] = await tc(() => fetchPlayer(username, opts));
 			if (err) throw new Error("That player doesn't seem to exist.");
 			return player;
 		})
@@ -1253,7 +1253,7 @@ function playerByInput(input: string, opts?: { signal?: AbortSignal }) {
 			}
 		})
 		.with({ kind: "steam-id" }, async (x) => {
-			const [err, player] = await tc(fetchPlayerBySteamId(x.id));
+			const [err, player] = await tc(() => fetchPlayerBySteamId(x.id));
 			if (err) throw new Error("We couldn't resolve a FACEIT player from that Steam ID.");
 			return player;
 		})
