@@ -17,26 +17,9 @@
 
 @font-face {
 	font-family: "BricolageGrotesque";
-	font-weight: 200;
-	src:
-		local("BricolageGrotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraLight.woff2")
-		format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
-	font-weight: 300;
-	src:
-		local("BricolageGrotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Light.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
 	font-weight: 400;
 	src:
-		local("BricolageGrotesque"),
+		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
 }
 
@@ -44,7 +27,7 @@
 	font-family: "BricolageGrotesque";
 	font-weight: 500;
 	src:
-		local("BricolageGrotesque"),
+		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
 }
 
@@ -52,7 +35,7 @@
 	font-family: "BricolageGrotesque";
 	font-weight: 600;
 	src:
-		local("BricolageGrotesque"),
+		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2")
 		format("woff2");
 }
@@ -61,7 +44,7 @@
 	font-family: "BricolageGrotesque";
 	font-weight: 700;
 	src:
-		local("BricolageGrotesque"),
+		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
 }
 
@@ -69,7 +52,7 @@
 	font-family: "BricolageGrotesque";
 	font-weight: 800;
 	src:
-		local("BricolageGrotesque"),
+		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
 		format("woff2");
 }
