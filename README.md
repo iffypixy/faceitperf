@@ -1,8 +1,7 @@
-# faceitperf — FACEIT stats, HLTV style.
+# faceitperf
 
-This project represents an HLTV-resembling performance tracking tool for FACEIT players.
+HLTV-style performance tracker for FACEIT CS2 players.
 
-Feel free to reach out:
+---
 
-- telegram: @iffypixy
-- email: ansat.euler@gmail.com
+Contact: [@iffypixy](https://t.me/iffypixy) · ansat.euler@gmail.com
