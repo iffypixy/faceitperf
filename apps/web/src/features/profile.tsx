@@ -33,6 +33,9 @@ import { clamp, divide } from "~/shared/lib/numbers";
 import { tc } from "~/shared/lib/tc";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
+	Avatar,
+	AvatarFallback,
+	AvatarImage,
 	Container,
 	ContentTemplate,
 	Select,
@@ -76,6 +79,7 @@ export const ProfileSearch: React.FC = () => {
 					<div className="flex flex-col items-center gap-4">
 						<Heading />
 						<ProfileSearchForm initialValue={username ?? ""} />
+						<PlayerHistory />
 					</div>
 
 					{username && <Profile username={username} />}
@@ -1023,8 +1027,11 @@ const ProfileSearchForm: React.FC<{
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
+		setSearch(initialValue);
+	}, [initialValue]);
+
+	useEffect(() => {
 		if (location !== homeUrl()) return;
-		setSearch("");
 		inputRef.current?.focus();
 	}, [location]);
 
@@ -1035,11 +1042,16 @@ const ProfileSearchForm: React.FC<{
 			const { data, isSuccess } = await query.refetch();
 			if (!isSuccess) return;
 
+			addToPlayerHistory({
+				id: data.player_id,
+				nickname: data.nickname,
+				avatar: data.avatar,
+			});
+
 			navigate(playerUrl(data.nickname));
 
-			// This component doesn't get unmounted/mounted after navigation (only `initialValue` prop changes),
-			// so we have to manually update its value and force blur the input.
-			setSearch(data.nickname);
+			// Navigation doesn't force remount for this component (-> no blur),
+			// so we have to manually force blur the input.
 			inputRef.current?.blur();
 		},
 		[navigate, query],
@@ -1120,6 +1132,58 @@ function playerUrl(username: string) {
 function homeUrl() {
 	return "/";
 }
+
+interface PlayerHistoryEntry {
+	id: string;
+	nickname: string;
+	avatar: string;
+}
+
+const PlayerHistoryKey = "player-history";
+const MaxPlayerHistorySize = 5;
+
+function getPlayerHistory(): PlayerHistoryEntry[] {
+	const json = localStorage.getItem(PlayerHistoryKey);
+	if (!json) return [];
+	return JSON.parse(json) as PlayerHistoryEntry[];
+}
+
+function addToPlayerHistory(player: PlayerHistoryEntry): void {
+	const history = getPlayerHistory().filter((x) => x.id !== player.id);
+	history.unshift(player);
+
+	localStorage.setItem(PlayerHistoryKey, JSON.stringify(history.slice(0, MaxPlayerHistorySize)));
+}
+
+const PlayerHistory: React.FC = () => {
+	const [location, navigate] = useLocation();
+	const players = useMemo(() => {
+		// A hacky way to subscribe for player history update, as it triggers location update.
+		void location;
+		return getPlayerHistory();
+	}, [location]);
+
+	if (players.length === 0) return null;
+
+	return (
+		<div className="flex flex-wrap justify-center gap-2">
+			{players.map((player) => (
+				<button
+					key={player.id}
+					type="button"
+					onClick={() => navigate(playerUrl(player.nickname))}
+					className="flex items-center gap-2 p-2 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
+				>
+					<Avatar className="size-6 rounded-xs">
+						<AvatarImage src={player.avatar} alt={player.nickname} />
+						<AvatarFallback>{player.nickname[0]}</AvatarFallback>
+					</Avatar>
+					<span className="text-sm">{player.nickname}</span>
+				</button>
+			))}
+		</div>
+	);
+};
 
 const RegExps = {
 	FaceitUrl: /^https?:\/\/(www\.)?faceit\.com\/en\/players\/([a-zA-Z0-9_ -]{1,24})\/?$/,
