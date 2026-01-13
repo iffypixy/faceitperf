@@ -1172,7 +1172,7 @@ const PlayerHistory: React.FC = () => {
 					key={player.id}
 					type="button"
 					onClick={() => navigate(playerUrl(player.nickname))}
-					className="flex items-center gap-2 p-2 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
+					className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
 				>
 					<Avatar className="size-6 rounded-xs">
 						<AvatarImage src={player.avatar} alt={player.nickname} />
