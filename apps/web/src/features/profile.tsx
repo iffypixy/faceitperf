@@ -6,6 +6,7 @@ import {
 	ChevronDownIcon,
 	ChevronUpIcon,
 	CircleAlert,
+	HistoryIcon,
 	InfoIcon,
 	SnowflakeIcon,
 	XIcon,
@@ -23,6 +24,7 @@ import {
 } from "react";
 import { match, P } from "ts-pattern";
 import { useLocation, useParams } from "wouter";
+import { create } from "zustand";
 import { MapAlias, type MapId, MapLabel, Maps } from "~/entities/map";
 import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
@@ -147,11 +149,13 @@ const Profile: React.FC<{
 	const playerQuery = usePlayerQuery(username.trim());
 	const mapsQuery = useMapsQuery(playerQuery.data?.player_id ?? null, filter.version);
 
+	const { addToHistory } = usePlayerHistory();
+
 	useEffect(() => {
 		if (!playerQuery.data) return;
-		const { player_id, nickname, avatar } = playerQuery.data;
-		addToPlayerHistory({ id: player_id, nickname, avatar });
-	}, [playerQuery.data]);
+		const { player_id, avatar, nickname } = playerQuery.data;
+		addToHistory({ id: player_id, avatar, nickname });
+	}, [playerQuery.data, addToHistory]);
 
 	const filteredMaps = useMemo(() => {
 		if (!mapsQuery.data) return null;
@@ -1142,45 +1146,60 @@ interface PlayerHistoryEntry {
 const PlayerHistoryKey = "player-history";
 const MaxPlayerHistorySize = 5;
 
-function getPlayerHistory(): PlayerHistoryEntry[] {
+function loadPlayerHistory(): PlayerHistoryEntry[] {
 	const json = localStorage.getItem(PlayerHistoryKey);
-	if (!json) return [];
-	return JSON.parse(json) as PlayerHistoryEntry[];
+	if (json === null) return [];
+
+	const [err, history] = tc(() => JSON.parse(json) as PlayerHistoryEntry[]);
+	return err === null ? history : [];
 }
 
-function addToPlayerHistory(player: PlayerHistoryEntry): void {
-	const history = getPlayerHistory().filter((x) => x.id !== player.id);
-	history.unshift(player);
-
-	localStorage.setItem(PlayerHistoryKey, JSON.stringify(history.slice(0, MaxPlayerHistorySize)));
+function savePlayerHistory(history: PlayerHistoryEntry[]) {
+	localStorage.setItem(PlayerHistoryKey, JSON.stringify(history));
 }
+
+const usePlayerHistory = create<{
+	history: PlayerHistoryEntry[];
+	addToHistory: (player: PlayerHistoryEntry) => void;
+}>((set) => ({
+	history: loadPlayerHistory(),
+	addToHistory: (player) =>
+		set((state) => {
+			const history = [player, ...state.history.filter((x) => x.id !== player.id)].slice(
+				0,
+				MaxPlayerHistorySize,
+			);
+
+			savePlayerHistory(history);
+			return { history };
+		}),
+}));
 
 const PlayerHistory: React.FC = () => {
-	const [location, navigate] = useLocation();
-	const players = useMemo(() => {
-		// A hacky way to subscribe for player history update, as it triggers location update.
-		void location;
-		return getPlayerHistory();
-	}, [location]);
+	const { history } = usePlayerHistory();
+	const [, navigate] = useLocation();
 
-	if (players.length === 0) return null;
+	if (history.length === 0) return null;
 
 	return (
-		<div className="flex flex-wrap justify-center gap-2">
-			{players.map((player) => (
-				<button
-					key={player.id}
-					type="button"
-					onClick={() => navigate(playerUrl(player.nickname))}
-					className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
-				>
-					<Avatar className="size-6 rounded-xs">
-						<AvatarImage src={player.avatar} alt={player.nickname} />
-						<AvatarFallback>{player.nickname[0]}</AvatarFallback>
-					</Avatar>
-					<span className="text-sm">{player.nickname}</span>
-				</button>
-			))}
+		<div className="flex items-center gap-4">
+			<HistoryIcon className="size-4 text-muted-foreground" />
+			<div className="flex flex-wrap justify-center gap-2">
+				{history.map((player) => (
+					<button
+						key={player.id}
+						type="button"
+						onClick={() => navigate(playerUrl(player.nickname))}
+						className="animate-in zoom-in-75 duration-300 flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
+					>
+						<Avatar className="size-6 rounded-xs">
+							<AvatarImage src={player.avatar} alt={player.nickname} />
+							<AvatarFallback>{player.nickname[0]}</AvatarFallback>
+						</Avatar>
+						<span className="text-sm">{player.nickname}</span>
+					</button>
+				))}
+			</div>
 		</div>
 	);
 };
