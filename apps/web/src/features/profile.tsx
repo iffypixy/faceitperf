@@ -188,6 +188,8 @@ const Profile: React.FC<{
 					<PlayerCard player={x.data} maps={filteredMaps} />
 				</div>
 
+				<ClashGGWidget />
+
 				<MapHistory maps={filteredMaps} />
 			</div>
 		))
@@ -567,6 +569,17 @@ const Metric: React.FC<{
 		</div>
 	);
 };
+
+const TrackingLink = "https://trk.clash.gg/click?o=2&a=771&c=8";
+
+const ClashGGWidget: React.FC = () => (
+	<iframe
+		title="Clash.gg"
+		src={`https://clash.gg/embed-ad/Fort-Knox?redirect=${encodeURIComponent(TrackingLink)}&winChance=0.75`}
+		allow="autoplay"
+		className="w-full rounded-xs h-72 focus-visible:outline-solid outline-1 outline-card"
+	/>
+);
 
 const MapHistory: React.FC<{
 	maps: PlayerMapStats[] | null;
