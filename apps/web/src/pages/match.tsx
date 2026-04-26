@@ -316,7 +316,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 };
 
 function mapImageUrl(map: MapId): string {
-	return `https://hltv.org/img/static/maps/${map.slice(3)}.png`;
+	return `/hltv/maps/${map.slice(3)}.png`;
 }
 
 const TeamMapResult: React.FC<{
@@ -790,11 +790,7 @@ interface VetoProcessResponse {
 }
 
 async function fetchVetoProcess(matchId: string) {
-	return await api
-		.get<VetoProcessResponse>(
-			`https://corsproxy.io/?${encodeURIComponent(`https://api.faceit.com/democracy/v1/match/${matchId}/history`)}`,
-		)
-		.json();
+	return await api.get<VetoProcessResponse>(`/faceit/veto/${matchId}`).json();
 }
 
 interface MatchStats {

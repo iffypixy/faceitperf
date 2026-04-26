@@ -28,7 +28,6 @@ import { create } from "zustand";
 import { MapAlias, type MapId, MapLabel, Maps } from "~/entities/map";
 import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
-import { Env } from "~/shared/env";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
 import { clamp, divide } from "~/shared/lib/numbers";
@@ -1307,11 +1306,7 @@ interface SteamIdResponse {
 }
 
 async function steamIdByCustomId(customId: string): Promise<string> {
-	const res = await api
-		.get<SteamIdResponse>(
-			`https://corsproxy.io/?url=https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=${Env.VITE_STEAM_WEB_API_KEY}&vanityurl=${customId}`,
-		)
-		.json();
+	const res = await api.get<SteamIdResponse>(`/steam/resolve?vanityurl=${customId}`).json();
 	const steamId = res.response.steamid;
 	if (steamId === undefined) throw new Error(`failed to resolve custom id: ${customId}`);
 	return steamId;
@@ -1497,5 +1492,5 @@ function usePlayerPerformance(maps: PlayerMapStatsInput[]) {
 }
 
 export function flagUrl(countryCode: string): string {
-	return `https://hltv.org/img/static/flags/30x20/${countryCode.toUpperCase()}.gif`;
+	return `/hltv/flags/${countryCode.toUpperCase()}.gif`;
 }
