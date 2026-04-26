@@ -206,3 +206,7 @@ dist
 
 # Python
 venv
+
+# Wrangler
+.wrangler
+.dev.vars
