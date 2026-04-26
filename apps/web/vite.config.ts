@@ -11,4 +11,10 @@ export default defineConfig({
 			"~": "/src",
 		},
 	},
+	server: {
+		proxy: {
+			"/faceit": "http://localhost:8788",
+			"/steam": "http://localhost:8788",
+		},
+	},
 });
