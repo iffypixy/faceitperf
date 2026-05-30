@@ -350,6 +350,8 @@ const PlayerCard: React.FC<{
 	maps: PlayerMapStats[] | null;
 }> = ({ player, maps }) => {
 	const performance = usePlayerPerformance(maps ?? []);
+	const detailsQuery = usePlayerDetailsQuery(player.player_id);
+	const elo = detailsQuery.data?.games.cs2;
 
 	return (
 		<div className="grid grid-cols-[auto_1fr] bg-primary rounded-xs max-xs:grid-cols-1">
@@ -364,7 +366,7 @@ const PlayerCard: React.FC<{
 					style={{ backgroundImage: `url(${player.avatar})` }}
 				/>
 
-				<div className="absolute bottom-8 w-full flex items-center text-center gap-2">
+				<div className="absolute bottom-8 w-full flex flex-col items-center gap-1">
 					<h4
 						title={player.nickname}
 						className="text-2xl font-bold text-shadow flex items-center gap-2 mx-auto truncate px-4"
@@ -376,6 +378,22 @@ const PlayerCard: React.FC<{
 						/>
 						{player.nickname}
 					</h4>
+
+					{elo && (
+						<ul className="flex items-center list-none text-sm text-shadow text-white/75">
+							{[`Level ${elo.skill_level}`, `${elo.faceit_elo.toLocaleString()} ELO`].map(
+								(item, index) => {
+									const showBullet = index > 0;
+									return (
+										<li key={index}>
+											{showBullet && <span className="mx-1.5">·</span>}
+											{item}
+										</li>
+									);
+								},
+							)}
+						</ul>
+					)}
 				</div>
 			</a>
 
@@ -1018,6 +1036,7 @@ function groupMapsIntoSessions(maps: PlayerMapStats[]): PlayerMapStats[][] {
 const queryKeys = createQueryKeys("profile", {
 	mapsByPlayerId: (playerId: string, version: "cs2" | "csgo") => ["maps", playerId, version],
 	playerByInput: (input: string) => ["player", input],
+	playerDetailsById: (playerId: string) => ["player-details", playerId],
 });
 
 function usePlayerQuery(input: string, enabled: boolean = true) {
@@ -1034,6 +1053,13 @@ function useMapsQuery(playerId: string | null, version: GameVersion) {
 		enabled: !!playerId,
 		queryKey: queryKeys.mapsByPlayerId(id, version).queryKey,
 		queryFn: ({ signal }) => fetchMapHistory(id, version, { signal }),
+	});
+}
+
+function usePlayerDetailsQuery(playerId: string) {
+	return useQuery({
+		queryKey: queryKeys.playerDetailsById(playerId).queryKey,
+		queryFn: ({ signal }) => fetchPlayerDetails(playerId, { signal }),
 	});
 }
 
@@ -1446,6 +1472,19 @@ interface PlayerBySteamIdResponse {
 async function fetchPlayerBySteamId(steamId: string): Promise<PlayerBySteamIdResponse> {
 	return await faceitApi
 		.get<PlayerBySteamIdResponse>(`players?game=cs2&game_player_id=${steamId}`)
+		.json();
+}
+
+interface PlayerDetailsResponse {
+	games: Record<string, { faceit_elo: number; skill_level: number }>;
+}
+
+async function fetchPlayerDetails(
+	playerId: string,
+	opts?: { signal?: AbortSignal },
+): Promise<PlayerDetailsResponse> {
+	return await faceitApi
+		.get<PlayerDetailsResponse>(`players/${playerId}`, { signal: opts?.signal })
 		.json();
 }
 
