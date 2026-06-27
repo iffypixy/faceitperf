@@ -187,7 +187,7 @@ const Profile: React.FC<{
 					<PlayerCard player={x.data} maps={filteredMaps} />
 				</div>
 
-				<ClashGGWidget />
+				<HuntGGWidget />
 
 				<MapHistory maps={filteredMaps} />
 			</div>
@@ -587,16 +587,85 @@ const Metric: React.FC<{
 	);
 };
 
-const TrackingLink = "https://trk.clash.gg/click?o=2&a=771&c=8";
+const HuntCampaignId = "6a3af1f0956aac00125af12b";
+const HuntRefCode = "FACEITPERF";
+const HuntTrackingLink = `https://link.hunt.gg/cf/r/${HuntCampaignId}?ref_code=${HuntRefCode}`;
+const HuntIframeSrc = `https://case-ad.hunt.gg?code=${HuntRefCode}&campaign_id=${HuntCampaignId}`;
 
-const ClashGGWidget: React.FC = () => (
-	<iframe
-		title="Clash.gg"
-		src={`https://clash.gg/embed-ad/Fort-Knox?redirect=${encodeURIComponent(TrackingLink)}&winChance=0.75`}
-		allow="autoplay"
-		className="w-full rounded-xs h-72 focus-visible:outline-solid outline-1 outline-card"
-	/>
-);
+/**
+ * Reports whether the ad iframe failed to render — an adblocker cancelled its request, the
+ * host is down, or a blocker collapsed it to zero size. Both checks are event-driven (no
+ * timeout), so the banner appears within ms of a block and a slow connection is never
+ * wrongly cut off.
+ */
+function useAdBlocked() {
+	const ref = useRef<HTMLIFrameElement>(null);
+	const [isBlocked, setIsBlocked] = useState(false);
+
+	useEffect(() => {
+		const iframe = ref.current;
+		if (!iframe) return;
+
+		let isCancelled = false;
+		const collapseObserver = new ResizeObserver(() => {
+			// Blockers that hide the iframe via CSS collapse it to zero size; catch that too.
+			if (iframe.clientHeight === 0 || iframe.offsetParent === null) block();
+		});
+
+		// Idempotent: the first signal wins and tears down the rest so a detached
+		// iframe is never observed after the swap.
+		function block() {
+			if (isCancelled) return;
+			isCancelled = true;
+			collapseObserver.disconnect();
+			setIsBlocked(true);
+		}
+
+		// A blocked (or otherwise failed) request rejects almost instantly. redirect:"follow"
+		// keeps a real redirect counting as reachable rather than a false block.
+		fetch(HuntIframeSrc, { method: "GET", mode: "no-cors", redirect: "follow" }).catch(block);
+		collapseObserver.observe(iframe);
+
+		return () => {
+			isCancelled = true;
+			collapseObserver.disconnect();
+		};
+	}, []);
+
+	return { ref, isBlocked };
+}
+
+const HuntGGWidget: React.FC = () => {
+	const { ref, isBlocked } = useAdBlocked();
+
+	if (isBlocked)
+		return (
+			<a
+				href={HuntTrackingLink}
+				target="_blank"
+				rel="noopener noreferrer sponsored"
+				className="w-full"
+			>
+				<img
+					src="/hunt-banner.png"
+					alt="hunt.gg"
+					width={960}
+					height={280}
+					className="w-full h-auto rounded-xs"
+				/>
+			</a>
+		);
+
+	return (
+		<iframe
+			ref={ref}
+			title="hunt.gg"
+			src={HuntIframeSrc}
+			loading="lazy"
+			className="w-full aspect-[24/7] rounded-xs border-none bg-card focus-visible:outline-solid outline-1 outline-card"
+		/>
+	);
+};
 
 const MapHistory: React.FC<{
 	maps: PlayerMapStats[] | null;
