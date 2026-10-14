@@ -4,7 +4,11 @@ import { cn } from "~/shared/lib/cn";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (
-		<div data-slot="table-container" className="relative w-full overflow-x-auto">
+		// Scrolling past the table's edge would otherwise reach the page, where a horizontal swipe means "go back".
+		<div
+			data-slot="table-container"
+			className="relative w-full overflow-x-auto overscroll-x-contain"
+		>
 			<table
 				data-slot="table"
 				className={cn(
@@ -60,12 +64,13 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	);
 }
 
+// On phones, text and spacing shrink a step so a whole table fits the screen, as on HLTV.
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 	return (
 		<th
 			data-slot="table-head"
 			className={cn(
-				"text-foreground h-12 px-2 text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				"text-foreground h-12 px-2 max-sm:px-1.5 max-sm:text-[13px] text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
@@ -78,7 +83,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				"p-2 max-sm:px-1.5 max-sm:text-[13px] max-sm:leading-5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
