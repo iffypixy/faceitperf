@@ -41,14 +41,14 @@ export const ChangelogDialog: React.FC<{
 	onOpenChange: (open: boolean) => void;
 }> = ({ open, onOpenChange }) => (
 	<Dialog open={open} onOpenChange={onOpenChange}>
-		<DialogContent className="max-w-[480px]">
+		<DialogContent className="sm:max-w-[480px] grid-rows-[auto_minmax(0,1fr)]">
 			<DialogHeader>
 				<DialogTitle className="flex flex-row items-center">
 					<GiftIcon className="size-6 me-2" /> What's new?
 				</DialogTitle>
 			</DialogHeader>
 
-			<div className="grid gap-8 overflow-y-auto mt-4">
+			<div className="grid gap-8 overflow-y-auto overscroll-contain mt-4">
 				{Changelog.map((x, index) => (
 					<div key={index} className="flex flex-col gap-4">
 						<img

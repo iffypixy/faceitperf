@@ -13,19 +13,20 @@ import {
 } from "~/shared/ui";
 
 export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children }) => (
-	<div className="fixed inset-0 grid grid-rows-[auto_1fr] overflow-auto">
-		<header className="bg-card shadow-xs shadow-background z-10 py-4">
+	<div className="flex min-h-dvh flex-col">
+		<header className="sticky top-0 z-10 bg-card shadow-xs shadow-background py-4">
 			<Container>
 				<div className="flex items-center justify-between">
 					<a
 						href="https://github.com/iffypixy/faceitperf"
 						target="_blank"
 						rel="noopener noreferrer"
+						aria-label="Source code on GitHub"
 					>
 						<GitHubIcon className="size-8 fill-foreground" />
 					</a>
 
-					<Link to="/">
+					<Link to="/" aria-label="faceitperf home">
 						<Logo />
 					</Link>
 
@@ -34,7 +35,7 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children })
 			</Container>
 		</header>
 
-		<main className="overflow-auto py-24">{children}</main>
+		<main className="grid flex-1 grid-cols-1 py-8 sm:py-12">{children}</main>
 	</div>
 );
 
@@ -77,18 +78,12 @@ const HelpButton: React.FC = () => {
 };
 
 const NotificationDot: React.FC = () => (
-	<>
-		<div
-			aria-hidden
-			className="absolute rounded-full size-3 bg-faceit right-0 top-0 animate-ping"
-		/>
-		<div aria-hidden className="absolute rounded-full size-3 bg-faceit right-0 top-0" />
-	</>
+	<div aria-hidden className="absolute rounded-full size-3 bg-faceit right-0 top-0" />
 );
 
 const Logo: React.FC = () => (
-	<h3 className="font-extrabold text-4xl text-center leading-none">
+	<span className="block font-extrabold text-3xl sm:text-4xl leading-none">
 		<span className="text-faceit">FACEIT</span>
-		<span className="text-hltv text-[1.25em]">perf </span>
-	</h3>
+		<span className="text-hltv text-[1.25em]">perf</span>
+	</span>
 );

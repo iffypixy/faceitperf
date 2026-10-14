@@ -6,5 +6,5 @@ export const Container: React.FC<
 	}
 > = ({ children, className }) => (
 	// Keep "max-width" in sync with `--breakpoint-md` CSS variable.
-	<div className={cn("max-w-[1024px] px-8 mx-auto", className)}>{children}</div>
+	<div className={cn("w-full max-w-[1024px] px-4 sm:px-8 mx-auto", className)}>{children}</div>
 );

@@ -1,10 +1,11 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import type * as React from "react";
+import { createContext, useContext, useState } from "react";
 
 import { cn } from "~/shared/lib/cn";
 
 function TooltipProvider({
-	delayDuration = 0,
+	delayDuration = 300,
 	...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
 	return (
@@ -16,11 +17,15 @@ function TooltipProvider({
 	);
 }
 
+const TooltipOpenContext = createContext<(open: boolean) => void>(() => {});
+
 function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+	const [open, setOpen] = useState(false);
+
 	return (
-		<TooltipProvider>
-			<TooltipPrimitive.Root data-slot="tooltip" {...props} />
-		</TooltipProvider>
+		<TooltipOpenContext.Provider value={setOpen}>
+			<TooltipPrimitive.Root data-slot="tooltip" open={open} onOpenChange={setOpen} {...props} />
+		</TooltipOpenContext.Provider>
 	);
 }
 
@@ -28,10 +33,17 @@ function TooltipTrigger({
 	className,
 	...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+	const setOpen = useContext(TooltipOpenContext);
+
 	return (
 		<TooltipPrimitive.Trigger
 			data-slot="tooltip-trigger"
 			className={cn("cursor-help", className)}
+			// Touch has no hover, and Radix closes a tooltip on click, so a tap opens it instead.
+			onClick={(ev) => {
+				ev.preventDefault();
+				setOpen(true);
+			}}
 			{...props}
 		/>
 	);
@@ -40,6 +52,7 @@ function TooltipTrigger({
 function TooltipContent({
 	className,
 	sideOffset = 0,
+	collisionPadding = 8,
 	children,
 	...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
@@ -48,8 +61,9 @@ function TooltipContent({
 			<TooltipPrimitive.Content
 				data-slot="tooltip-content"
 				sideOffset={sideOffset}
+				collisionPadding={collisionPadding}
 				className={cn(
-					"bg-card text-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-xs px-3 py-1.5 text-xs text-balance",
+					"bg-card text-foreground animate-in fade-in-0 zoom-in-95 ease-out data-[state=instant-open]:animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-xs px-3 py-1.5 text-xs text-balance",
 					className,
 				)}
 				{...props}

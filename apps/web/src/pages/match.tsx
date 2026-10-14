@@ -1,10 +1,11 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useQuery } from "@tanstack/react-query";
-import { format, formatDistanceStrict } from "date-fns";
+import { formatDistanceStrict } from "date-fns";
+import { ExternalLinkIcon, UsersIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { match, P } from "ts-pattern";
-import { useParams } from "wouter";
-import { type MapId, MapLabel } from "~/entities/map";
+import { Link, useParams } from "wouter";
+import { mapLabel } from "~/entities/map";
 import {
 	aggregatePlayerPerformance,
 	flagUrl,
@@ -36,14 +37,21 @@ import {
 } from "~/shared/ui";
 import { Spinner } from "~/shared/ui/loader";
 
+const MatchDateFormat = new Intl.DateTimeFormat(undefined, {
+	dateStyle: "long",
+	timeStyle: "short",
+});
+
 export const MatchPage: React.FC = () => {
 	const { matchId } = useParams<{ matchId: string }>();
 
 	const query = useMatchQuery(matchId);
 	useVetoProcessQuery(matchId);
-	useStatsQuery(matchId);
+	const statsQuery = useStatsQuery(matchId);
 
-	useDocumentTitle("Match");
+	useDocumentTitle(
+		query.data?.status === "FINISHED" ? matchTitle(query.data, statsQuery.data) : "Match",
+	);
 
 	return (
 		<ContentTemplate>
@@ -54,8 +62,11 @@ export const MatchPage: React.FC = () => {
 					{ status: "error" },
 					{ status: "success", data: { status: P.not("FINISHED") } },
 					() => (
-						<Center>
+						<Center className="flex-col gap-4 px-4 text-center">
 							<h1 className="text-2xl">This match doesn't exist or isn't available right now.</h1>
+							<Link href="/" className="text-primary-foreground">
+								Search for a player
+							</Link>
 						</Center>
 					),
 				)
@@ -72,6 +83,7 @@ export const MatchPage: React.FC = () => {
 					} = x.data;
 
 					const serverInfo = inferServerInfo(voting);
+					const score = headlineScore(x.data, statsQuery.data);
 					const startDate = new Date(started_at * 1000);
 					const endDate = new Date(finished_at * 1000);
 
@@ -89,32 +101,39 @@ export const MatchPage: React.FC = () => {
 					return (
 						<Container>
 							<div className="flex flex-col gap-8">
-								<div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center bg-card p-8">
-									<TeamScoreCard
-										avatar={faction1.avatar}
-										name={faction1.name}
-										score={results.score.faction1}
-										outcome={results.winner === "faction1" ? "win" : "loss"}
-									/>
-									<div className="flex flex-col justify-center text-center gap-4">
-										<p className="text-3xl font-bold">{format(startDate, "HH:mm")}</p>
-										<div className="flex flex-col">
-											<p>{format(startDate, "do 'of' MMMM yyyy")}</p>
-											<p>{formatDistanceStrict(endDate, startDate, { unit: "minute" })}</p>
-										</div>
-										<p className="text-xl font-bold">Match over</p>
+								<div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 items-start bg-card p-4 sm:p-8">
+									<TeamCard avatar={faction1.avatar} name={faction1.name} />
+									<div className="self-center">
+										<h1 className="sr-only">
+											{faction1.name} vs {faction2.name}
+										</h1>
+										<p className="text-4xl sm:text-5xl font-bold tracking-tight tabular-nums">
+											{score ? (
+												<>
+													<span style={{ color: outcomeColor(results.winner === "faction1") }}>
+														{score[0]}
+													</span>
+													<span className="mx-2 sm:mx-3 text-muted-foreground">:</span>
+													<span style={{ color: outcomeColor(results.winner === "faction2") }}>
+														{score[1]}
+													</span>
+												</>
+											) : (
+												<span className="text-muted-foreground">–</span>
+											)}
+										</p>
 									</div>
-									<TeamScoreCard
-										avatar={faction2.avatar}
-										name={faction2.name}
-										score={results.score.faction2}
-										outcome={results.winner === "faction2" ? "win" : "loss"}
-									/>
+									<TeamCard avatar={faction2.avatar} name={faction2.name} />
+									<p className="col-span-3 text-center text-sm text-muted-foreground">
+										{MatchDateFormat.format(startDate)}
+										<span className="mx-1.5">·</span>
+										{formatDistanceStrict(endDate, startDate, { unit: "minute" })}
+									</p>
 								</div>
 
-								<div className="grid grid-cols-2 gap-8">
+								<div className="grid md:grid-cols-2 gap-8">
 									<div className="flex flex-col gap-2">
-										<h3 className="font-bold">Maps</h3>
+										<h2 className="font-bold">Maps</h2>
 										<InfoBlock>Best of {best_of}</InfoBlock>
 										<Veto
 											type="map"
@@ -127,7 +146,7 @@ export const MatchPage: React.FC = () => {
 
 									<div className="flex flex-col gap-8">
 										<div className="flex flex-col gap-2">
-											<h3 className="font-bold">Server</h3>
+											<h2 className="font-bold">Server</h2>
 											<Veto
 												type="location"
 												matchId={match_id}
@@ -149,13 +168,15 @@ export const MatchPage: React.FC = () => {
 										</div>
 
 										<div className="flex flex-col gap-2">
-											<h3 className="font-bold">Rewatch</h3>
+											<h2 className="font-bold">Match room</h2>
 											<a
 												href={faceit_url.replace("{lang}", "en")}
 												target="_blank"
 												rel="noopener noreferrer"
+												className="flex items-center justify-between p-4 bg-card rounded-xs text-primary-foreground hover:bg-muted/50 transition-colors"
 											>
-												<InfoBlock>Go to matchroom</InfoBlock>
+												Open on FACEIT
+												<ExternalLinkIcon className="size-4" />
 											</a>
 										</div>
 									</div>
@@ -170,6 +191,28 @@ export const MatchPage: React.FC = () => {
 		</ContentTemplate>
 	);
 };
+
+// A best-of-one ends 1:0 in maps, so its headline shows the rounds of that map instead.
+// They come from the stats, which may still be loading.
+function headlineScore(match: Match, stats: MatchStats | undefined): [number, number] | null {
+	if (match.best_of !== 1) return [match.results.score.faction1, match.results.score.faction2];
+
+	const teams = stats?.rounds[0]?.teams;
+	if (!teams) return null;
+
+	const rounds = (teamId: string) =>
+		Number(teams.find((x) => x.team_id === teamId)?.team_stats["Final Score"]);
+	return [rounds(match.teams.faction1.faction_id), rounds(match.teams.faction2.faction_id)];
+}
+
+function matchTitle(match: Match, stats: MatchStats | undefined): string {
+	const { faction1, faction2 } = match.teams;
+	return `${faction1.name} ${headlineScore(match, stats)?.join(":") ?? "vs"} ${faction2.name}`;
+}
+
+function outcomeColor(hasWon: boolean): string {
+	return hasWon ? PerformanceColor.good : PerformanceColor.poor;
+}
 
 function inferServerInfo(voting: Match["voting"]) {
 	if (!voting || !voting.location) return null;
@@ -186,32 +229,22 @@ function inferServerInfo(voting: Match["voting"]) {
 	return { location, countryCode };
 }
 
-const TeamScoreCard: React.FC<{
-	avatar: string;
-	name: string;
-	score: number;
-	outcome: "win" | "loss";
-}> = ({ avatar, name, score, outcome }) => {
-	const scoreColor = match(outcome)
-		.with("win", () => PerformanceColor.good)
-		.with("loss", () => PerformanceColor.poor)
-		.exhaustive();
+const TeamCard: React.FC<{ avatar: string; name: string }> = ({ avatar, name }) => (
+	<div className="flex flex-col items-center gap-2">
+		<TeamAvatar src={avatar} name={name} className="w-12 sm:w-16" />
+		<p title={name} className="max-w-full font-bold text-center line-clamp-2 break-words">
+			{withBreaks(name)}
+		</p>
+	</div>
+);
 
-	return (
-		<div className="flex flex-col items-center gap-4 overflow-hidden">
-			<div className="flex flex-col items-center gap-2 w-full">
-				<PlayerAvatar src={avatar} alt={name} />
-				<p title={name} className="font-bold truncate w-full text-center">
-					{name}
-				</p>
-			</div>
-
-			<p className="text-xl font-bold" style={{ color: scoreColor }}>
-				{score}
-			</p>
-		</div>
-	);
-};
+// Team names like "team_NaZooie" have no spaces, so a narrow screen would break them
+// mid-word. This lets them break after "_" or "-" first.
+function withBreaks(name: string): ReactNode[] {
+	return name
+		.split(/(?<=[_-])/)
+		.flatMap((part, index) => (index > 0 ? [<wbr key={index} />, part] : [part]));
+}
 
 const Veto: React.FC<{
 	type: "map" | "location";
@@ -225,10 +258,10 @@ const Veto: React.FC<{
 		<InfoBlock>
 			{match(vetoProcessQuery)
 				.with({ status: "pending" }, () => <Spinner />)
-				.with({ status: "error" }, () => <ErrorMessage />)
+				.with({ status: "error" }, () => <NoVeto />)
 				.with({ status: "success" }, (x) => {
 					const veto = x.data.payload.tickets.find((x) => x.entity_type === type);
-					if (!veto) return <ErrorMessage />;
+					if (!veto) return <NoVeto />;
 
 					return (
 						<ol className="list-decimal pl-4">
@@ -244,7 +277,7 @@ const Veto: React.FC<{
 									.exhaustive();
 
 								const entity = match(type)
-									.with("map", () => MapLabel[x.guid as MapId] ?? "???")
+									.with("map", () => mapLabel(x.guid))
 									.with("location", () => x.guid)
 									.exhaustive();
 
@@ -260,6 +293,11 @@ const Veto: React.FC<{
 		</InfoBlock>
 	);
 };
+
+// Hubs and tournaments often skip the veto, so its absence isn't an error.
+const NoVeto: React.FC = () => (
+	<p className="text-muted-foreground">No veto available for this match.</p>
+);
 
 interface TeamEntry {
 	id: string;
@@ -288,7 +326,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 		.with({ status: "success" }, (x) => (
 			<ul>
 				{x.data.rounds.map((x, index) => {
-					const map = (x.round_stats.Map ?? "tba") as MapId;
+					const map = x.round_stats.Map ?? "tba";
 					const stats1 = x.teams.find((x) => x.team_id === team1.id)?.team_stats;
 					const stats2 = x.teams.find((x) => x.team_id === team2.id)?.team_stats;
 					const hadOvertime =
@@ -299,8 +337,8 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 							<div className="flex flex-col">
 								<div className="relative aspect-[97/10] bg-card">
 									<img src={mapImageUrl(map)} alt="" className="w-full" />
-									<p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold">
-										{MapLabel[map] ?? "???"}
+									<p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-shadow-image">
+										{mapLabel(map)}
 									</p>
 								</div>
 
@@ -312,14 +350,12 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 											score={parseFloat(stats1?.["Final Score"] ?? "")}
 											outcome={x.round_stats.Winner === team1.id ? "win" : "loss"}
 										/>
-
-										<p>
+										<p className="text-center text-sm text-muted-foreground tabular-nums">
 											({stats1?.["First Half Score"]}:{stats2?.["First Half Score"]};{" "}
 											{stats1?.["Second Half Score"]}:{stats2?.["Second Half Score"]})
 											{hadOvertime &&
 												` (${stats1?.["Overtime score"]}:${stats2?.["Overtime score"]})`}
 										</p>
-
 										<TeamMapResult
 											avatar={team2.avatar}
 											name={team2.name}
@@ -338,7 +374,7 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 		.exhaustive();
 };
 
-function mapImageUrl(map: MapId): string {
+function mapImageUrl(map: string): string {
 	return `/hltv/maps/${map.slice(3)}.png`;
 }
 
@@ -348,40 +384,25 @@ const TeamMapResult: React.FC<{
 	score: number;
 	outcome: "win" | "loss";
 	reverse?: boolean;
-}> = ({ avatar, name, score, outcome, reverse }) => {
-	const scoreColor = match(outcome)
-		.with("win", () => PerformanceColor.good)
-		.with("loss", () => PerformanceColor.poor)
-		.exhaustive();
-
-	return (
-		<div
-			className={cn("grid grid-cols-[auto_1fr] items-start gap-4", reverse && "text-right ml-auto")}
-		>
-			<PlayerAvatar src={avatar} alt={name} className={cn("w-8", reverse && "order-2")} />
-			<div className="flex flex-col overflow-hidden">
-				<p
-					title={name}
-					className={cn("truncate", {
-						"font-bold": outcome === "win",
-						"text-muted-foreground": outcome === "loss",
-					})}
-				>
-					{name}
-				</p>
-				<p
-					style={{ color: scoreColor }}
-					className={cn({
-						"font-bold": outcome === "win",
-						"text-muted-foreground": outcome === "loss",
-					})}
-				>
-					{score}
-				</p>
-			</div>
+}> = ({ avatar, name, score, outcome, reverse }) => (
+	<div className={cn("flex items-start gap-3", reverse && "flex-row-reverse text-right")}>
+		<TeamAvatar src={avatar} name={name} className="w-8" />
+		<div className="flex flex-col min-w-0">
+			<p
+				title={name}
+				className={cn("truncate", outcome === "win" ? "font-bold" : "text-muted-foreground")}
+			>
+				{name}
+			</p>
+			<p
+				style={{ color: outcomeColor(outcome === "win") }}
+				className={cn("tabular-nums", outcome === "win" && "font-bold")}
+			>
+				{score}
+			</p>
 		</div>
-	);
-};
+	</div>
+);
 
 const InfoBlock: React.FC<{ children: ReactNode }> = ({ children }) => (
 	<div className="p-4 bg-card rounded-xs">{children}</div>
@@ -457,8 +478,6 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 		.sort((a, b) => b.stats.rating - a.stats.rating);
 }
 
-type MapFilterValue = "all" | MapId;
-
 const MatchStats: React.FC<{
 	matchId: string;
 	team1: TeamEntry;
@@ -466,32 +485,32 @@ const MatchStats: React.FC<{
 }> = ({ matchId, team1, team2 }) => {
 	const query = useStatsQuery(matchId);
 
-	const [mapFilter, setMapFilter] = useState<MapFilterValue>("all");
+	const [mapFilter, setMapFilter] = useState("all");
 
 	return match(query)
 		.with({ status: "pending" }, () => <Spinner />)
 		.with({ status: "error" }, () => <ErrorMessage />)
 		.with({ status: "success" }, (x) => {
-			const mapFilterValues: MapFilterValue[] = [
-				"all",
-				...x.data.rounds.map((x) => x.round_stats.Map as MapId),
-			];
-
-			const rounds = match(mapFilter)
-				.with("all", () => x.data.rounds)
-				.otherwise(() => x.data.rounds.filter((x) => x.round_stats.Map === mapFilter));
+			const rounds =
+				mapFilter === "all"
+					? x.data.rounds
+					: x.data.rounds.filter((x) => x.round_stats.Map === mapFilter);
 
 			return (
 				<div className="flex flex-col gap-2">
 					<InfoBlock>
-						<ul className="flex items-center gap-4">
-							{mapFilterValues.map((x) => (
+						<ul className="flex flex-wrap items-center gap-x-4 gap-y-2">
+							{["all", ...x.data.rounds.map((x) => x.round_stats.Map)].map((x) => (
 								<li
 									key={x}
 									className={cn("text-primary-foreground", x === mapFilter && "font-bold")}
 								>
-									<button type="button" onClick={() => setMapFilter(x)}>
-										{x === "all" ? "All maps" : (MapLabel[x] ?? "???")}
+									<button
+										type="button"
+										onClick={() => setMapFilter(x)}
+										className="active:opacity-70"
+									>
+										{x === "all" ? "All maps" : mapLabel(x)}
 									</button>
 								</li>
 							))}
@@ -521,12 +540,12 @@ const PlayerTable: React.FC<{
 	avatar: string;
 	players: Array<PlayerEntry>;
 }> = ({ name, avatar, players }) => (
-	<Table>
+	<Table className="min-w-[36rem]">
 		<TableHeader>
 			<TableRow className="[&>th]:text-center">
 				<TableHead>
 					<div className="flex items-center gap-2">
-						<PlayerAvatar src={avatar} alt={name} className="w-8" />
+						<TeamAvatar src={avatar} name={name} className="w-8" />
 						<p className="font-bold">{name}</p>
 					</div>
 				</TableHead>
@@ -595,14 +614,16 @@ function playerUrl(username: string) {
 	return `/players/${username}`;
 }
 
-const PlayerAvatar: React.FC<{
+const TeamAvatar: React.FC<{
 	src: string;
-	alt: string;
+	name: string;
 	className?: string;
-}> = ({ src, alt, className }) => (
-	<Avatar className={cn("w-16 h-auto rounded-xs", className)}>
-		<AvatarImage src={src} alt={alt} />
-		<AvatarFallback>?</AvatarFallback>
+}> = ({ src, name, className }) => (
+	<Avatar className={cn("h-auto shrink-0 rounded-xs", className)}>
+		<AvatarImage src={src} alt={name} />
+		<AvatarFallback>
+			<UsersIcon className="size-1/2 text-muted-foreground" />
+		</AvatarFallback>
 	</Avatar>
 );
 
