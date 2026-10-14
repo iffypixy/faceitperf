@@ -565,20 +565,25 @@ const PlayerTable: React.FC<{
 	avatar: string;
 	players: Array<PlayerEntry>;
 }> = ({ name, avatar, players }) => (
-	<Table className="min-w-[36rem]">
+	<Table className="sm:min-w-[36rem]">
 		<TableHeader>
 			<TableRow className="[&>th]:text-center">
-				<TableHead>
+				{/* On phones the name column gives way first, so the numbers always fit. */}
+				<TableHead className="max-sm:w-full max-sm:max-w-0">
 					<div className="flex items-center gap-2">
-						<TeamAvatar src={avatar} name={name} className="w-8" />
-						<p className="font-bold">{name}</p>
+						<TeamAvatar src={avatar} name={name} className="w-6 sm:w-8" />
+						<p className="font-bold text-left max-sm:whitespace-normal max-sm:leading-tight max-sm:line-clamp-2 max-sm:wrap-anywhere">
+							{withBreaks(name)}
+						</p>
 					</div>
 				</TableHead>
-				<TableHead className="w-[10%]">K—D</TableHead>
-				<TableHead className="w-[10%]">+/-</TableHead>
-				<TableHead className="w-[10%]">ADR</TableHead>
-				<TableHead className="w-[10%]">KAST %</TableHead>
-				<TableHead className="w-[10%]">
+				<TableHead className="sm:w-[10%]">K—D</TableHead>
+				<TableHead className="sm:w-[10%]">+/-</TableHead>
+				<TableHead className="sm:w-[10%]">ADR</TableHead>
+				<TableHead className="sm:w-[10%]">
+					KAST<span className="max-sm:hidden"> %</span>
+				</TableHead>
+				<TableHead className="sm:w-[10%]">
 					<RatingColumnHead />
 				</TableHead>
 			</TableRow>
@@ -602,28 +607,36 @@ const PlayerRow: React.FC<{
 
 	return (
 		<TableRow className="[&>td]:text-center">
-			<TableCell>
-				<div className="flex items-center gap-2">
+			<TableCell className="max-sm:w-full max-sm:max-w-0">
+				<div className="flex items-center gap-1.5 sm:gap-2">
 					{country && (
-						<img src={flagUrl(country)} alt={country} className="w-6 border border-background" />
+						<img
+							src={flagUrl(country)}
+							alt={country}
+							className="w-5 sm:w-6 border border-background"
+						/>
 					)}
-					<Link href={playerUrl(nickname)} className="font-bold text-primary-foreground">
+					<Link
+						href={playerUrl(nickname)}
+						title={nickname}
+						className="min-w-0 truncate font-bold text-primary-foreground"
+					>
 						{nickname}
 					</Link>
 				</div>
 			</TableCell>
 
-			<TableCell className="w-[10%]">
+			<TableCell className="sm:w-[10%]">
 				{stats.kills}—{stats.deaths}
 			</TableCell>
 
-			<TableCell className="w-[10%]">
+			<TableCell className="sm:w-[10%]">
 				<Performance metric="kdDiff" value={stats.kills - stats.deaths} render={toSignedString} />
 			</TableCell>
 
-			<TableCell className="w-[10%]">{roundMetricValue("adr", stats.adr)}</TableCell>
-			<TableCell className="w-[10%]">{roundMetricValue("kast", stats.kast)}</TableCell>
-			<TableCell className="w-[10%]">
+			<TableCell className="sm:w-[10%]">{roundMetricValue("adr", stats.adr)}</TableCell>
+			<TableCell className="sm:w-[10%]">{roundMetricValue("kast", stats.kast)}</TableCell>
+			<TableCell className="sm:w-[10%]">
 				<Performance metric="rating" value={stats.rating} />
 			</TableCell>
 		</TableRow>
