@@ -14,6 +14,7 @@ import {
 	type PlayerMapStatsInput,
 	RatingColumnHead,
 	roundMetricValue,
+	StackedColumnHead,
 } from "~/features/profile";
 import type { PlayerPerformance } from "~/features/stats";
 import { api, faceitApi } from "~/shared/api";
@@ -481,7 +482,6 @@ interface PlayerEntry {
 
 // FACEIT reports these for CS2 matches only.
 interface PlayerDetails {
-	headshots: number;
 	firstKills: number;
 	firstDeaths: number;
 	sniperKills: number;
@@ -514,7 +514,6 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 					stats: [],
 					assists: 0,
 					details: {
-						headshots: 0,
 						firstKills: 0,
 						firstDeaths: 0,
 						sniperKills: 0,
@@ -547,7 +546,6 @@ function addDetails(details: PlayerDetails | null, stats: PlayerMatchStats): Pla
 	if (!details || stats["First Kills"] === undefined) return null;
 
 	return {
-		headshots: details.headshots + Number(stats.Headshots),
 		firstKills: details.firstKills + Number(stats["First Kills"]),
 		// Each round's opening duel counts as an entry for both players, so the entries a player
 		// didn't win are the rounds they died first.
@@ -720,18 +718,17 @@ const PlayerTable: React.FC<{
 			? DetailedColumns
 			: OverviewColumns.filter((x) => x !== FirstKillsColumn || players.every((p) => p.details));
 
-	// The overview fits phones as long as names aren't cut, and opening duels don't fit beside
-	// the rest; the detailed view has them. The detailed view scrolls sideways on phones
-	// instead, with the names pinned.
+	// The overview fits phones as long as names aren't cut, so opening duels give way there. The
+	// detailed view's headers don't fit beside names, so it scrolls sideways with the names pinned.
 	const nameClassName =
 		view === "overview"
 			? "max-sm:w-full max-sm:max-w-0"
 			: "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-36 max-sm:border-r-0 max-sm:shadow-[inset_-1px_0_0_var(--color-border)] max-sm:bg-[color-mix(in_srgb,var(--color-card)_50%,var(--color-background))] max-sm:[tr:nth-child(even)>&]:bg-card";
 	const columnClassName = (column: Column) =>
-		view === "overview" ? cn("sm:w-[10%]", column === FirstKillsColumn && "max-sm:hidden") : "";
+		cn("sm:w-[11%]", view === "overview" && column === FirstKillsColumn && "max-sm:hidden");
 
 	return (
-		<Table className={view === "overview" ? "sm:min-w-[36rem]" : "max-sm:overflow-visible"}>
+		<Table className={cn("sm:min-w-[36rem]", view === "detailed" && "max-sm:overflow-visible")}>
 			<TableHeader>
 				<TableRow className="[&>th]:text-center">
 					<TableHead className={cn(nameClassName, "max-sm:bg-card")}>
@@ -823,17 +820,16 @@ const OverviewColumns: Column[] = [
 	RatingColumn,
 ];
 
+// The stats the overview leaves out, in the same six columns, so switching views keeps the grid.
 const DetailedColumns: Column[] = [
-	{ head: "K (hs)", cell: (x) => `${x.stats.kills} (${x.details?.headshots})` },
-	{ head: "A", cell: (x) => x.assists },
-	{ head: "D", cell: (x) => x.stats.deaths },
-	DiffColumn,
-	AdrColumn,
-	KastColumn,
-	FirstKillsColumn,
-	{ head: "AWP kills", cell: (x) => x.details?.sniperKills },
-	{ head: "Multi-kills", cell: (x) => x.details?.multiKills },
-	{ head: "Utility dmg", cell: (x) => x.details?.utilityDamage },
+	{ head: "Assists", cell: (x) => x.assists },
+	{ head: "FK—FD", cell: (x) => x.details && `${x.details.firstKills}—${x.details.firstDeaths}` },
+	{ head: <StackedColumnHead title="AWP" detail="kills" />, cell: (x) => x.details?.sniperKills },
+	{ head: <StackedColumnHead title="Multi" detail="kills" />, cell: (x) => x.details?.multiKills },
+	{
+		head: <StackedColumnHead title="Utility" detail="damage" />,
+		cell: (x) => x.details?.utilityDamage,
+	},
 	RatingColumn,
 ];
 
