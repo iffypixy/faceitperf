@@ -767,9 +767,14 @@ const DateColumnHead: React.FC = () => (
 	</>
 );
 
-export const RatingColumnHead: React.FC = () => (
+export const RatingColumnHead: React.FC = () => <StackedColumnHead title="Rating" detail="2.0" />;
+
+export const StackedColumnHead: React.FC<{ title: string; detail: string }> = ({
+	title,
+	detail,
+}) => (
 	<span className="flex flex-col items-center">
-		Rating <span className="text-sm max-sm:text-xs font-normal -mt-2">2.0</span>
+		{title} <span className="text-sm max-sm:text-xs font-normal -mt-2">{detail}</span>
 	</span>
 );
 
