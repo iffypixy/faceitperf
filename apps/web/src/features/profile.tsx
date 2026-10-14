@@ -1,6 +1,6 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
-import { useQuery } from "@tanstack/react-query";
-import { addMonths, getYear, isAfter, isToday, isYesterday, parseISO } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { addMonths, getYear, isAfter, isBefore, isToday, isYesterday, parseISO } from "date-fns";
 import {
 	AsteriskIcon,
 	ChevronDownIcon,
@@ -122,7 +122,32 @@ function timeFilterValues(startDate: Date | null): TimeFilterValue[] {
 	return res;
 }
 
+function timeFilterStart(value: TimeFilterValue): Date | null {
+	return match(value)
+		.with("all", () => null)
+		.with("lastMonth", "lastThreeMonths", "lastSixMonths", "lastTwelveMonths", (x) =>
+			TimeFilterPresetStartDate[x](new Date()),
+		)
+		.with(P.number, (year) => new Date(year, 0, 1))
+		.exhaustive();
+}
+
+function timeFilterLabel(value: TimeFilterValue): string {
+	return match(value)
+		.with("all", () => "All")
+		.with("lastMonth", () => "Last month")
+		.with("lastThreeMonths", () => "Last 3 months")
+		.with("lastSixMonths", () => "Last 6 months")
+		.with("lastTwelveMonths", () => "Last 12 months")
+		.with(P.number, (x) => x.toString())
+		.exhaustive();
+}
+
 type MapFilterValue = "all" | MapId;
+
+function mapFilterLabel(value: MapFilterValue): string {
+	return value === "all" ? "All" : mapLabel(value);
+}
 
 const GameVersions = ["cs2", "csgo"] as const;
 type GameVersion = (typeof GameVersions)[number];
@@ -151,11 +176,12 @@ const Profile: React.FC<{
 
 	useEffect(() => {
 		if (!playerQuery.data) return;
-		const { player_id, avatar, nickname } = playerQuery.data;
-		addToHistory({ id: player_id, avatar, nickname });
+		const { player_id, avatar, nickname, country } = playerQuery.data;
+		addToHistory({ id: player_id, avatar, nickname, country });
 	}, [playerQuery.data, addToHistory]);
 
-	const maps = mapsQuery.data ?? null;
+	const maps = mapsQuery.data?.maps ?? null;
+	const isComplete = mapsQuery.data?.isComplete ?? false;
 
 	const timeValues = useMemo(() => {
 		const firstMap = maps?.at(-1);
@@ -167,10 +193,22 @@ const Profile: React.FC<{
 		return ["all", ...Maps.filter((x) => played.has(x))];
 	}, [maps]);
 
-	// The filter outlives the maps it was picked for (another player or version),
-	// so a value those maps don't offer falls back to "all".
-	const selectedTime = timeValues.includes(filter.time) ? filter.time : "all";
-	const selectedMap = mapValues.includes(filter.map) ? filter.map : "all";
+	// The filter outlives the maps it was picked for (another player or version), so once the
+	// history is complete, a value those maps don't offer falls back to "all". Until then, a
+	// value no loaded map reaches yet is kept.
+	const selectedTime = !isComplete || timeValues.includes(filter.time) ? filter.time : "all";
+	const selectedMap = !isComplete || mapValues.includes(filter.map) ? filter.map : "all";
+
+	// The history arrives newest first, so a time filter has all its maps as soon as the
+	// loaded ones reach back past its start.
+	const timeStart = timeFilterStart(selectedTime);
+	const oldestMap = maps?.at(-1);
+	const isLoading = !(
+		isComplete ||
+		(timeStart !== null &&
+			oldestMap !== undefined &&
+			isBefore(parseISO(oldestMap["Created At"]), timeStart))
+	);
 
 	const filteredMaps = useMemo(
 		() => maps && filterMaps(maps, selectedTime, selectedMap),
@@ -202,13 +240,13 @@ const Profile: React.FC<{
 						onVersionChange={(version) => setFilter({ ...filter, version })}
 					/>
 					<PlayerCard player={x.data} version={filter.version}>
-						{filteredMaps ? <MetricBox maps={filteredMaps} /> : <MetricBoxSkeleton />}
+						{filteredMaps && !isLoading ? <MetricBox maps={filteredMaps} /> : <MetricBoxSkeleton />}
 					</PlayerCard>
 				</div>
 
 				<HuntGGWidget />
 
-				<MapHistory maps={filteredMaps} />
+				<MapHistory maps={filteredMaps} isLoading={isLoading} />
 			</div>
 		))
 		.exhaustive();
@@ -296,26 +334,15 @@ const FilterGroup: React.FC<{
 
 				<Select value={selectedTime.toString()} onValueChange={onSelectedTimeChange}>
 					<SelectTrigger className="w-full" aria-label="Time">
-						<SelectValue />
+						{/* Spelled out: while the history loads, the chosen value may not be on offer yet. */}
+						<SelectValue>{timeFilterLabel(selectedTime)}</SelectValue>
 					</SelectTrigger>
 					<SelectContent>
-						{timeValues.map((x) => {
-							const id = x.toString();
-							const label = match(x)
-								.with("all", () => "All")
-								.with("lastMonth", () => "Last month")
-								.with("lastThreeMonths", () => "Last 3 months")
-								.with("lastSixMonths", () => "Last 6 months")
-								.with("lastTwelveMonths", () => "Last 12 months")
-								.with(P.number, (x) => x.toString())
-								.exhaustive();
-
-							return (
-								<SelectItem key={id} value={id}>
-									{label}
-								</SelectItem>
-							);
-						})}
+						{timeValues.map((x) => (
+							<SelectItem key={x} value={x.toString()}>
+								{timeFilterLabel(x)}
+							</SelectItem>
+						))}
 					</SelectContent>
 				</Select>
 			</div>
@@ -325,12 +352,12 @@ const FilterGroup: React.FC<{
 
 				<Select value={selectedMap} onValueChange={onMapChange}>
 					<SelectTrigger className="w-full" aria-label="Map">
-						<SelectValue />
+						<SelectValue>{mapFilterLabel(selectedMap)}</SelectValue>
 					</SelectTrigger>
 					<SelectContent>
 						{mapValues.map((x) => (
 							<SelectItem key={x} value={x}>
-								{x === "all" ? "All" : mapLabel(x)}
+								{mapFilterLabel(x)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -374,6 +401,7 @@ const PlayerCard: React.FC<{
 }> = ({ player, version, children }) => {
 	const detailsQuery = usePlayerDetailsQuery(player.player_id);
 	const elo = detailsQuery.data?.games[version];
+	const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);
 
 	return (
 		<div className="grid md:grid-cols-[auto_1fr] bg-primary rounded-xs">
@@ -383,10 +411,18 @@ const PlayerCard: React.FC<{
 				rel="noopener noreferrer"
 				className="relative block h-64 md:h-96 md:aspect-square overflow-hidden border border-primary rounded-t-xs md:rounded-l-xs md:rounded-tr-none"
 			>
-				<div
-					className="size-full bg-cover bg-center before:absolute before:inset-0 before:bg-background/50"
-					style={{ backgroundImage: `url(${player.avatar})` }}
-				/>
+				{player.avatar && (
+					<img
+						src={player.avatar}
+						alt=""
+						onLoad={() => setIsAvatarLoaded(true)}
+						className={cn(
+							"size-full object-cover transition-opacity duration-300 ease-out",
+							!isAvatarLoaded && "opacity-0",
+						)}
+					/>
+				)}
+				<div className="absolute inset-0 bg-background/50" />
 
 				<div className="absolute bottom-8 w-full flex flex-col items-center gap-1">
 					<h1
@@ -401,13 +437,16 @@ const PlayerCard: React.FC<{
 						<span className="truncate">{player.nickname}</span>
 					</h1>
 
-					{elo && (
-						<p className="text-sm text-shadow-image text-white/75">
-							Level {elo.skill_level}
-							<span className="mx-1.5">·</span>
-							{elo.faceit_elo.toLocaleString()} ELO
-						</p>
-					)}
+					{/* The line keeps its place while it loads, so the name above doesn't jump. */}
+					<p className="h-5 text-sm text-shadow-image text-white/75">
+						{elo && (
+							<span className="animate-in fade-in-0 duration-200 ease-out">
+								Level {elo.skill_level}
+								<span className="mx-1.5">·</span>
+								{elo.faceit_elo.toLocaleString()} ELO
+							</span>
+						)}
+					</p>
 				</div>
 			</a>
 
@@ -448,15 +487,19 @@ const MetricBoxSkeleton: React.FC = () => (
 	</div>
 );
 
+// Mirrors a metric's label, value and bar heights, so nothing moves when the numbers arrive.
 const MetricSkeleton: React.FC = () => (
-	<div className="flex flex-col gap-4 animate-pulse">
-		<div className="h-5 w-20 bg-muted-foreground/25 rounded-xs" />
+	<div className="flex flex-col gap-3 animate-pulse">
+		<div className="h-5 my-0.5 w-20 bg-muted-foreground/25 rounded-xs" />
 		<div className="flex flex-col gap-2">
-			<div className="h-12 w-24 bg-muted-foreground/25 rounded-xs" />
-			<div className="h-5 w-full bg-muted-foreground/25 rounded-xs" />
+			<div className="h-10 sm:h-12 w-24 bg-muted-foreground/25 rounded-xs" />
+			{/* As tall as a real bar's marker, which makes it look thicker than its 8px track; the
+			    negative margin keeps the track's 8px slot. */}
+			<div className="h-3 -my-0.5 w-full bg-muted-foreground/25 rounded-xs" />
 		</div>
 	</div>
 );
+
 type MetricType = "rating" | "kd" | "dpr" | "kpr" | "kast" | "adr" | "kdDiff";
 
 const MetricLabel: Record<MetricType, string> = {
@@ -675,7 +718,8 @@ const HuntGGWidget: React.FC = () => {
 
 const MapHistory: React.FC<{
 	maps: PlayerMapStats[] | null;
-}> = ({ maps }) => {
+	isLoading: boolean;
+}> = ({ maps, isLoading }) => {
 	const sessions = useMemo(() => (maps ? groupMapsIntoSessions(maps) : null), [maps]);
 	const sessionRule = `Maps you played within ${MaxSessionGapHours} hours are grouped into one session`;
 
@@ -698,11 +742,11 @@ const MapHistory: React.FC<{
 			</TabsList>
 
 			<TabsContent value="maps" className="w-full">
-				<MapsTable maps={maps} />
+				<MapsTable maps={maps} isLoading={isLoading} />
 			</TabsContent>
 
 			<TabsContent value="sessions" className="w-full">
-				<SessionsTable sessions={sessions} />
+				<SessionsTable sessions={sessions} isLoading={isLoading} />
 			</TabsContent>
 		</Tabs>
 	);
@@ -745,6 +789,21 @@ const SortableTableHead: React.FC<{
 	</TableHead>
 );
 
+// Each item's key is computed once rather than on every comparison: a rating takes real work,
+// and the tables re-sort each time more of the history arrives.
+function sortBy<T>(items: T[], key: (x: T) => number | string, direction: SortDirection): T[] {
+	const sign = direction === "asc" ? 1 : -1;
+
+	return items
+		.map((item) => ({ item, key: key(item) }))
+		.sort((a, b) =>
+			typeof a.key === "number" && typeof b.key === "number"
+				? sign * (a.key - b.key)
+				: sign * String(a.key).localeCompare(String(b.key)),
+		)
+		.map((x) => x.item);
+}
+
 type TableSortState<T> = {
 	column: T;
 	direction: SortDirection;
@@ -775,57 +834,32 @@ function useTableSortState<T>(initialState: TableSortState<T>) {
 
 type MapSortColumn = "datetime" | "map" | "score" | "kd-diff" | "kd" | "rating";
 
-const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
+const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }> = ({
+	maps,
+	isLoading,
+}) => {
 	const { sortState, register } = useTableSortState<MapSortColumn>({
 		column: "datetime",
 		direction: "desc",
 	});
 
-	const sortedMaps = useMemo(() => {
-		if (!maps) return null;
-
-		return [...maps].sort((a, b) => {
-			const direction = match(sortState.direction)
-				.with("asc", () => 1)
-				.with("desc", () => -1)
-				.exhaustive();
-
-			const diff = match(sortState.column)
-				.with("datetime", () => {
-					const dateA = new Date(a["Created At"]);
-					const dateB = new Date(b["Created At"]);
-					return dateA.getTime() - dateB.getTime();
-				})
-				.with("map", () => {
-					const mapA = a.Map;
-					const mapB = b.Map;
-					return mapA.localeCompare(mapB);
-				})
-				.with("score", () => {
-					const roundsA = Number(a.Rounds);
-					const roundsB = Number(b.Rounds);
-					return roundsA - roundsB;
-				})
-				.with("kd-diff", () => {
-					const diffA = Number(a.Kills) - Number(a.Deaths);
-					const diffB = Number(b.Kills) - Number(b.Deaths);
-					return diffA - diffB;
-				})
-				.with("kd", () => {
-					const kdA = divide(Number(a.Kills), Number(a.Deaths));
-					const kdB = divide(Number(b.Kills), Number(b.Deaths));
-					return kdA - kdB;
-				})
-				.with("rating", () => {
-					const perfA = aggregatePlayerPerformance([a]);
-					const perfB = aggregatePlayerPerformance([b]);
-					return perfA.rating - perfB.rating;
-				})
-				.exhaustive();
-
-			return diff * direction;
-		});
-	}, [maps, sortState]);
+	const sortedMaps = useMemo(
+		() =>
+			maps &&
+			sortBy(
+				maps,
+				match(sortState.column)
+					.with("datetime", () => (x: PlayerMapStats) => Date.parse(x["Created At"]))
+					.with("map", () => (x: PlayerMapStats) => mapLabel(x.Map))
+					.with("score", () => (x: PlayerMapStats) => Number(x.Rounds))
+					.with("kd-diff", () => (x: PlayerMapStats) => Number(x.Kills) - Number(x.Deaths))
+					.with("kd", () => (x: PlayerMapStats) => divide(Number(x.Kills), Number(x.Deaths)))
+					.with("rating", () => (x: PlayerMapStats) => aggregatePlayerPerformance([x]).rating)
+					.exhaustive(),
+				sortState.direction,
+			),
+		[maps, sortState],
+	);
 
 	const { visible, hiddenCount, showMore } = usePaged(sortedMaps);
 
@@ -855,13 +889,10 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
 					</TableRow>
 				</TableHeader>
 
-				<TableBody>
-					{visible ? (
-						visible.map((map, index) => <MapRow key={index} map={map} />)
-					) : (
-						<TableSkeleton />
-					)}
-				</TableBody>
+				<HistoryTableBody
+					rows={visible?.map((map, index) => <MapRow key={index} map={map} />)}
+					isLoading={isLoading}
+				/>
 			</Table>
 			<ShowMore hiddenCount={hiddenCount} onClick={showMore} />
 		</>
@@ -959,48 +990,35 @@ function matchUrl(matchId: string) {
 
 type SessionSortColumn = "datetime" | "maps" | "wins" | "kd-diff" | "kd" | "rating";
 
-const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sessions }) => {
+const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: boolean }> = ({
+	sessions,
+	isLoading,
+}) => {
 	const { sortState, register } = useTableSortState<SessionSortColumn>({
 		column: "datetime",
 		direction: "desc",
 	});
 
-	const sortedSessions = useMemo(() => {
-		if (!sessions) return null;
-
-		return [...sessions].sort((a, b) => {
-			const direction = match(sortState.direction)
-				.with("asc", () => 1)
-				.with("desc", () => -1)
-				.exhaustive();
-
-			const perfA = aggregatePlayerPerformance(a);
-			const perfB = aggregatePlayerPerformance(b);
-
-			const diff = match(sortState.column)
-				.with("datetime", () => {
-					const dateA = new Date(a[0]["Created At"]);
-					const dateB = new Date(b[0]["Created At"]);
-					return dateA.getTime() - dateB.getTime();
-				})
-				.with("maps", () => a.length - b.length)
-				.with("wins", () => {
-					const winsA = a.filter((m) => m.Result === "1").length;
-					const winsB = b.filter((m) => m.Result === "1").length;
-					return winsA - winsB;
-				})
-				.with("kd-diff", () => {
-					const diffA = perfA.kills - perfA.deaths;
-					const diffB = perfB.kills - perfB.deaths;
-					return diffA - diffB;
-				})
-				.with("kd", () => perfA.kd - perfB.kd)
-				.with("rating", () => perfA.rating - perfB.rating)
-				.exhaustive();
-
-			return diff * direction;
-		});
-	}, [sortState, sessions]);
+	const sortedSessions = useMemo(
+		() =>
+			sessions &&
+			sortBy(
+				sessions,
+				match(sortState.column)
+					.with("datetime", () => (x: PlayerMapStats[]) => Date.parse(x[0]["Created At"]))
+					.with("maps", () => (x: PlayerMapStats[]) => x.length)
+					.with("wins", () => (x: PlayerMapStats[]) => x.filter((m) => m.Result === "1").length)
+					.with("kd-diff", () => (x: PlayerMapStats[]) => {
+						const performance = aggregatePlayerPerformance(x);
+						return performance.kills - performance.deaths;
+					})
+					.with("kd", () => (x: PlayerMapStats[]) => aggregatePlayerPerformance(x).kd)
+					.with("rating", () => (x: PlayerMapStats[]) => aggregatePlayerPerformance(x).rating)
+					.exhaustive(),
+				sortState.direction,
+			),
+		[sessions, sortState],
+	);
 
 	const { visible, hiddenCount, showMore } = usePaged(sortedSessions);
 
@@ -1030,13 +1048,10 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sess
 					</TableRow>
 				</TableHeader>
 
-				<TableBody>
-					{visible ? (
-						visible.map((session, index) => <SessionRow key={index} session={session} />)
-					) : (
-						<TableSkeleton />
-					)}
-				</TableBody>
+				<HistoryTableBody
+					rows={visible?.map((session, index) => <SessionRow key={index} session={session} />)}
+					isLoading={isLoading}
+				/>
 			</Table>
 			<ShowMore hiddenCount={hiddenCount} onClick={showMore} />
 		</>
@@ -1122,29 +1137,66 @@ const ShowMore: React.FC<{ hiddenCount: number; onClick: () => void }> = ({
 		</Button>
 	);
 
+// Rows replace the skeleton with a fade, as the metrics do. A table that opens with its rows
+// already there, like after switching tabs, shows them at once.
+const HistoryTableBody: React.FC<{ rows: ReactNode[] | undefined; isLoading: boolean }> = ({
+	rows,
+	isLoading,
+}) => {
+	const [startedEmpty] = useState(rows === undefined);
+
+	if (rows === undefined || (rows.length === 0 && isLoading))
+		return (
+			<TableBody>
+				<TableSkeleton />
+			</TableBody>
+		);
+
+	return (
+		<TableBody className={cn(startedEmpty && "animate-in fade-in-0 duration-150 ease-out")}>
+			{rows.length > 0 ? (
+				rows
+			) : (
+				<TableRow>
+					<TableCell colSpan={6} className="p-8 text-center text-muted-foreground">
+						No maps for these filters
+					</TableCell>
+				</TableRow>
+			)}
+		</TableBody>
+	);
+};
+
 const TableSkeleton: React.FC = () =>
 	Array.from({ length: 10 }).map((_, index) => (
-		<TableRow key={index} className="[&>td]:h-10">
+		<TableRow key={index}>
 			<TableCell className="w-[30%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-28 mx-auto animate-pulse" />
+				<SkeletonLine className="w-28" />
 			</TableCell>
 			<TableCell className="w-[10%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
+				<SkeletonLine className="w-12" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-16 mx-auto animate-pulse" />
+				<SkeletonLine className="w-16" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-16 mx-auto animate-pulse" />
+				<SkeletonLine className="w-16" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
+				<SkeletonLine className="w-12" />
 			</TableCell>
 			<TableCell className="w-[15%]">
-				<div className="h-4 bg-muted-foreground/25 rounded-xs w-12 mx-auto animate-pulse" />
+				<SkeletonLine className="w-12" />
 			</TableCell>
 		</TableRow>
 	));
+
+// One line of table text tall, so a skeleton row is exactly as tall as a real one.
+const SkeletonLine: React.FC<{ className: string }> = ({ className }) => (
+	<div className="h-6 flex items-center">
+		<div className={cn("h-4 mx-auto bg-muted-foreground/25 rounded-xs animate-pulse", className)} />
+	</div>
+);
 
 const MaxSessionGapHours = 3;
 
@@ -1183,17 +1235,37 @@ function usePlayerQuery(input: string, enabled: boolean = true) {
 	return useQuery({
 		queryKey: queryKeys.playerByInput(input).queryKey,
 		queryFn: ({ signal }) => playerByInput(input, { signal }),
+		// A recent player shows at once from the saved entry; the lookup still runs to refresh it.
+		initialData: () => recentPlayer(input),
+		initialDataUpdatedAt: 0,
 		enabled,
 		retry: (failureCount, error) => !(error instanceof PlayerLookupError) && failureCount < 1,
 	});
 }
 
+/** The maps downloaded so far, newest first. `isComplete` once the whole history is in. */
+interface DownloadedMaps {
+	maps: PlayerMapStats[];
+	isComplete: boolean;
+}
+
 function useMapsQuery(playerId: string | null, version: GameVersion) {
+	const queryClient = useQueryClient();
 	const id = playerId ?? "";
+	const { queryKey } = queryKeys.mapsByPlayerId(id, version);
+
 	return useQuery({
 		enabled: !!playerId,
-		queryKey: queryKeys.mapsByPlayerId(id, version).queryKey,
-		queryFn: ({ signal }) => fetchMapHistory(id, version, { signal }),
+		queryKey,
+		// No abort signal: leaving the page doesn't stop the download either.
+		queryFn: async (): Promise<DownloadedMaps> => {
+			const maps = await fetchMapHistory(id, version, (loaded) => {
+				// A refetch keeps showing the complete history until the new one is complete too.
+				if (queryClient.getQueryData<DownloadedMaps>(queryKey)?.isComplete) return;
+				queryClient.setQueryData<DownloadedMaps>(queryKey, { maps: loaded, isComplete: false });
+			});
+			return { maps, isComplete: true };
+		},
 	});
 }
 
@@ -1358,6 +1430,20 @@ interface PlayerHistoryEntry {
 	id: string;
 	nickname: string;
 	avatar: string;
+	// Missing from entries saved before it was recorded.
+	country?: string;
+}
+
+function recentPlayer(nickname: string): PlayerResponse | undefined {
+	const entry = usePlayerHistory.getState().history.find((x) => x.nickname === nickname);
+	if (!entry?.country) return undefined;
+
+	return {
+		player_id: entry.id,
+		nickname: entry.nickname,
+		avatar: entry.avatar,
+		country: entry.country,
+	};
 }
 
 const PlayerHistoryKey = "player-history";
@@ -1654,34 +1740,49 @@ interface PlayerMapsResponse {
 	}[];
 }
 
-const FaceitPlayerMapsOffsetLimit = 200;
+// FACEIT pages by offset only up to 200, so each round asks for these three pages at once and the
+// next round continues from the last map it got. It's three times faster than one page at a time.
+const PageOffsets = [0, 100, 200];
 
 async function fetchMapHistory(
 	playerId: string,
 	version: GameVersion,
-	opts?: { signal?: AbortSignal },
+	onPage: (loaded: PlayerMapStats[]) => void,
 ): Promise<PlayerMapStats[]> {
 	const history: PlayerMapStats[] = [];
 
 	while (true) {
-		const { items } = await faceitApi
-			.get<PlayerMapsResponse>(`players/${playerId}/games/${version}/stats`, {
-				searchParams: {
-					limit: FaceitQueryLimit,
-					...(history.length <= FaceitPlayerMapsOffsetLimit
-						? { offset: history.length }
-						: { to: history.at(-1)?.["Match Finished At"] }),
-				},
-				signal: opts?.signal,
-			})
-			.json();
-		if (items.length === 0) break;
+		const to = history.at(-1)?.["Match Finished At"];
+		const pages = PageOffsets.map((offset) => fetchMapsPage(playerId, version, offset, to));
 
-		history.push(...items.map((x) => x.stats));
-		if (items.length < FaceitQueryLimit) break;
+		for (const page of pages) {
+			const maps = await page;
+			history.push(...maps);
+
+			if (maps.length < FaceitQueryLimit) {
+				// The pages after a short one are empty; awaiting them still surfaces a failure.
+				await Promise.all(pages);
+				return history;
+			}
+
+			onPage(history.slice());
+		}
 	}
+}
 
-	return history;
+async function fetchMapsPage(
+	playerId: string,
+	version: GameVersion,
+	offset: number,
+	to: number | undefined,
+): Promise<PlayerMapStats[]> {
+	const { items } = await faceitApi
+		.get<PlayerMapsResponse>(`players/${playerId}/games/${version}/stats`, {
+			searchParams: { limit: FaceitQueryLimit, offset, ...(to === undefined ? {} : { to }) },
+		})
+		.json();
+
+	return items.map((x) => x.stats);
 }
 
 interface PlayerResponse {
