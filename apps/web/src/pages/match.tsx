@@ -19,6 +19,7 @@ import type { PlayerPerformance } from "~/features/stats";
 import { api, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
+import { useHistoryState } from "~/shared/lib/history-state";
 import { toSignedString } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -474,10 +475,33 @@ interface PlayerEntry {
 	id: string;
 	nickname: string;
 	stats: PlayerPerformance;
+	assists: number;
+	details: PlayerDetails | null;
 }
 
+// FACEIT reports these for CS2 matches only.
+interface PlayerDetails {
+	headshots: number;
+	firstKills: number;
+	firstDeaths: number;
+	sniperKills: number;
+	multiKills: number;
+	utilityDamage: number;
+}
+
+type PlayerMatchStats =
+	MatchStats["rounds"][number]["teams"][number]["players"][number]["player_stats"];
+
 function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerEntry> {
-	const playerByIdMap = new Map<string, { nickname: string; stats: PlayerMapStatsInput[] }>();
+	const playerByIdMap = new Map<
+		string,
+		{
+			nickname: string;
+			stats: PlayerMapStatsInput[];
+			assists: number;
+			details: PlayerDetails | null;
+		}
+	>();
 
 	for (const map of maps) {
 		const team = map.teams.find((t) => t.team_id === teamId);
@@ -485,12 +509,26 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 
 		for (const p of team.players) {
 			if (!playerByIdMap.has(p.player_id))
-				playerByIdMap.set(p.player_id, { nickname: p.nickname, stats: [] });
+				playerByIdMap.set(p.player_id, {
+					nickname: p.nickname,
+					stats: [],
+					assists: 0,
+					details: {
+						headshots: 0,
+						firstKills: 0,
+						firstDeaths: 0,
+						sniperKills: 0,
+						multiKills: 0,
+						utilityDamage: 0,
+					},
+				});
 
 			const player = playerByIdMap.get(p.player_id);
 			assert(player);
 
 			player.stats.push({ ...p.player_stats, Rounds: map.round_stats.Rounds });
+			player.assists += Number(p.player_stats.Assists);
+			player.details = addDetails(player.details, p.player_stats);
 		}
 	}
 
@@ -499,9 +537,33 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 			id,
 			nickname: p.nickname,
 			stats: aggregatePlayerPerformance(p.stats),
+			assists: p.assists,
+			details: p.details,
 		}))
 		.sort((a, b) => b.stats.rating - a.stats.rating);
 }
+
+function addDetails(details: PlayerDetails | null, stats: PlayerMatchStats): PlayerDetails | null {
+	if (!details || stats["First Kills"] === undefined) return null;
+
+	return {
+		headshots: details.headshots + Number(stats.Headshots),
+		firstKills: details.firstKills + Number(stats["First Kills"]),
+		// Each round's opening duel counts as an entry for both players, so the entries a player
+		// didn't win are the rounds they died first.
+		firstDeaths: details.firstDeaths + Number(stats["Entry Count"]) - Number(stats["Entry Wins"]),
+		sniperKills: details.sniperKills + Number(stats["Sniper Kills"]),
+		multiKills:
+			details.multiKills +
+			Number(stats["Double Kills"]) +
+			Number(stats["Triple Kills"]) +
+			Number(stats["Quadro Kills"]) +
+			Number(stats["Penta Kills"]),
+		utilityDamage: details.utilityDamage + Number(stats["Utility Damage"]),
+	};
+}
+
+type StatsView = "overview" | "detailed";
 
 const MatchStats: React.FC<{
 	matchId: string;
@@ -511,6 +573,7 @@ const MatchStats: React.FC<{
 	const query = useStatsQuery(matchId);
 
 	const [mapFilter, setMapFilter] = useState("all");
+	const [view, setView] = useHistoryState<StatsView>("statsView", "overview");
 
 	return match(query)
 		.with({ status: "pending" }, () => <Spinner />)
@@ -520,38 +583,50 @@ const MatchStats: React.FC<{
 				mapFilter === "all"
 					? x.data.rounds
 					: x.data.rounds.filter((x) => x.round_stats.Map === mapFilter);
+			const players1 = buildPlayers(rounds, team1.id);
+			const players2 = buildPlayers(rounds, team2.id);
+			const hasDetails = [...players1, ...players2].every((p) => p.details);
+			const shownView = hasDetails ? view : "overview";
 
 			return (
 				<div className="flex flex-col gap-2">
 					<InfoBlock>
-						<ul className="flex flex-wrap items-center gap-x-4 gap-y-2">
-							{["all", ...x.data.rounds.map((x) => x.round_stats.Map)].map((x) => (
-								<li
-									key={x}
-									className={cn("text-primary-foreground", x === mapFilter && "font-bold")}
-								>
-									<button
-										type="button"
-										onClick={() => setMapFilter(x)}
-										className="active:opacity-70"
-									>
-										{x === "all" ? "All maps" : mapLabel(x)}
-									</button>
-								</li>
-							))}
-						</ul>
+						<div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
+							<Switcher
+								options={["all", ...x.data.rounds.map((x) => x.round_stats.Map)].map((x) => ({
+									value: x,
+									label: x === "all" ? "All maps" : mapLabel(x),
+								}))}
+								selected={mapFilter}
+								onSelect={setMapFilter}
+							/>
+							{hasDetails && (
+								<Switcher
+									options={[
+										{ value: "overview", label: "Overview" },
+										{ value: "detailed", label: "Detailed" },
+									]}
+									selected={view}
+									onSelect={setView}
+								/>
+							)}
+						</div>
 					</InfoBlock>
+
+					<TopPerformers players={[...players1, ...players2]} />
 
 					<div className="flex flex-col gap-4">
 						<PlayerTable
 							avatar={team1.avatar}
 							name={team1.name}
-							players={buildPlayers(rounds, team1.id)}
+							players={players1}
+							view={shownView}
 						/>
 						<PlayerTable
 							avatar={team2.avatar}
 							name={team2.name}
-							players={buildPlayers(rounds, team2.id)}
+							players={players2}
+							view={shownView}
 						/>
 					</div>
 				</div>
@@ -560,86 +635,224 @@ const MatchStats: React.FC<{
 		.exhaustive();
 };
 
+const Switcher = <T extends string>({
+	options,
+	selected,
+	onSelect,
+}: {
+	options: Array<{ value: T; label: string }>;
+	selected: T;
+	onSelect: (value: T) => void;
+}) => (
+	<ul className="flex flex-wrap items-center gap-x-4 gap-y-2">
+		{options.map((x) => (
+			<li
+				key={x.value}
+				className={cn("text-primary-foreground", x.value === selected && "font-bold")}
+			>
+				<button type="button" onClick={() => onSelect(x.value)} className="active:opacity-70">
+					{x.label}
+				</button>
+			</li>
+		))}
+	</ul>
+);
+
+// HLTV's match leaders. A leader everyone ties at zero (no AWP kills, say) isn't shown.
+const Leaders: Array<{
+	label: string;
+	value: (x: PlayerEntry) => number | undefined;
+	format: (value: number) => string;
+}> = [
+	{ label: "Most kills", value: (x) => x.stats.kills, format: String },
+	{ label: "Highest ADR", value: (x) => x.stats.adr, format: (x) => roundMetricValue("adr", x) },
+	{ label: "Most assists", value: (x) => x.assists, format: String },
+	{ label: "Most AWP kills", value: (x) => x.details?.sniperKills, format: String },
+	{ label: "Most first kills", value: (x) => x.details?.firstKills, format: String },
+	{
+		label: "Best rating",
+		value: (x) => x.stats.rating,
+		format: (x) => roundMetricValue("rating", x),
+	},
+];
+
+const TopPerformers: React.FC<{ players: PlayerEntry[] }> = ({ players }) => {
+	const leaders = Leaders.flatMap(({ label, value, format }) => {
+		const leader = players.reduce<{ player: PlayerEntry; value: number } | null>((best, player) => {
+			const v = value(player);
+			return v !== undefined && v > (best?.value ?? 0) ? { player, value: v } : best;
+		}, null);
+		return leader ? [{ label, text: format(leader.value), player: leader.player }] : [];
+	});
+
+	return (
+		// Columns follow the number of leaders, so none sits alone in a row.
+		<div
+			className={cn(
+				"grid grid-cols-2 gap-2",
+				leaders.length === 4 && "sm:grid-cols-4",
+				leaders.length === 5 && "sm:grid-cols-5",
+				leaders.length === 6 && "sm:grid-cols-3",
+			)}
+		>
+			{leaders.map(({ label, text, player }) => (
+				<div
+					key={label}
+					className="flex flex-col gap-1 min-w-0 p-4 bg-card rounded-xs max-sm:odd:last:col-span-2"
+				>
+					<p className="text-muted-foreground text-sm uppercase tracking-wide">{label}</p>
+					<p className="text-2xl font-bold">{text}</p>
+					<PlayerName id={player.id} nickname={player.nickname} />
+				</div>
+			))}
+		</div>
+	);
+};
+
 const PlayerTable: React.FC<{
 	name: string;
 	avatar: string;
 	players: Array<PlayerEntry>;
-}> = ({ name, avatar, players }) => (
-	<Table className="sm:min-w-[36rem]">
-		<TableHeader>
-			<TableRow className="[&>th]:text-center">
-				{/* On phones the name column gives way first, so the numbers always fit. */}
-				<TableHead className="max-sm:w-full max-sm:max-w-0">
-					<div className="flex items-center gap-2">
-						<TeamAvatar src={avatar} name={name} className="w-6 sm:w-8" />
-						<p className="font-bold text-left max-sm:whitespace-normal max-sm:leading-tight max-sm:line-clamp-2 max-sm:wrap-anywhere">
-							{withBreaks(name)}
-						</p>
-					</div>
-				</TableHead>
-				<TableHead className="sm:w-[10%]">K—D</TableHead>
-				<TableHead className="sm:w-[10%]">+/-</TableHead>
-				<TableHead className="sm:w-[10%]">ADR</TableHead>
-				<TableHead className="sm:w-[10%]">
-					KAST<span className="max-sm:hidden"> %</span>
-				</TableHead>
-				<TableHead className="sm:w-[10%]">
-					<RatingColumnHead />
-				</TableHead>
-			</TableRow>
-		</TableHeader>
+	view: StatsView;
+}> = ({ name, avatar, players, view }) => {
+	const columns =
+		view === "detailed"
+			? DetailedColumns
+			: OverviewColumns.filter((x) => x !== FirstKillsColumn || players.every((p) => p.details));
 
-		<TableBody>
-			{players.map((player) => (
-				<PlayerRow key={player.id} {...player} />
-			))}
-		</TableBody>
-	</Table>
-);
-
-const PlayerRow: React.FC<{
-	id: string;
-	nickname: string;
-	stats: PlayerPerformance;
-}> = ({ id, nickname, stats }) => {
-	const { data } = usePlayerQuery(id);
-	const country = data?.country;
+	// The overview fits phones as long as names aren't cut, and opening duels don't fit beside
+	// the rest; the detailed view has them. The detailed view scrolls sideways on phones
+	// instead, with the names pinned.
+	const nameClassName =
+		view === "overview"
+			? "max-sm:w-full max-sm:max-w-0"
+			: "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-36 max-sm:border-r-0 max-sm:shadow-[inset_-1px_0_0_var(--color-border)] max-sm:bg-[color-mix(in_srgb,var(--color-card)_50%,var(--color-background))] max-sm:[tr:nth-child(even)>&]:bg-card";
+	const columnClassName = (column: Column) =>
+		view === "overview" ? cn("sm:w-[10%]", column === FirstKillsColumn && "max-sm:hidden") : "";
 
 	return (
-		<TableRow className="[&>td]:text-center">
-			<TableCell className="max-sm:w-full max-sm:max-w-0">
-				<div className="flex items-center gap-1.5 sm:gap-2">
-					{country && (
-						<img
-							src={flagUrl(country)}
-							alt={country}
-							className="w-5 sm:w-6 border border-background"
-						/>
-					)}
-					<Link
-						href={playerUrl(nickname)}
-						title={nickname}
-						className="min-w-0 truncate font-bold text-primary-foreground"
-					>
-						{nickname}
-					</Link>
-				</div>
-			</TableCell>
+		<Table className={view === "overview" ? "sm:min-w-[36rem]" : "max-sm:overflow-visible"}>
+			<TableHeader>
+				<TableRow className="[&>th]:text-center">
+					<TableHead className={cn(nameClassName, "max-sm:bg-card")}>
+						<div className="flex items-center gap-2">
+							<TeamAvatar src={avatar} name={name} className="w-6 sm:w-8" />
+							<p className="font-bold text-left max-sm:whitespace-normal max-sm:leading-tight max-sm:line-clamp-2 max-sm:wrap-anywhere">
+								{withBreaks(name)}
+							</p>
+						</div>
+					</TableHead>
+					{columns.map((column, index) => (
+						<TableHead key={index} className={columnClassName(column)}>
+							{column.head}
+						</TableHead>
+					))}
+				</TableRow>
+			</TableHeader>
 
-			<TableCell className="sm:w-[10%]">
-				{stats.kills}—{stats.deaths}
-			</TableCell>
+			<TableBody>
+				{players.map((player) => (
+					<TableRow key={player.id} className="[&>td]:text-center">
+						<TableCell className={nameClassName}>
+							<PlayerName id={player.id} nickname={player.nickname} />
+						</TableCell>
+						{columns.map((column, index) => (
+							<TableCell key={index} className={columnClassName(column)}>
+								{column.cell(player)}
+							</TableCell>
+						))}
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
+	);
+};
 
-			<TableCell className="sm:w-[10%]">
-				<Performance metric="kdDiff" value={stats.kills - stats.deaths} render={toSignedString} />
-			</TableCell>
+interface Column {
+	head: ReactNode;
+	cell: (player: PlayerEntry) => ReactNode;
+}
 
-			<TableCell className="sm:w-[10%]">{roundMetricValue("adr", stats.adr)}</TableCell>
-			<TableCell className="sm:w-[10%]">{roundMetricValue("kast", stats.kast)}</TableCell>
-			<TableCell className="sm:w-[10%]">
-				<Performance metric="rating" value={stats.rating} />
-			</TableCell>
-		</TableRow>
+const KillsDeathsColumn: Column = {
+	head: "K—D",
+	cell: (x) => `${x.stats.kills}—${x.stats.deaths}`,
+};
+
+const DiffColumn: Column = {
+	head: "+/-",
+	cell: (x) => (
+		<Performance metric="kdDiff" value={x.stats.kills - x.stats.deaths} render={toSignedString} />
+	),
+};
+
+// HLTV's "FK diff": opening duels won minus lost.
+const FirstKillsColumn: Column = {
+	head: "FK diff",
+	cell: (x) =>
+		x.details && (
+			<Performance
+				metric="kdDiff"
+				value={x.details.firstKills - x.details.firstDeaths}
+				render={toSignedString}
+			/>
+		),
+};
+
+const AdrColumn: Column = { head: "ADR", cell: (x) => roundMetricValue("adr", x.stats.adr) };
+
+const KastColumn: Column = {
+	head: (
+		<>
+			KAST<span className="max-sm:hidden"> %</span>
+		</>
+	),
+	cell: (x) => roundMetricValue("kast", x.stats.kast),
+};
+
+const RatingColumn: Column = {
+	head: <RatingColumnHead />,
+	cell: (x) => <Performance metric="rating" value={x.stats.rating} />,
+};
+
+const OverviewColumns: Column[] = [
+	KillsDeathsColumn,
+	DiffColumn,
+	FirstKillsColumn,
+	AdrColumn,
+	KastColumn,
+	RatingColumn,
+];
+
+const DetailedColumns: Column[] = [
+	{ head: "K (hs)", cell: (x) => `${x.stats.kills} (${x.details?.headshots})` },
+	{ head: "A", cell: (x) => x.assists },
+	{ head: "D", cell: (x) => x.stats.deaths },
+	DiffColumn,
+	AdrColumn,
+	KastColumn,
+	FirstKillsColumn,
+	{ head: "AWP kills", cell: (x) => x.details?.sniperKills },
+	{ head: "Multi-kills", cell: (x) => x.details?.multiKills },
+	{ head: "Utility dmg", cell: (x) => x.details?.utilityDamage },
+	RatingColumn,
+];
+
+const PlayerName: React.FC<{ id: string; nickname: string }> = ({ id, nickname }) => {
+	const country = usePlayerQuery(id).data?.country;
+
+	return (
+		<div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+			{country && (
+				<img src={flagUrl(country)} alt={country} className="w-5 sm:w-6 border border-background" />
+			)}
+			<Link
+				href={playerUrl(nickname)}
+				title={nickname}
+				className="min-w-0 truncate font-bold text-primary-foreground"
+			>
+				{nickname}
+			</Link>
+		</div>
 	);
 };
 
@@ -861,6 +1074,12 @@ interface MatchStats {
 					Result: string;
 					"K/D Ratio": string;
 					ADR: string;
+					// The ones below are missing from CS:GO matches.
+					"First Kills"?: string;
+					"Entry Count"?: string;
+					"Entry Wins"?: string;
+					"Sniper Kills"?: string;
+					"Utility Damage"?: string;
 				};
 			}[];
 		}[];
