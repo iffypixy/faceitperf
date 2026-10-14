@@ -21,6 +21,7 @@
 @font-face {
 	font-family: "BricolageGrotesque";
 	font-weight: 400;
+	font-display: swap;
 	src:
 		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
@@ -29,6 +30,7 @@
 @font-face {
 	font-family: "BricolageGrotesque";
 	font-weight: 500;
+	font-display: swap;
 	src:
 		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
@@ -37,6 +39,7 @@
 @font-face {
 	font-family: "BricolageGrotesque";
 	font-weight: 600;
+	font-display: swap;
 	src:
 		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2")
@@ -46,6 +49,7 @@
 @font-face {
 	font-family: "BricolageGrotesque";
 	font-weight: 700;
+	font-display: swap;
 	src:
 		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
@@ -54,6 +58,7 @@
 @font-face {
 	font-family: "BricolageGrotesque";
 	font-weight: 800;
+	font-display: swap;
 	src:
 		local("Bricolage Grotesque"),
 		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
@@ -81,12 +86,20 @@
 	--breakpoint-md: 1024px;
 	--breakpoint-lg: 1280px;
 	--breakpoint-xl: 1536px;
+
+	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+	--text-shadow-image: 0 1px 3px rgb(0 0 0 / 0.8);
 }
 
 @layer base {
 	html {
 		box-sizing: border-box;
-		font-size: clamp(0.5rem, 1.5vw, 1rem);
+		/* Controls show their own pressed state, so the phone's grey tap flash would double it. */
+		-webkit-tap-highlight-color: transparent;
+		/* iOS otherwise enlarges text in landscape, which pushes table columns apart. */
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
 	}
 
 	*,
@@ -124,5 +137,24 @@
 	[role="button"] {
 		user-select: none;
 		-webkit-user-select: none;
+	}
+
+	a:active {
+		opacity: 0.7;
+	}
+}
+
+/* Unlayered on purpose: it has to win over the zoom and slide utilities.
+   Entrances and exits keep their fade and lose the movement. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	::before,
+	::after {
+		--tw-enter-scale: 1;
+		--tw-enter-translate-x: 0;
+		--tw-enter-translate-y: 0;
+		--tw-exit-scale: 1;
+		--tw-exit-translate-x: 0;
+		--tw-exit-translate-y: 0;
 	}
 }
