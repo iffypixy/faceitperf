@@ -759,9 +759,17 @@ const MapHistory: React.FC<{
 	);
 };
 
+// Phones show the day only (see MapDate), so the column is named for it there.
+const DateColumnHead: React.FC = () => (
+	<>
+		<span className="sm:hidden">Date</span>
+		<span className="max-sm:hidden">Datetime</span>
+	</>
+);
+
 export const RatingColumnHead: React.FC = () => (
 	<span className="flex flex-col items-center">
-		Rating <span className="text-sm font-normal -mt-2">2.0</span>
+		Rating <span className="text-sm max-sm:text-xs font-normal -mt-2">2.0</span>
 	</span>
 );
 
@@ -774,7 +782,8 @@ const SortableTableHead: React.FC<{
 	className?: string;
 }> = ({ direction, onClick, children, className }) => (
 	<TableHead
-		className={cn("p-0", className)}
+		// The button inside carries the padding, so the whole cell is clickable.
+		className={cn("p-0 max-sm:p-0", className)}
 		aria-sort={match(direction)
 			.with("asc", () => "ascending" as const)
 			.with("desc", () => "descending" as const)
@@ -784,7 +793,7 @@ const SortableTableHead: React.FC<{
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex h-12 w-full items-center justify-center gap-1 px-2 active:bg-muted/50 -outline-offset-2 outline-foreground focus-visible:outline-solid"
+			className="flex h-12 w-full items-center justify-center gap-1 px-2 max-sm:px-1.5 active:bg-muted/50 -outline-offset-2 outline-foreground focus-visible:outline-solid"
 		>
 			{children}
 
@@ -867,25 +876,25 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 
 	return (
 		<>
-			<Table className="rounded-xs min-w-[36rem]">
+			<Table className="rounded-xs sm:min-w-[36rem]">
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
-						<SortableTableHead className="w-[30%]" {...register("datetime")}>
-							Datetime
+						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
+							<DateColumnHead />
 						</SortableTableHead>
-						<SortableTableHead className="w-[10%]" {...register("map")}>
+						<SortableTableHead className="sm:w-[10%]" {...register("map")}>
 							Map
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("score")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("score")}>
 							Score
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("kd-diff")}>
 							K—D
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("kd")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("kd")}>
 							K/D
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("rating")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("rating")}>
 							<RatingColumnHead />
 						</SortableTableHead>
 					</TableRow>
@@ -921,25 +930,31 @@ export const Performance: React.FC<{
 	);
 };
 
+const DateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "short" });
 const TimeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: "short" });
-const DateTimeFormat = new Intl.DateTimeFormat(undefined, {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
-function readableMapDate(map: PlayerMapStats) {
+// Phones show the day only, so every column fits; the match page has the time.
+const MapDate: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 	// FACEIT API currently sets "Created At" to the same value as "Match Finished At".
 	// Until this is fixed, we use "Created At" if available, otherwise fallback to "Match Finished At".
 	const date = new Date(map["Created At"] ?? map["Match Finished At"]);
 
-	if (isToday(date)) return `Today, ${TimeFormat.format(date)}`;
-	if (isYesterday(date)) return `Yesterday, ${TimeFormat.format(date)}`;
-	return DateTimeFormat.format(date);
+	return (
+		<>
+			{readableDay(date)}
+			<span className="max-sm:hidden">, {TimeFormat.format(date)}</span>
+		</>
+	);
+};
+
+function readableDay(date: Date): string {
+	if (isToday(date)) return "Today";
+	if (isYesterday(date)) return "Yesterday";
+	return DateFormat.format(date);
 }
 
 const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 	const performance = usePlayerPerformance([map]);
-	const date = useMemo(() => readableMapDate(map), [map]);
 
 	const scoreColor = match(map.Result)
 		.with("1", () => PerformanceColor.good)
@@ -948,27 +963,27 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 
 	return (
 		<TableRow className="[&>td]:text-center">
-			<TableCell className="w-[30%] text-muted-foreground">
+			<TableCell className="sm:w-[30%] text-muted-foreground">
 				<Link href={matchUrl(map["Match Id"])} className="text-primary-foreground">
-					{date}
+					<MapDate map={map} />
 				</Link>
 			</TableCell>
 
-			<TableCell className="w-[10%] text-muted-foreground">{mapAlias(map.Map)}</TableCell>
+			<TableCell className="sm:w-[10%] text-muted-foreground">{mapAlias(map.Map)}</TableCell>
 
-			<TableCell className="w-[15%]" style={{ color: scoreColor }}>
+			<TableCell className="sm:w-[15%]" style={{ color: scoreColor }}>
 				{ownScoreFirst(map)}
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				{map.Kills}—{map.Deaths}
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<Performance metric="kd" value={performance.kd} />
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<Performance metric="rating" value={performance.rating} />
 			</TableCell>
 		</TableRow>
@@ -1021,25 +1036,25 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 
 	return (
 		<>
-			<Table className="rounded-xs min-w-[36rem]">
+			<Table className="rounded-xs sm:min-w-[36rem]">
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
-						<SortableTableHead className="w-[30%]" {...register("datetime")}>
-							Datetime
+						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
+							<DateColumnHead />
 						</SortableTableHead>
-						<SortableTableHead className="w-[10%]" {...register("maps")}>
+						<SortableTableHead className="sm:w-[10%]" {...register("maps")}>
 							Maps
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("wins")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("wins")}>
 							W/L
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("kd-diff")}>
 							K—D
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("kd")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("kd")}>
 							K/D
 						</SortableTableHead>
-						<SortableTableHead className="w-[15%]" {...register("rating")}>
+						<SortableTableHead className="sm:w-[15%]" {...register("rating")}>
 							<RatingColumnHead />
 						</SortableTableHead>
 					</TableRow>
@@ -1057,15 +1072,23 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 
 const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 	const performance = usePlayerPerformance(session);
-	const date = useMemo(() => readableMapDate(session[0]), [session]);
 	const maps = useMemo(() => session.slice().reverse(), [session]);
+	const wins = session.filter((x) => x.Result === "1").length;
+	const losses = session.filter((x) => x.Result === "0").length;
 
 	return (
 		<TableRow className="[&>td]:text-center">
-			<TableCell className="w-[30%] text-muted-foreground">{date}</TableCell>
-			<TableCell className="w-[10%] text-muted-foreground">{session.length}</TableCell>
-			<TableCell className="w-[15%] text-muted-foreground">
-				<ul className="inline-flex flex-wrap justify-center">
+			<TableCell className="sm:w-[30%] text-muted-foreground">
+				<MapDate map={session[0]} />
+			</TableCell>
+			<TableCell className="sm:w-[10%] text-muted-foreground">{session.length}</TableCell>
+			<TableCell className="sm:w-[15%] text-muted-foreground">
+				{/* Phones show the tally: the full run of results would wrap and make rows uneven. */}
+				<span className="sm:hidden">
+					<span style={{ color: wins > 0 ? PerformanceColor.good : undefined }}>{wins}</span> /{" "}
+					<span style={{ color: losses > 0 ? PerformanceColor.poor : undefined }}>{losses}</span>
+				</span>
+				<ul className="max-sm:hidden inline-flex flex-wrap justify-center">
 					{maps.map((x, index) => {
 						const [result, color] = match(x.Result)
 							.with("1", () => ["W", PerformanceColor.good])
@@ -1081,15 +1104,15 @@ const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 				</ul>
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				{performance.kills}—{performance.deaths}
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<Performance metric="kd" value={performance.kd} />
 			</TableCell>
 
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<Performance metric="rating" value={performance.rating} />
 			</TableCell>
 		</TableRow>
@@ -1167,22 +1190,22 @@ const HistoryTableBody: React.FC<{ rows: ReactNode[] | undefined; isLoading: boo
 const TableSkeleton: React.FC = () =>
 	Array.from({ length: 10 }).map((_, index) => (
 		<TableRow key={index}>
-			<TableCell className="w-[30%]">
-				<SkeletonLine className="w-28" />
+			<TableCell className="sm:w-[30%]">
+				<SkeletonLine className="w-14 sm:w-28" />
 			</TableCell>
-			<TableCell className="w-[10%]">
+			<TableCell className="sm:w-[10%]">
 				<SkeletonLine className="w-12" />
 			</TableCell>
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<SkeletonLine className="w-16" />
 			</TableCell>
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<SkeletonLine className="w-16" />
 			</TableCell>
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<SkeletonLine className="w-12" />
 			</TableCell>
-			<TableCell className="w-[15%]">
+			<TableCell className="sm:w-[15%]">
 				<SkeletonLine className="w-12" />
 			</TableCell>
 		</TableRow>
@@ -1190,7 +1213,7 @@ const TableSkeleton: React.FC = () =>
 
 // One line of table text tall, so a skeleton row is exactly as tall as a real one.
 const SkeletonLine: React.FC<{ className: string }> = ({ className }) => (
-	<div className="h-6 flex items-center">
+	<div className="h-6 max-sm:h-5 flex items-center">
 		<div className={cn("h-4 mx-auto bg-muted-foreground/25 rounded-xs animate-pulse", className)} />
 	</div>
 );
