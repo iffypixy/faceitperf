@@ -48,7 +48,6 @@ export const MatchPage: React.FC = () => {
 	const { matchId } = useParams<{ matchId: string }>();
 
 	const query = useMatchQuery(matchId);
-	useVetoProcessQuery(matchId);
 	const statsQuery = useStatsQuery(matchId);
 
 	useDocumentTitle(
@@ -144,6 +143,7 @@ export const MatchPage: React.FC = () => {
 										<Veto
 											type="map"
 											matchId={match_id}
+											hasVeto={(voting?.map?.entities.length ?? 0) > 1}
 											team1={faction1.name}
 											team2={faction2.name}
 										/>
@@ -161,6 +161,7 @@ export const MatchPage: React.FC = () => {
 											<Veto
 												type="location"
 												matchId={match_id}
+												hasVeto={(voting?.location?.entities.length ?? 0) > 1}
 												team1={faction1.name}
 												team2={faction2.name}
 											/>
@@ -257,13 +258,23 @@ function withBreaks(name: string): ReactNode[] {
 		.flatMap((part, index) => (index > 0 ? [<wbr key={index} />, part] : [part]));
 }
 
+// FACEIT holds a veto only when more than one option was in the pool; matchmaking often
+// picks the map itself. Asking anyway costs a Function request, and those are capped daily.
 const Veto: React.FC<{
 	type: "map" | "location";
 	matchId: string;
+	hasVeto: boolean;
 	team1: string;
 	team2: string;
-}> = ({ type, matchId, team1, team2 }) => {
-	const vetoProcessQuery = useVetoProcessQuery(matchId);
+}> = ({ type, matchId, hasVeto, team1, team2 }) => {
+	const vetoProcessQuery = useVetoProcessQuery(matchId, hasVeto);
+
+	if (!hasVeto)
+		return (
+			<InfoBlock>
+				<NoVeto />
+			</InfoBlock>
+		);
 
 	return (
 		<InfoBlock>
@@ -305,7 +316,6 @@ const Veto: React.FC<{
 	);
 };
 
-// Hubs and tournaments often skip the veto, so its absence isn't an error.
 const NoVeto: React.FC = () => (
 	<p className="text-muted-foreground">No veto available for this match.</p>
 );
@@ -451,10 +461,11 @@ function useMatchQuery(matchId: string) {
 	});
 }
 
-function useVetoProcessQuery(matchId: string) {
+function useVetoProcessQuery(matchId: string, enabled: boolean) {
 	return useQuery({
 		queryKey: queryKeys.vetoProcessByMatchId(matchId).queryKey,
 		queryFn: () => fetchVetoProcess(matchId),
+		enabled,
 	});
 }
 

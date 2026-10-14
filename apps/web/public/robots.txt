@@ -1,0 +1,7 @@
+# These run on Cloudflare Functions, which allow a fixed number of requests a day.
+User-agent: *
+Disallow: /faceit/
+Disallow: /steam/
+
+User-agent: ExaSearchBot
+Disallow: /
