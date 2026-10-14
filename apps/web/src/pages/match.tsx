@@ -607,14 +607,9 @@ const PlayerRow: React.FC<{
 					{country && (
 						<img src={flagUrl(country)} alt={country} className="w-6 border border-background" />
 					)}
-					<a
-						href={playerUrl(nickname)}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="font-bold text-primary-foreground"
-					>
+					<Link href={playerUrl(nickname)} className="font-bold text-primary-foreground">
 						{nickname}
-					</a>
+					</Link>
 				</div>
 			</TableCell>
 

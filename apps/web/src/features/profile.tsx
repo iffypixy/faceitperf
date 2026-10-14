@@ -23,12 +23,13 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { match, P } from "ts-pattern";
-import { useLocation, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
 import { computePlayerPerformance, type MapStats } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
 import { cn } from "~/shared/lib/cn";
+import { useHistoryState } from "~/shared/lib/history-state";
 import { clamp, divide } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -163,10 +164,15 @@ const Profile: React.FC<{
 }> = ({ username }) => {
 	const [filter, setFilter] = useState(filterFromUrl);
 
-	// The address mirrors the filter, so a refresh or a shared link shows the same view.
+	// The address mirrors the filter, so a refresh or a shared link shows the same view. The
+	// entry's state is kept: it holds the tab, sort and scroll that Back restores.
 	useEffect(() => {
 		const query = filterToQuery(filter);
-		window.history.replaceState(null, "", playerUrl(username) + (query && `?${query}`));
+		window.history.replaceState(
+			window.history.state,
+			"",
+			playerUrl(username) + (query && `?${query}`),
+		);
 	}, [username, filter]);
 
 	const playerQuery = usePlayerQuery(username.trim());
@@ -722,9 +728,10 @@ const MapHistory: React.FC<{
 }> = ({ maps, isLoading }) => {
 	const sessions = useMemo(() => (maps ? groupMapsIntoSessions(maps) : null), [maps]);
 	const sessionRule = `Maps you played within ${MaxSessionGapHours} hours are grouped into one session`;
+	const [tab, setTab] = useHistoryState("historyTab", "maps");
 
 	return (
-		<Tabs defaultValue="maps" className="w-full flex items-center mx-auto gap-2">
+		<Tabs value={tab} onValueChange={setTab} className="w-full flex items-center mx-auto gap-2">
 			<TabsList className="w-full gap-2 bg-card">
 				<TabsTrigger value="maps">Maps {maps && `— ${maps.length.toLocaleString()}`}</TabsTrigger>
 
@@ -809,24 +816,19 @@ type TableSortState<T> = {
 	direction: SortDirection;
 };
 
-function useTableSortState<T>(initialState: TableSortState<T>) {
-	const [state, setState] = useState(initialState);
-
-	const toggle = useCallback((column: T) => {
-		setState((prev) => {
-			if (prev.column !== column) return { column, direction: "desc" };
-			return { column, direction: prev.direction === "asc" ? "desc" : "asc" };
-		});
-	}, []);
+function useTableSortState<T>(key: string, initialState: TableSortState<T>) {
+	const [state, setState] = useHistoryState(key, initialState);
 
 	const register = useCallback(
-		(column: T) => {
-			return {
-				onClick: () => toggle(column),
-				direction: state.column === column ? state.direction : null,
-			};
-		},
-		[state, toggle],
+		(column: T) => ({
+			onClick: () =>
+				setState({
+					column,
+					direction: state.column === column && state.direction === "desc" ? "asc" : "desc",
+				}),
+			direction: state.column === column ? state.direction : null,
+		}),
+		[state, setState],
 	);
 
 	return { sortState: state, register };
@@ -838,7 +840,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 	maps,
 	isLoading,
 }) => {
-	const { sortState, register } = useTableSortState<MapSortColumn>({
+	const { sortState, register } = useTableSortState<MapSortColumn>("mapsSort", {
 		column: "datetime",
 		direction: "desc",
 	});
@@ -861,7 +863,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 		[maps, sortState],
 	);
 
-	const { visible, hiddenCount, showMore } = usePaged(sortedMaps);
+	const { visible, hiddenCount, showMore } = usePaged("mapsShown", sortedMaps);
 
 	return (
 		<>
@@ -947,14 +949,9 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 	return (
 		<TableRow className="[&>td]:text-center">
 			<TableCell className="w-[30%] text-muted-foreground">
-				<a
-					href={matchUrl(map["Match Id"])}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-primary-foreground"
-				>
+				<Link href={matchUrl(map["Match Id"])} className="text-primary-foreground">
 					{date}
-				</a>
+				</Link>
 			</TableCell>
 
 			<TableCell className="w-[10%] text-muted-foreground">{mapAlias(map.Map)}</TableCell>
@@ -994,7 +991,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 	sessions,
 	isLoading,
 }) => {
-	const { sortState, register } = useTableSortState<SessionSortColumn>({
+	const { sortState, register } = useTableSortState<SessionSortColumn>("sessionsSort", {
 		column: "datetime",
 		direction: "desc",
 	});
@@ -1020,7 +1017,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 		[sessions, sortState],
 	);
 
-	const { visible, hiddenCount, showMore } = usePaged(sortedSessions);
+	const { visible, hiddenCount, showMore } = usePaged("sessionsShown", sortedSessions);
 
 	return (
 		<>
@@ -1101,8 +1098,8 @@ const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 
 const PageSize = 50;
 
-function usePaged<T>(items: T[] | null) {
-	const [count, setCount] = useState(PageSize);
+function usePaged<T>(key: string, items: T[] | null) {
+	const [count, setCount] = useHistoryState(key, PageSize);
 
 	return {
 		visible: items?.slice(0, count) ?? null,
@@ -1257,6 +1254,8 @@ function useMapsQuery(playerId: string | null, version: GameVersion) {
 	return useQuery({
 		enabled: !!playerId,
 		queryKey,
+		// A history takes seconds to download, so it's kept longer for Back to find it.
+		gcTime: 30 * 60 * 1000,
 		// No abort signal: leaving the page doesn't stop the download either.
 		queryFn: async (): Promise<DownloadedMaps> => {
 			const maps = await fetchMapHistory(id, version, (loaded) => {
