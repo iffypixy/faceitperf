@@ -4,9 +4,6 @@ export async function onRequest({ params }) {
 	);
 	return new Response(res.body, {
 		status: res.status,
-		headers: {
-			"Content-Type": "application/json",
-			"Access-Control-Allow-Origin": "*",
-		},
+		headers: { "Content-Type": "application/json" },
 	});
 }
