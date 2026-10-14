@@ -13,6 +13,9 @@
 	--faceit: #ff5500;
 	--hltv: #2b6ea4;
 	--border: #4a535b;
+
+	/* The theme is always dark, so native scrollbars and controls should be too. */
+	color-scheme: dark;
 }
 
 @font-face {
@@ -105,5 +108,21 @@
 	button:not(:disabled),
 	[role="button"]:not(:disabled) {
 		cursor: pointer;
+	}
+
+	/* Phones wait for a possible double-tap zoom before firing a tap; controls never need it. */
+	button,
+	a,
+	[role="button"],
+	[role="menuitem"],
+	[role="option"] {
+		touch-action: manipulation;
+	}
+
+	/* A long press on a control shouldn't select its label. */
+	button,
+	[role="button"] {
+		user-select: none;
+		-webkit-user-select: none;
 	}
 }

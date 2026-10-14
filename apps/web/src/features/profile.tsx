@@ -8,7 +8,7 @@ import {
 	CircleAlert,
 	HistoryIcon,
 	InfoIcon,
-	SnowflakeIcon,
+	ShieldUserIcon,
 	XIcon,
 } from "lucide-react";
 import type React from "react";
@@ -28,10 +28,8 @@ import { create } from "zustand";
 import { MapAlias, type MapId, MapLabel, Maps } from "~/entities/map";
 import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
-import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
 import { clamp, divide } from "~/shared/lib/numbers";
-import { tc } from "~/shared/lib/tc";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
 	Avatar,
@@ -114,13 +112,12 @@ function timeFilterValues(startDate: Date | null): TimeFilterValue[] {
 
 	const now = new Date();
 	for (const preset of TimeFilterPresets) {
-		const PresetStartDate = TimeFilterPresetStartDate[preset](now);
-		if (isAfter(startDate, PresetStartDate)) continue;
+		if (isAfter(startDate, TimeFilterPresetStartDate[preset](now))) continue;
 		res.push(preset);
 	}
 
-	const startYear = startDate.getUTCFullYear();
-	for (let year = now.getUTCFullYear(); year >= startYear; year--) res.push(year);
+	const startYear = getYear(startDate);
+	for (let year = getYear(now); year >= startYear; year--) res.push(year);
 
 	return res;
 }
@@ -156,10 +153,25 @@ const Profile: React.FC<{
 		addToHistory({ id: player_id, avatar, nickname });
 	}, [playerQuery.data, addToHistory]);
 
+	const timeValues = useMemo(() => {
+		const firstMap = mapsQuery.data?.at(-1);
+		return timeFilterValues(firstMap ? new Date(firstMap["Created At"]) : null);
+	}, [mapsQuery.data]);
+
+	const mapValues = useMemo<MapFilterValue[]>(
+		() => ["all", ...Maps.filter((x) => mapsQuery.data?.some((map) => map.Map === x))],
+		[mapsQuery.data],
+	);
+
+	// The filter outlives the maps it was picked for (another player or version),
+	// so a value those maps don't offer falls back to "all".
+	const selectedTime = timeValues.includes(filter.time) ? filter.time : "all";
+	const selectedMap = mapValues.includes(filter.map) ? filter.map : "all";
+
 	const filteredMaps = useMemo(() => {
 		if (!mapsQuery.data) return null;
-		return filterMaps(mapsQuery.data, filter);
-	}, [mapsQuery.data, filter]);
+		return filterMaps(mapsQuery.data, selectedTime, selectedMap);
+	}, [mapsQuery.data, selectedTime, selectedMap]);
 
 	if (mapsQuery.isError)
 		return (
@@ -176,15 +188,16 @@ const Profile: React.FC<{
 			<div className="w-full flex flex-col mx-auto gap-4 animate-in fade-in-25 zoom-in-50 duration-500">
 				<div className="flex flex-col gap-2">
 					<FilterGroup
-						maps={mapsQuery.data ?? null}
-						selectedTime={filter.time}
-						selectedMap={filter.map}
+						timeValues={timeValues}
+						mapValues={mapValues}
+						selectedTime={selectedTime}
+						selectedMap={selectedMap}
 						selectedVersion={filter.version}
 						onTimeChange={(time) => setFilter({ ...filter, time })}
 						onMapChange={(map) => setFilter({ ...filter, map })}
 						onVersionChange={(version) => setFilter({ ...filter, version })}
 					/>
-					<PlayerCard player={x.data} maps={filteredMaps} />
+					<PlayerCard player={x.data} maps={filteredMaps} version={filter.version} />
 				</div>
 
 				<HuntGGWidget />
@@ -195,21 +208,23 @@ const Profile: React.FC<{
 		.exhaustive();
 };
 
-function filterMaps(maps: PlayerMapStats[], filter: FilterState): PlayerMapStats[] {
+function filterMaps(
+	maps: PlayerMapStats[],
+	selectedTime: TimeFilterValue,
+	selectedMap: MapFilterValue,
+): PlayerMapStats[] {
 	let res: PlayerMapStats[] = [];
 
-	res = match(filter.time)
+	res = match(selectedTime)
 		.with("all", () => maps)
 		.with("lastMonth", "lastThreeMonths", "lastSixMonths", "lastTwelveMonths", (x) => {
-			const now = new Date();
-			const PresetStartDate = TimeFilterPresetStartDate[x](now);
-
-			return maps.filter((map) => isAfter(parseISO(map["Created At"]), PresetStartDate));
+			const presetStartDate = TimeFilterPresetStartDate[x](new Date());
+			return maps.filter((map) => isAfter(parseISO(map["Created At"]), presetStartDate));
 		})
 		.with(P.number, (x) => maps.filter((map) => getYear(parseISO(map["Created At"])) === x))
 		.exhaustive();
 
-	res = match(filter.map)
+	res = match(selectedMap)
 		.with("all", () => res)
 		.with(P.string, (x) => res.filter((map) => map.Map === x))
 		.exhaustive();
@@ -218,7 +233,8 @@ function filterMaps(maps: PlayerMapStats[], filter: FilterState): PlayerMapStats
 }
 
 const FilterGroup: React.FC<{
-	maps: PlayerMapStats[] | null;
+	timeValues: TimeFilterValue[];
+	mapValues: MapFilterValue[];
 	selectedTime: TimeFilterValue;
 	selectedMap: MapFilterValue;
 	selectedVersion: GameVersion;
@@ -226,7 +242,8 @@ const FilterGroup: React.FC<{
 	onMapChange: (value: MapFilterValue) => void;
 	onVersionChange: (value: GameVersion) => void;
 }> = ({
-	maps,
+	timeValues,
+	mapValues,
 	selectedTime,
 	selectedMap,
 	selectedVersion,
@@ -234,26 +251,6 @@ const FilterGroup: React.FC<{
 	onMapChange,
 	onVersionChange,
 }) => {
-	const timeValues = useMemo(() => {
-		const firstMap = maps?.at(-1);
-		return timeFilterValues(firstMap ? new Date(firstMap["Created At"]) : null);
-	}, [maps]);
-
-	const mapValues = useMemo(() => {
-		const filtered = Maps.filter((x) => maps?.some((map) => map.Map === x));
-		return ["all", ...filtered] as const;
-	}, [maps]);
-
-	const safeSelectedTime = useMemo(
-		() => (timeValues.includes(selectedTime) ? selectedTime : "all"),
-		[timeValues, selectedTime],
-	);
-
-	const safeSelectedMap = useMemo(
-		() => (mapValues.includes(selectedMap) ? selectedMap : "all"),
-		[mapValues, selectedMap],
-	);
-
 	const onSelectedTimeChange = useCallback(
 		(valueStr: string) => {
 			// Convert to number if it represents a year; otherwise keep as string.
@@ -269,7 +266,7 @@ const FilterGroup: React.FC<{
 			<div className="flex flex-col">
 				<p className="text-muted-foreground text-sm uppercase">Time</p>
 
-				<Select value={safeSelectedTime.toString()} onValueChange={onSelectedTimeChange}>
+				<Select value={selectedTime.toString()} onValueChange={onSelectedTimeChange}>
 					<SelectTrigger className="w-full">
 						<SelectValue />
 					</SelectTrigger>
@@ -298,10 +295,7 @@ const FilterGroup: React.FC<{
 			<div className="flex flex-col">
 				<p className="text-muted-foreground text-sm uppercase">Map</p>
 
-				<Select
-					value={safeSelectedMap}
-					onValueChange={(value: MapFilterValue) => onMapChange(value)}
-				>
+				<Select value={selectedMap} onValueChange={(value: MapFilterValue) => onMapChange(value)}>
 					<SelectTrigger className="w-full">
 						<SelectValue />
 					</SelectTrigger>
@@ -348,10 +342,11 @@ const FilterGroup: React.FC<{
 const PlayerCard: React.FC<{
 	player: Pick<PlayerListItem, "player_id" | "avatar" | "nickname" | "country">;
 	maps: PlayerMapStats[] | null;
-}> = ({ player, maps }) => {
+	version: GameVersion;
+}> = ({ player, maps, version }) => {
 	const performance = usePlayerPerformance(maps ?? []);
 	const detailsQuery = usePlayerDetailsQuery(player.player_id);
-	const elo = detailsQuery.data?.games.cs2;
+	const elo = detailsQuery.data?.games[version];
 
 	return (
 		<div className="grid grid-cols-[auto_1fr] bg-primary rounded-xs max-xs:grid-cols-1">
@@ -707,9 +702,9 @@ const MapHistory: React.FC<{
 };
 
 export const RatingColumnHead: React.FC = () => (
-	<div className="flex flex-col items-center">
+	<span className="flex flex-col items-center">
 		Rating <span className="text-sm font-normal -mt-2">2.0</span>
-	</div>
+	</span>
 );
 
 type SortDirection = "asc" | "desc";
@@ -720,15 +715,26 @@ const SortableTableHead: React.FC<{
 	children: ReactNode;
 	className?: string;
 }> = ({ direction, onClick, children, className }) => (
-	<TableHead className={cn("cursor-pointer select-none", className)} onClick={onClick}>
-		<div className="flex items-center justify-center gap-1">
+	<TableHead
+		className={cn("p-0", className)}
+		aria-sort={match(direction)
+			.with("asc", () => "ascending" as const)
+			.with("desc", () => "descending" as const)
+			.with(null, () => undefined)
+			.exhaustive()}
+	>
+		<button
+			type="button"
+			onClick={onClick}
+			className="flex h-12 w-full items-center justify-center gap-1 px-2 select-none -outline-offset-2 outline-foreground focus-visible:outline-solid"
+		>
 			{children}
 
 			{match(direction)
 				.with("asc", () => <ChevronUpIcon className="size-4" />)
 				.with("desc", () => <ChevronDownIcon className="size-4" />)
 				.otherwise(() => null)}
-		</div>
+		</button>
 	</TableHead>
 );
 
@@ -794,9 +800,9 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
 					return roundsA - roundsB;
 				})
 				.with("kd-diff", () => {
-					const sumA = Number(a.Kills) + Number(a.Deaths);
-					const sumB = Number(b.Kills) + Number(b.Deaths);
-					return sumA - sumB;
+					const diffA = Number(a.Kills) - Number(a.Deaths);
+					const diffB = Number(b.Kills) - Number(b.Deaths);
+					return diffA - diffB;
 				})
 				.with("kd", () => {
 					const kdA = divide(Number(a.Kills), Number(a.Deaths));
@@ -962,9 +968,9 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sess
 					return winsA - winsB;
 				})
 				.with("kd-diff", () => {
-					const sumA = perfA.kills + perfA.deaths;
-					const sumB = perfB.kills + perfB.deaths;
-					return sumA - sumB;
+					const diffA = perfA.kills - perfA.deaths;
+					const diffB = perfB.kills - perfB.deaths;
+					return diffA - diffB;
 				})
 				.with("kd", () => perfA.kd - perfB.kd)
 				.with("rating", () => perfA.rating - perfB.rating)
@@ -1103,7 +1109,7 @@ function groupMapsIntoSessions(maps: PlayerMapStats[]): PlayerMapStats[][] {
 }
 
 const queryKeys = createQueryKeys("profile", {
-	mapsByPlayerId: (playerId: string, version: "cs2" | "csgo") => ["maps", playerId, version],
+	mapsByPlayerId: (playerId: string, version: GameVersion) => ["maps", playerId, version],
 	playerByInput: (input: string) => ["player", input],
 	playerDetailsById: (playerId: string) => ["player-details", playerId],
 });
@@ -1113,6 +1119,7 @@ function usePlayerQuery(input: string, enabled: boolean = true) {
 		queryKey: queryKeys.playerByInput(input).queryKey,
 		queryFn: ({ signal }) => playerByInput(input, { signal }),
 		enabled,
+		retry: (failureCount, error) => !(error instanceof PlayerLookupError) && failureCount < 1,
 	});
 }
 
@@ -1191,21 +1198,22 @@ const ProfileSearchForm: React.FC<{
 			)}
 		>
 			<div className="relative">
-				{/* Use SnowflakeIcon by 2026, switch back to ShieldUserIcon after */}
-				<SnowflakeIcon
+				<ShieldUserIcon
 					className={cn(
 						"absolute left-4 top-1/2 -translate-y-1/2 size-8 hidden",
 						isInitialSearch && "block group-focus-within:hidden",
 					)}
 				/>
-				{/* eslint-disable jsx-a11y/no-autofocus */}
-				{/* This input is the only interactive element -> autofocus is justified */}
 				<input
 					value={search}
 					ref={inputRef}
 					onChange={(ev) => setSearch(ev.currentTarget.value)}
 					placeholder="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
 					aria-label="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
+					autoCapitalize="none"
+					autoCorrect="off"
+					spellCheck={false}
+					enterKeyHint="search"
 					className={cn(
 						"w-full text-2xl bg-background border-2 rounded-xs border-foreground pl-4 pr-56 py-4 focus-visible:outline-solid outline-offset-2 outline-foreground",
 						isInitialSearch && "pl-14 pr-14 group-focus-within:pl-4 group-focus-within:pr-4",
@@ -1229,7 +1237,9 @@ const ProfileSearchForm: React.FC<{
 			{query.error && (
 				<p role="alert" className="text-destructive inline-flex items-center text-left">
 					<CircleAlert className="h-5 w-5 me-2" />
-					{query.error.message}
+					{query.error instanceof PlayerLookupError
+						? query.error.message
+						: "We couldn't look up that player. Try again?"}
 				</p>
 			)}
 		</form>
@@ -1257,8 +1267,12 @@ function loadPlayerHistory(): PlayerHistoryEntry[] {
 	const json = localStorage.getItem(PlayerHistoryKey);
 	if (json === null) return [];
 
-	const [err, history] = tc(() => JSON.parse(json) as PlayerHistoryEntry[]);
-	return err === null ? history : [];
+	// A corrupted entry only costs the list of recent players, so start it over.
+	try {
+		return JSON.parse(json);
+	} catch {
+		return [];
+	}
 }
 
 function savePlayerHistory(history: PlayerHistoryEntry[]) {
@@ -1312,31 +1326,31 @@ const PlayerHistory: React.FC = () => {
 };
 
 const RegExps = {
-	FaceitUrl: /^https?:\/\/(www\.)?faceit\.com\/en\/players\/([a-zA-Z0-9_ -]{1,24})\/?$/,
+	FaceitUrl: /^https?:\/\/(?:www\.)?faceit\.com\/[a-zA-Z-]+\/players\/([a-zA-Z0-9_ -]{1,24})\/?$/,
 	FaceitUsername: /^[a-zA-Z0-9_ -]{1,24}$/,
-	SteamUrlWithSteamId: /https?:\/\/steamcommunity\.com\/profiles\/(\d{17})/,
-	SteamUrlWithCustomId: /https?:\/\/steamcommunity\.com\/id\/([\w\d_-]+)/,
-	SteamUrl: /^https?:\/\/steamcommunity\.com\/(id|profiles)\/([a-zA-Z0-9_-]+)\/?$/,
+	SteamUrlWithSteamId: /^https?:\/\/steamcommunity\.com\/profiles\/(\d{17})\/?$/,
+	SteamUrlWithCustomId: /^https?:\/\/steamcommunity\.com\/id\/([a-zA-Z0-9_-]+)\/?$/,
 	SteamId: /^\d{17}$/,
 };
 
 type PlayerInput =
 	| { kind: "faceit-username"; username: string }
-	| { kind: "faceit-url"; url: string }
-	| { kind: "invalid" }
-	| { kind: "steam-url"; url: string }
-	| { kind: "steam-id"; id: string };
+	| { kind: "steam-id"; id: string }
+	| { kind: "steam-custom-id"; customId: string }
+	| { kind: "invalid" };
 
 function parseInput(input: string): PlayerInput {
-	if (RegExps.SteamId.test(input)) {
-		return { kind: "steam-id", id: input };
-	} else if (RegExps.FaceitUsername.test(input)) {
-		return { kind: "faceit-username", username: input };
-	} else if (RegExps.FaceitUrl.test(safeDecodeURIComponent(input))) {
-		return { kind: "faceit-url", url: safeDecodeURIComponent(input) };
-	} else if (RegExps.SteamUrl.test(input)) {
-		return { kind: "steam-url", url: input };
-	}
+	if (RegExps.SteamId.test(input)) return { kind: "steam-id", id: input };
+	if (RegExps.FaceitUsername.test(input)) return { kind: "faceit-username", username: input };
+
+	const faceitUrl = safeDecodeURIComponent(input).match(RegExps.FaceitUrl);
+	if (faceitUrl) return { kind: "faceit-username", username: faceitUrl[1] };
+
+	const steamId = input.match(RegExps.SteamUrlWithSteamId);
+	if (steamId) return { kind: "steam-id", id: steamId[1] };
+
+	const customId = input.match(RegExps.SteamUrlWithCustomId);
+	if (customId) return { kind: "steam-custom-id", customId: customId[1] };
 
 	return { kind: "invalid" };
 }
@@ -1349,62 +1363,47 @@ function safeDecodeURIComponent(x: string): string {
 	}
 }
 
+// The input itself is the problem, so the message is shown as is and the lookup isn't retried.
+class PlayerLookupError extends Error {}
+
 function playerByInput(input: string, opts?: { signal?: AbortSignal }) {
 	return match(parseInput(input))
 		.with({ kind: "invalid" }, () => {
-			throw new Error(
+			throw new PlayerLookupError(
 				"Hmm… that doesn't look like a valid FACEIT username, FACEIT URL, Steam URL, or Steam ID.",
 			);
 		})
-		.with({ kind: "faceit-url" }, { kind: "faceit-username" }, async (x) => {
-			const username = match(x)
-				.with({ kind: "faceit-username" }, (x) => x.username)
-				.with({ kind: "faceit-url" }, (x) => {
-					const match = x.url.match(RegExps.FaceitUrl);
-					assert(match);
-					return match[2];
-				})
-				.exhaustive();
-
-			const [err, player] = await tc(() => fetchPlayer(username, opts));
-			if (err) throw new Error("That player doesn't seem to exist.");
+		.with({ kind: "faceit-username" }, async (x) => {
+			const player = await fetchPlayer(x.username, opts);
+			if (!player) throw new PlayerLookupError("That player doesn't seem to exist.");
 			return player;
 		})
-		.with({ kind: "steam-url" }, async (x) => {
-			try {
-				const steamId = await steamIdByUrl(x.url);
-				return await fetchPlayerBySteamId(steamId);
-			} catch {
-				throw new Error("We couldn't resolve a FACEIT player from that Steam URL.");
-			}
-		})
-		.with({ kind: "steam-id" }, async (x) => {
-			const [err, player] = await tc(() => fetchPlayerBySteamId(x.id));
-			if (err) throw new Error("We couldn't resolve a FACEIT player from that Steam ID.");
+		.with({ kind: "steam-id" }, { kind: "steam-custom-id" }, async (x) => {
+			const steamId = x.kind === "steam-id" ? x.id : await steamIdByCustomId(x.customId, opts);
+			const player = steamId && (await fetchPlayerBySteamId(steamId, opts));
+			if (!player)
+				throw new PlayerLookupError("We couldn't resolve a FACEIT player from that Steam profile.");
 			return player;
 		})
 		.exhaustive();
-}
-
-async function steamIdByUrl(url: string): Promise<string> {
-	const steamIdMatch = url.match(RegExps.SteamUrlWithSteamId);
-	if (steamIdMatch) return steamIdMatch[1];
-
-	const customIdMatch = url.match(RegExps.SteamUrlWithCustomId);
-	if (customIdMatch) return await steamIdByCustomId(customIdMatch[1]);
-
-	throw new Error(`failed to resolve steam id: ${url}`);
 }
 
 interface SteamIdResponse {
 	response: { steamid?: string };
 }
 
-async function steamIdByCustomId(customId: string): Promise<string> {
-	const res = await api.get<SteamIdResponse>(`/steam/resolve?vanityurl=${customId}`).json();
-	const steamId = res.response.steamid;
-	if (steamId === undefined) throw new Error(`failed to resolve custom id: ${customId}`);
-	return steamId;
+async function steamIdByCustomId(
+	customId: string,
+	opts?: { signal?: AbortSignal },
+): Promise<string | null> {
+	const res = await api
+		.get<SteamIdResponse>("/steam/resolve", {
+			searchParams: { vanityurl: customId },
+			signal: opts?.signal,
+		})
+		.json();
+
+	return res.response.steamid ?? null;
 }
 
 interface PlayerListItem {
@@ -1429,9 +1428,8 @@ interface PlayerListResponse {
 async function fetchPlayer(
 	username: string,
 	opts?: { signal?: AbortSignal },
-): Promise<PlayerListItem> {
+): Promise<PlayerListItem | null> {
 	const target = username.toLowerCase();
-	const error = new Error(`player not found: ${username}`);
 
 	for (let page = 0; ; page++) {
 		const { items } = await faceitApi
@@ -1446,12 +1444,10 @@ async function fetchPlayer(
 			})
 			.json();
 
-		if (items.length === 0) throw error;
+		const player = items.find((p) => p.nickname.toLowerCase() === target);
+		if (player) return player;
 
-		const match = items.find((p) => p.nickname.toLowerCase() === target);
-		if (match) return match;
-
-		if (items.length < FaceitQueryLimit) throw error;
+		if (items.length < FaceitQueryLimit) return null;
 	}
 }
 
@@ -1538,10 +1534,18 @@ interface PlayerBySteamIdResponse {
 	country: string;
 }
 
-async function fetchPlayerBySteamId(steamId: string): Promise<PlayerBySteamIdResponse> {
-	return await faceitApi
-		.get<PlayerBySteamIdResponse>(`players?game=cs2&game_player_id=${steamId}`)
-		.json();
+async function fetchPlayerBySteamId(
+	steamId: string,
+	opts?: { signal?: AbortSignal },
+): Promise<PlayerBySteamIdResponse | null> {
+	const res = await faceitApi.get<PlayerBySteamIdResponse>("players", {
+		searchParams: { game: "cs2", game_player_id: steamId },
+		signal: opts?.signal,
+		// FACEIT answers 404 when no account is linked to the Steam ID.
+		throwHttpErrors: (status) => status !== 404,
+	});
+
+	return res.status === 404 ? null : await res.json();
 }
 
 interface PlayerDetailsResponse {

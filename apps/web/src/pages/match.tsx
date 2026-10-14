@@ -1,8 +1,8 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceStrict } from "date-fns";
-import { type ReactNode, useMemo, useState } from "react";
-import { match } from "ts-pattern";
+import { type ReactNode, useState } from "react";
+import { match, P } from "ts-pattern";
 import { useParams } from "wouter";
 import { type MapId, MapLabel } from "~/entities/map";
 import {
@@ -49,11 +49,16 @@ export const MatchPage: React.FC = () => {
 		<ContentTemplate>
 			{match(query)
 				.with({ status: "pending" }, () => <Spinner />)
-				.with({ status: "error" }, () => (
-					<Center>
-						<h1 className="text-2xl">This match doesn't exist or isn't available right now.</h1>
-					</Center>
-				))
+				// A match that hasn't finished has no results or end time to render.
+				.with(
+					{ status: "error" },
+					{ status: "success", data: { status: P.not("FINISHED") } },
+					() => (
+						<Center>
+							<h1 className="text-2xl">This match doesn't exist or isn't available right now.</h1>
+						</Center>
+					),
+				)
 				.with({ status: "success" }, (x) => {
 					const {
 						match_id,
@@ -111,14 +116,24 @@ export const MatchPage: React.FC = () => {
 									<div className="flex flex-col gap-2">
 										<h3 className="font-bold">Maps</h3>
 										<InfoBlock>Best of {best_of}</InfoBlock>
-										<MapVeto matchId={match_id} team1={faction1.name} team2={faction2.name} />
+										<Veto
+											type="map"
+											matchId={match_id}
+											team1={faction1.name}
+											team2={faction2.name}
+										/>
 										<MapHistory matchId={match_id} team1={team1} team2={team2} />
 									</div>
 
 									<div className="flex flex-col gap-8">
 										<div className="flex flex-col gap-2">
 											<h3 className="font-bold">Server</h3>
-											<ServerVeto matchId={match_id} team1={faction1.name} team2={faction2.name} />
+											<Veto
+												type="location"
+												matchId={match_id}
+												team1={faction1.name}
+												team2={faction2.name}
+											/>
 											{serverInfo && (
 												<InfoBlock>
 													<div className="flex items-center gap-2">
@@ -198,11 +213,12 @@ const TeamScoreCard: React.FC<{
 	);
 };
 
-const MapVeto: React.FC<{ matchId: string; team1: string; team2: string }> = ({
-	matchId,
-	team1,
-	team2,
-}) => {
+const Veto: React.FC<{
+	type: "map" | "location";
+	matchId: string;
+	team1: string;
+	team2: string;
+}> = ({ type, matchId, team1, team2 }) => {
 	const vetoProcessQuery = useVetoProcessQuery(matchId);
 
 	return (
@@ -211,12 +227,12 @@ const MapVeto: React.FC<{ matchId: string; team1: string; team2: string }> = ({
 				.with({ status: "pending" }, () => <Spinner />)
 				.with({ status: "error" }, () => <ErrorMessage />)
 				.with({ status: "success" }, (x) => {
-					const mapVeto = x.data.payload.tickets.find((x) => x.entity_type === "map");
-					if (!mapVeto) return <ErrorMessage />;
+					const veto = x.data.payload.tickets.find((x) => x.entity_type === type);
+					if (!veto) return <ErrorMessage />;
 
 					return (
 						<ol className="list-decimal pl-4">
-							{mapVeto.entities.map((x, index, { length }) => {
+							{veto.entities.map((x, index, { length }) => {
 								const team = match(x.selected_by)
 									.with("faction1", () => team1)
 									.with("faction2", () => team2)
@@ -227,9 +243,13 @@ const MapVeto: React.FC<{ matchId: string; team1: string; team2: string }> = ({
 									.with("pick", () => "picked")
 									.exhaustive();
 
-								const map = MapLabel[x.guid as MapId] ?? "???";
+								const entity = match(type)
+									.with("map", () => MapLabel[x.guid as MapId] ?? "???")
+									.with("location", () => x.guid)
+									.exhaustive();
+
 								const text =
-									index === length - 1 ? `${map} was left over` : `${team} ${action} ${map}`;
+									index === length - 1 ? `${entity} was left over` : `${team} ${action} ${entity}`;
 
 								return <li key={x.guid}>{text}</li>;
 							})}
@@ -271,12 +291,14 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 					const map = (x.round_stats.Map ?? "tba") as MapId;
 					const stats1 = x.teams.find((x) => x.team_id === team1.id)?.team_stats;
 					const stats2 = x.teams.find((x) => x.team_id === team2.id)?.team_stats;
+					const hadOvertime =
+						Number(stats1?.["Overtime score"]) > 0 || Number(stats2?.["Overtime score"]) > 0;
 
 					return (
 						<li key={index}>
 							<div className="flex flex-col">
-								<div className="relative">
-									<img src={mapImageUrl(map)} alt={map} className="w-full" />
+								<div className="relative aspect-[97/10] bg-card">
+									<img src={mapImageUrl(map)} alt="" className="w-full" />
 									<p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold">
 										{MapLabel[map] ?? "???"}
 									</p>
@@ -293,8 +315,9 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 
 										<p>
 											({stats1?.["First Half Score"]}:{stats2?.["First Half Score"]};{" "}
-											{stats1?.["Second Half Score"]}:{stats2?.["Second Half Score"]}) (
-											{stats1?.["Overtime score"]}:{stats2?.["Overtime score"]})
+											{stats1?.["Second Half Score"]}:{stats2?.["Second Half Score"]})
+											{hadOvertime &&
+												` (${stats1?.["Overtime score"]}:${stats2?.["Overtime score"]})`}
 										</p>
 
 										<TeamMapResult
@@ -357,48 +380,6 @@ const TeamMapResult: React.FC<{
 				</p>
 			</div>
 		</div>
-	);
-};
-
-const ServerVeto: React.FC<{ matchId: string; team1: string; team2: string }> = ({
-	matchId,
-	team1,
-	team2,
-}) => {
-	const vetoProcessQuery = useVetoProcessQuery(matchId);
-
-	return (
-		<InfoBlock>
-			{match(vetoProcessQuery)
-				.with({ status: "pending" }, () => <Spinner />)
-				.with({ status: "error" }, () => <ErrorMessage />)
-				.with({ status: "success" }, (x) => {
-					const serverVeto = x.data.payload.tickets.find((x) => x.entity_type === "location");
-					if (!serverVeto) return <ErrorMessage />;
-
-					return (
-						<ol className="list-decimal pl-4">
-							{serverVeto.entities.map((x, index, { length }) => {
-								const team = match(x.selected_by)
-									.with("faction1", () => team1)
-									.with("faction2", () => team2)
-									.exhaustive();
-
-								const action = match(x.status)
-									.with("drop", () => "removed")
-									.with("pick", () => "picked")
-									.exhaustive();
-
-								const text =
-									index === length - 1 ? `${x.guid} was left over` : `${team} ${action} ${x.guid}`;
-
-								return <li key={x.guid}>{text}</li>;
-							})}
-						</ol>
-					);
-				})
-				.exhaustive()}
-		</InfoBlock>
 	);
 };
 
@@ -467,11 +448,13 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 		}
 	}
 
-	return Array.from(playerByIdMap.entries()).map(([id, p]) => ({
-		id,
-		nickname: p.nickname,
-		stats: aggregatePlayerPerformance(p.stats),
-	}));
+	return Array.from(playerByIdMap.entries())
+		.map(([id, p]) => ({
+			id,
+			nickname: p.nickname,
+			stats: aggregatePlayerPerformance(p.stats),
+		}))
+		.sort((a, b) => b.stats.rating - a.stats.rating);
 }
 
 type MapFilterValue = "all" | MapId;
@@ -508,7 +491,7 @@ const MatchStats: React.FC<{
 									className={cn("text-primary-foreground", x === mapFilter && "font-bold")}
 								>
 									<button type="button" onClick={() => setMapFilter(x)}>
-										{x === "all" ? "All maps" : MapLabel[x]}
+										{x === "all" ? "All maps" : (MapLabel[x] ?? "???")}
 									</button>
 								</li>
 							))}
@@ -537,40 +520,33 @@ const PlayerTable: React.FC<{
 	name: string;
 	avatar: string;
 	players: Array<PlayerEntry>;
-}> = ({ name, avatar, players }) => {
-	const sortedPlayers = useMemo(
-		() => players.slice().sort((a, b) => b.stats.rating - a.stats.rating),
-		[players],
-	);
+}> = ({ name, avatar, players }) => (
+	<Table>
+		<TableHeader>
+			<TableRow className="[&>th]:text-center">
+				<TableHead>
+					<div className="flex items-center gap-2">
+						<PlayerAvatar src={avatar} alt={name} className="w-8" />
+						<p className="font-bold">{name}</p>
+					</div>
+				</TableHead>
+				<TableHead className="w-[10%]">K—D</TableHead>
+				<TableHead className="w-[10%]">+/-</TableHead>
+				<TableHead className="w-[10%]">ADR</TableHead>
+				<TableHead className="w-[10%]">KAST %</TableHead>
+				<TableHead className="w-[10%]">
+					<RatingColumnHead />
+				</TableHead>
+			</TableRow>
+		</TableHeader>
 
-	return (
-		<Table>
-			<TableHeader>
-				<TableRow className="[&>th]:text-center">
-					<TableHead>
-						<div className="flex items-center gap-2">
-							<PlayerAvatar src={avatar} alt={name} className="w-8" />
-							<p className="font-bold">{name}</p>
-						</div>
-					</TableHead>
-					<TableHead className="w-[10%]">K—D</TableHead>
-					<TableHead className="w-[10%]">+/-</TableHead>
-					<TableHead className="w-[10%]">ADR</TableHead>
-					<TableHead className="w-[10%]">KAST %</TableHead>
-					<TableHead className="w-[10%]">
-						<RatingColumnHead />
-					</TableHead>
-				</TableRow>
-			</TableHeader>
-
-			<TableBody>
-				{sortedPlayers.map((player) => (
-					<PlayerRow key={player.id} {...player} />
-				))}
-			</TableBody>
-		</Table>
-	);
-};
+		<TableBody>
+			{players.map((player) => (
+				<PlayerRow key={player.id} {...player} />
+			))}
+		</TableBody>
+	</Table>
+);
 
 const PlayerRow: React.FC<{
 	id: string;
@@ -581,7 +557,7 @@ const PlayerRow: React.FC<{
 	const country = data?.country;
 
 	return (
-		<TableRow key={id} className="[&>td]:text-center">
+		<TableRow className="[&>td]:text-center">
 			<TableCell>
 				<div className="flex items-center gap-2">
 					{country && (
