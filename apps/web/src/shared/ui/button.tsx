@@ -18,12 +18,6 @@ const buttonVariants = cva(
 	},
 );
 
-export interface ButtonProps
-	extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-		VariantProps<typeof buttonVariants> {
-	asChild?: boolean;
-}
-
 function Button({
 	className,
 	variant,
@@ -39,6 +33,5 @@ function Button({
 		<Comp data-slot="button" className={cn(buttonVariants({ variant, className }))} {...props} />
 	);
 }
-Button.displayName = "Button";
 
 export { Button, buttonVariants };

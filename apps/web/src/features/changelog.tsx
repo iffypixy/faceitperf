@@ -1,22 +1,8 @@
 import { GiftIcon } from "lucide-react";
-import {
-	createContext,
-	type PropsWithChildren,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
 
 import ScreenshotProfile from "~/shared/assets/images/screenshots/profile.webp";
 import ScreenshotSortableTables from "~/shared/assets/images/screenshots/sortable-tables.webp";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/shared/ui";
-
-const ChangelogContext = createContext<{
-	hasRead: boolean;
-	markAsRead: () => void;
-}>({ hasRead: false, markAsRead: () => {} });
 
 const Changelog: Array<{
 	title: string;
@@ -39,69 +25,44 @@ const Changelog: Array<{
 	},
 ];
 
-const lastChangelogEntryDate = new Date(Changelog[0].date);
+const LastSeenDateKey = "changelog/lastSeenDate";
 
-export const ChangelogProvider: React.FC<PropsWithChildren> = ({ children }) => {
-	const [lastSeenDate, setLastSeenDate] = useState(() => {
-		const date = localStorage.getItem("changelog/lastSeenDate");
-		return date !== null ? new Date(date) : null;
-	});
+export function hasReadChangelog(): boolean {
+	const lastSeenDate = localStorage.getItem(LastSeenDateKey);
+	return lastSeenDate !== null && new Date(lastSeenDate) >= new Date(Changelog[0].date);
+}
 
-	const markAsRead = useCallback(() => {
-		localStorage.setItem("changelog/lastSeenDate", lastChangelogEntryDate.toISOString());
-		setLastSeenDate(lastChangelogEntryDate);
-	}, []);
-
-	const hasRead = useMemo(() => {
-		if (!lastSeenDate) return false;
-		return lastSeenDate >= lastChangelogEntryDate;
-	}, [lastSeenDate]);
-
-	return (
-		<ChangelogContext.Provider value={{ hasRead, markAsRead }}>
-			{children}
-		</ChangelogContext.Provider>
-	);
-};
-
-export const useChangelog = () => useContext(ChangelogContext);
+export function markChangelogAsRead() {
+	localStorage.setItem(LastSeenDateKey, Changelog[0].date);
+}
 
 export const ChangelogDialog: React.FC<{
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-}> = ({ open, onOpenChange }) => {
-	const { markAsRead } = useChangelog();
+}> = ({ open, onOpenChange }) => (
+	<Dialog open={open} onOpenChange={onOpenChange}>
+		<DialogContent className="max-w-[480px]">
+			<DialogHeader>
+				<DialogTitle className="flex flex-row items-center">
+					<GiftIcon className="size-6 me-2" /> What's new?
+				</DialogTitle>
+			</DialogHeader>
 
-	useEffect(() => {
-		if (!open) return;
-		markAsRead();
-	}, [open, markAsRead]);
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-[480px]">
-				<DialogHeader>
-					<DialogTitle className="flex flex-row items-center">
-						<GiftIcon className="size-6 me-2" /> What's new?
-					</DialogTitle>
-				</DialogHeader>
-
-				<div className="grid gap-8 overflow-y-auto mt-4">
-					{Changelog.map((x, index) => (
-						<div key={index} className="flex flex-col gap-4">
-							<img
-								src={x.image}
-								alt={x.title}
-								className="max-w-full border border-card rounded-xs p-0.5"
-							/>
-							<div className="flex flex-col gap-2">
-								<h5 className="text-xl font-medium">{x.title}</h5>
-								<p className="text-muted-foreground">{x.description}</p>
-							</div>
+			<div className="grid gap-8 overflow-y-auto mt-4">
+				{Changelog.map((x, index) => (
+					<div key={index} className="flex flex-col gap-4">
+						<img
+							src={x.image}
+							alt={x.title}
+							className="max-w-full border border-card rounded-xs p-0.5"
+						/>
+						<div className="flex flex-col gap-2">
+							<h5 className="text-xl font-medium">{x.title}</h5>
+							<p className="text-muted-foreground">{x.description}</p>
 						</div>
-					))}
-				</div>
-			</DialogContent>
-		</Dialog>
-	);
-};
+					</div>
+				))}
+			</div>
+		</DialogContent>
+	</Dialog>
+);

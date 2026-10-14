@@ -1,7 +1,7 @@
 import { CircleQuestionMark, GiftIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
-import { ChangelogDialog, useChangelog } from "~/features/changelog";
+import { ChangelogDialog, hasReadChangelog, markChangelogAsRead } from "~/features/changelog";
 import {
 	Button,
 	Container,
@@ -40,7 +40,13 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children })
 
 const HelpButton: React.FC = () => {
 	const [isChangelogOpen, setIsChangelogOpen] = useState(false);
-	const { hasRead } = useChangelog();
+	const [hasRead, setHasRead] = useState(hasReadChangelog);
+
+	const openChangelog = () => {
+		markChangelogAsRead();
+		setHasRead(true);
+		setIsChangelogOpen(true);
+	};
 
 	return (
 		<>
@@ -53,7 +59,7 @@ const HelpButton: React.FC = () => {
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent>
-					<DropdownMenuItem onClick={() => setIsChangelogOpen(true)}>
+					<DropdownMenuItem onClick={openChangelog}>
 						<GiftIcon className="size-4" /> What's new?
 					</DropdownMenuItem>
 
