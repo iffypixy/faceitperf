@@ -1,6 +1,6 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useQuery } from "@tanstack/react-query";
-import { addMonths, format, getYear, isAfter, isToday, isYesterday, parseISO } from "date-fns";
+import { addMonths, getYear, isAfter, isToday, isYesterday, parseISO } from "date-fns";
 import {
 	AsteriskIcon,
 	ChevronDownIcon,
@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import {
-	type CSSProperties,
 	type FormEvent,
 	type ReactNode,
 	useCallback,
@@ -21,12 +20,13 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	useSyncExternalStore,
 } from "react";
 import { match, P } from "ts-pattern";
 import { useLocation, useParams } from "wouter";
 import { create } from "zustand";
-import { MapAlias, type MapId, MapLabel, Maps } from "~/entities/map";
-import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
+import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
+import { computePlayerPerformance, type MapStats } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
 import { cn } from "~/shared/lib/cn";
 import { clamp, divide } from "~/shared/lib/numbers";
@@ -59,13 +59,6 @@ import {
 import { Button } from "~/shared/ui/button";
 import { Spinner } from "~/shared/ui/loader";
 
-const Heading: React.FC = () => (
-	<h1 className="text-3xl text-center">
-		Your <span className="text-faceit font-medium">FACEIT</span> stats,{" "}
-		<span className="text-hltv font-medium">HLTV</span> style.
-	</h1>
-);
-
 export const ProfileSearch: React.FC = () => {
 	const { username } = useParams<{ username: string }>();
 
@@ -74,11 +67,11 @@ export const ProfileSearch: React.FC = () => {
 	return (
 		<ContentTemplate>
 			<Container>
-				<div className="flex flex-col gap-16">
+				<div className={cn("flex flex-col", username ? "gap-8" : "gap-16 pt-8 sm:pt-12")}>
 					<div className="flex flex-col items-center gap-4">
-						<Heading />
+						{!username && <Heading />}
 						<ProfileSearchForm initialValue={username ?? ""} />
-						<PlayerHistory />
+						<PlayerHistory current={username} />
 					</div>
 
 					{username && <Profile username={username} />}
@@ -87,6 +80,13 @@ export const ProfileSearch: React.FC = () => {
 		</ContentTemplate>
 	);
 };
+
+const Heading: React.FC = () => (
+	<h1 className="text-2xl sm:text-3xl tracking-tight text-center">
+		Your <span className="text-faceit font-medium">FACEIT</span> stats,{" "}
+		<span className="text-hltv font-medium">HLTV</span> style.
+	</h1>
+);
 
 const TimeFilterPresets = [
 	"lastMonth",
@@ -136,11 +136,13 @@ interface FilterState {
 const Profile: React.FC<{
 	username: string;
 }> = ({ username }) => {
-	const [filter, setFilter] = useState<FilterState>({
-		time: "all",
-		map: "all",
-		version: "cs2",
-	});
+	const [filter, setFilter] = useState(filterFromUrl);
+
+	// The address mirrors the filter, so a refresh or a shared link shows the same view.
+	useEffect(() => {
+		const query = filterToQuery(filter);
+		window.history.replaceState(null, "", playerUrl(username) + (query && `?${query}`));
+	}, [username, filter]);
 
 	const playerQuery = usePlayerQuery(username.trim());
 	const mapsQuery = useMapsQuery(playerQuery.data?.player_id ?? null, filter.version);
@@ -153,30 +155,32 @@ const Profile: React.FC<{
 		addToHistory({ id: player_id, avatar, nickname });
 	}, [playerQuery.data, addToHistory]);
 
-	const timeValues = useMemo(() => {
-		const firstMap = mapsQuery.data?.at(-1);
-		return timeFilterValues(firstMap ? new Date(firstMap["Created At"]) : null);
-	}, [mapsQuery.data]);
+	const maps = mapsQuery.data ?? null;
 
-	const mapValues = useMemo<MapFilterValue[]>(
-		() => ["all", ...Maps.filter((x) => mapsQuery.data?.some((map) => map.Map === x))],
-		[mapsQuery.data],
-	);
+	const timeValues = useMemo(() => {
+		const firstMap = maps?.at(-1);
+		return timeFilterValues(firstMap ? new Date(firstMap["Created At"]) : null);
+	}, [maps]);
+
+	const mapValues = useMemo<MapFilterValue[]>(() => {
+		const played = new Set(maps?.map((x) => x.Map));
+		return ["all", ...Maps.filter((x) => played.has(x))];
+	}, [maps]);
 
 	// The filter outlives the maps it was picked for (another player or version),
 	// so a value those maps don't offer falls back to "all".
 	const selectedTime = timeValues.includes(filter.time) ? filter.time : "all";
 	const selectedMap = mapValues.includes(filter.map) ? filter.map : "all";
 
-	const filteredMaps = useMemo(() => {
-		if (!mapsQuery.data) return null;
-		return filterMaps(mapsQuery.data, selectedTime, selectedMap);
-	}, [mapsQuery.data, selectedTime, selectedMap]);
+	const filteredMaps = useMemo(
+		() => maps && filterMaps(maps, selectedTime, selectedMap),
+		[maps, selectedTime, selectedMap],
+	);
 
 	if (mapsQuery.isError)
 		return (
 			<p role="alert" className="text-destructive text-xl inline-flex items-center mx-auto">
-				<CircleAlert className="h-5 w-5 me-2" />
+				<CircleAlert className="size-5 me-2" />
 				We couldn't load the maps. Try refreshing?
 			</p>
 		);
@@ -185,7 +189,7 @@ const Profile: React.FC<{
 		.with({ status: "error" }, () => null)
 		.with({ status: "pending" }, () => <Spinner />)
 		.with({ status: "success" }, (x) => (
-			<div className="w-full flex flex-col mx-auto gap-4 animate-in fade-in-25 zoom-in-50 duration-500">
+			<div className="w-full flex flex-col mx-auto gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-out">
 				<div className="flex flex-col gap-2">
 					<FilterGroup
 						timeValues={timeValues}
@@ -197,7 +201,9 @@ const Profile: React.FC<{
 						onMapChange={(map) => setFilter({ ...filter, map })}
 						onVersionChange={(version) => setFilter({ ...filter, version })}
 					/>
-					<PlayerCard player={x.data} maps={filteredMaps} version={filter.version} />
+					<PlayerCard player={x.data} version={filter.version}>
+						{filteredMaps ? <MetricBox maps={filteredMaps} /> : <MetricBoxSkeleton />}
+					</PlayerCard>
 				</div>
 
 				<HuntGGWidget />
@@ -207,6 +213,28 @@ const Profile: React.FC<{
 		))
 		.exhaustive();
 };
+
+function filterFromUrl(): FilterState {
+	const query = new URLSearchParams(window.location.search);
+	const time = query.get("time");
+
+	return {
+		time:
+			TimeFilterPresets.find((x) => x === time) ??
+			(time && Number.isInteger(Number(time)) ? Number(time) : "all"),
+		map: Maps.find((x) => x === query.get("map")) ?? "all",
+		version: GameVersions.find((x) => x === query.get("version")) ?? "cs2",
+	};
+}
+
+function filterToQuery(filter: FilterState): string {
+	const query = new URLSearchParams();
+	if (filter.time !== "all") query.set("time", String(filter.time));
+	if (filter.map !== "all") query.set("map", filter.map);
+	if (filter.version !== "cs2") query.set("version", filter.version);
+
+	return query.toString();
+}
 
 function filterMaps(
 	maps: PlayerMapStats[],
@@ -262,12 +290,12 @@ const FilterGroup: React.FC<{
 	);
 
 	return (
-		<div className="grid grid-cols-[12rem_8rem_6rem] items-center bg-card gap-8 p-4 rounded-xs max-sm:grid-cols-3">
-			<div className="flex flex-col">
-				<p className="text-muted-foreground text-sm uppercase">Time</p>
+		<div className="grid grid-cols-2 sm:grid-cols-[12rem_8rem_6rem] items-center bg-card gap-x-3 gap-y-4 sm:gap-x-8 p-4 rounded-xs">
+			<div className="flex flex-col col-span-2 sm:col-span-1">
+				<p className="text-muted-foreground text-sm uppercase tracking-wide">Time</p>
 
 				<Select value={selectedTime.toString()} onValueChange={onSelectedTimeChange}>
-					<SelectTrigger className="w-full">
+					<SelectTrigger className="w-full" aria-label="Time">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
@@ -293,16 +321,16 @@ const FilterGroup: React.FC<{
 			</div>
 
 			<div className="flex flex-col">
-				<p className="text-muted-foreground text-sm uppercase">Map</p>
+				<p className="text-muted-foreground text-sm uppercase tracking-wide">Map</p>
 
-				<Select value={selectedMap} onValueChange={(value: MapFilterValue) => onMapChange(value)}>
-					<SelectTrigger className="w-full">
+				<Select value={selectedMap} onValueChange={onMapChange}>
+					<SelectTrigger className="w-full" aria-label="Map">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{mapValues.map((x) => (
 							<SelectItem key={x} value={x}>
-								{x === "all" ? "All" : MapLabel[x]}
+								{x === "all" ? "All" : mapLabel(x)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -310,13 +338,13 @@ const FilterGroup: React.FC<{
 			</div>
 
 			<div className="flex flex-col">
-				<p className="text-muted-foreground text-sm uppercase">Version</p>
+				<p className="text-muted-foreground text-sm uppercase tracking-wide">Version</p>
 
 				<Select
 					value={selectedVersion}
 					onValueChange={(value: GameVersion) => onVersionChange(value)}
 				>
-					<SelectTrigger className="w-full">
+					<SelectTrigger className="w-full" aria-label="Version">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
@@ -341,20 +369,19 @@ const FilterGroup: React.FC<{
 
 const PlayerCard: React.FC<{
 	player: Pick<PlayerListItem, "player_id" | "avatar" | "nickname" | "country">;
-	maps: PlayerMapStats[] | null;
 	version: GameVersion;
-}> = ({ player, maps, version }) => {
-	const performance = usePlayerPerformance(maps ?? []);
+	children: ReactNode;
+}> = ({ player, version, children }) => {
 	const detailsQuery = usePlayerDetailsQuery(player.player_id);
 	const elo = detailsQuery.data?.games[version];
 
 	return (
-		<div className="grid grid-cols-[auto_1fr] bg-primary rounded-xs max-xs:grid-cols-1">
+		<div className="grid md:grid-cols-[auto_1fr] bg-primary rounded-xs">
 			<a
 				href={playerFaceitUrl(player.nickname)}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="aspect-square h-96 relative rounded-l-sm overflow-hidden border border-primary max-xs:h-64 max-xs:aspect-auto"
+				className="relative block h-64 md:h-96 md:aspect-square overflow-hidden border border-primary rounded-t-xs md:rounded-l-xs md:rounded-tr-none"
 			>
 				<div
 					className="size-full bg-cover bg-center before:absolute before:inset-0 before:bg-background/50"
@@ -362,39 +389,29 @@ const PlayerCard: React.FC<{
 				/>
 
 				<div className="absolute bottom-8 w-full flex flex-col items-center gap-1">
-					<h4
+					<h1
 						title={player.nickname}
-						className="text-2xl font-bold text-shadow flex items-center gap-2 mx-auto truncate px-4"
+						className="max-w-full text-2xl font-bold text-shadow-image flex items-center gap-2 px-4"
 					>
 						<img
 							src={flagUrl(player.country)}
 							alt={player.country}
-							className="border border-card w-7"
+							className="w-7 shrink-0 border border-card"
 						/>
-						{player.nickname}
-					</h4>
+						<span className="truncate">{player.nickname}</span>
+					</h1>
 
 					{elo && (
-						<ul className="flex items-center list-none text-sm text-shadow text-white/75">
-							{[`Level ${elo.skill_level}`, `${elo.faceit_elo.toLocaleString()} ELO`].map(
-								(item, index) => {
-									const showBullet = index > 0;
-									return (
-										<li key={index}>
-											{showBullet && <span className="mx-1.5">·</span>}
-											{item}
-										</li>
-									);
-								},
-							)}
-						</ul>
+						<p className="text-sm text-shadow-image text-white/75">
+							Level {elo.skill_level}
+							<span className="mx-1.5">·</span>
+							{elo.faceit_elo.toLocaleString()} ELO
+						</p>
 					)}
 				</div>
 			</a>
 
-			<div className="h-96 p-12">
-				{maps ? <MetricBox performance={performance} /> : <MetricBoxSkeleton />}
-			</div>
+			<div className="p-6 sm:p-12 md:h-96">{children}</div>
 		</div>
 	);
 };
@@ -403,38 +420,36 @@ function playerFaceitUrl(username: string) {
 	return `https://www.faceit.com/en/players/${username}`;
 }
 
-const MetricBox: React.FC<{ performance: PlayerPerformance }> = ({ performance }) => (
-	<div className="flex flex-col h-full pb-5 justify-between">
-		<div className="flex gap-12">
-			<Metric type="rating" value={performance.rating} approximate />
-			<Metric type="dpr" value={performance.dpr} />
-			<Metric type="kast" value={performance.kast} approximate />
+const MetricGrid =
+	"grid grid-cols-2 sm:grid-cols-3 gap-x-6 sm:gap-x-12 gap-y-10 pb-5 md:h-full md:content-between";
+
+const MetricBox: React.FC<{ maps: PlayerMapStats[] }> = ({ maps }) => {
+	const performance = usePlayerPerformance(maps);
+	// With no maps there is nothing to judge, so the values stay blank instead of reading "poor".
+	const hasMaps = maps.length > 0;
+
+	return (
+		<div className={cn(MetricGrid, "animate-in fade-in-0 duration-200 ease-out")}>
+			<Metric type="rating" value={hasMaps ? performance.rating : null} approximate />
+			<Metric type="dpr" value={hasMaps ? performance.dpr : null} />
+			<Metric type="kast" value={hasMaps ? performance.kast : null} approximate />
+			<Metric type="kd" value={hasMaps ? performance.kd : null} />
+			<Metric type="adr" value={hasMaps ? performance.adr : null} approximate />
+			<Metric type="kpr" value={hasMaps ? performance.kpr : null} />
 		</div>
-		<div className="flex gap-12">
-			<Metric type="kd" value={performance.kd} />
-			<Metric type="adr" value={performance.adr} approximate />
-			<Metric type="kpr" value={performance.kpr} />
-		</div>
-	</div>
-);
+	);
+};
 
 const MetricBoxSkeleton: React.FC = () => (
-	<div className="flex flex-col h-full justify-between py-2">
-		<div className="flex items-center h-24 gap-12">
-			<MetricSkeleton />
-			<MetricSkeleton />
-			<MetricSkeleton />
-		</div>
-		<div className="flex items-center h-24 gap-12">
-			<MetricSkeleton />
-			<MetricSkeleton />
-			<MetricSkeleton />
-		</div>
+	<div className={MetricGrid}>
+		{Array.from({ length: 6 }).map((_, index) => (
+			<MetricSkeleton key={index} />
+		))}
 	</div>
 );
 
 const MetricSkeleton: React.FC = () => (
-	<div className="flex flex-col w-1/3 gap-4 animate-pulse">
+	<div className="flex flex-col gap-4 animate-pulse">
 		<div className="h-5 w-20 bg-muted-foreground/25 rounded-xs" />
 		<div className="flex flex-col gap-2">
 			<div className="h-12 w-24 bg-muted-foreground/25 rounded-xs" />
@@ -442,7 +457,6 @@ const MetricSkeleton: React.FC = () => (
 		</div>
 	</div>
 );
-
 type MetricType = "rating" | "kd" | "dpr" | "kpr" | "kast" | "adr" | "kdDiff";
 
 const MetricLabel: Record<MetricType, string> = {
@@ -501,29 +515,33 @@ function metricInfo(metric: MetricType, value: number) {
 }
 
 const LevelColor: Record<Level, string> = {
-	poor: "#f53c3c",
+	poor: "#ff7369",
 	okay: "#e3ae08",
-	good: "#06ab18",
+	good: "#34c759",
+};
+
+// Each level's third of the bar, counted from the left.
+const LevelStep: Record<Level, number> = {
+	poor: 0,
+	okay: 1,
+	good: 2,
 };
 
 const Metric: React.FC<{
 	type: MetricType;
-	value: number;
+	value: number | null;
 	approximate?: boolean;
 }> = ({ type, value, approximate }) => {
-	const { roundedValueStr, normalizedValue, level } = useMemo(
-		() => metricInfo(type, value),
-		[type, value],
-	);
+	const info = useMemo(() => (value === null ? null : metricInfo(type, value)), [type, value]);
 
 	return (
-		<div className="flex flex-col w-1/3 gap-3">
+		<div className="flex flex-col gap-3 min-w-0">
 			<div className="flex items-start">
-				<span className="text-primary-foreground uppercase">{MetricLabel[type]}</span>
+				<span className="text-primary-foreground uppercase tracking-wide">{MetricLabel[type]}</span>
 
 				{approximate && (
 					<Tooltip>
-						<TooltipTrigger>
+						<TooltipTrigger aria-label="About this estimate">
 							<AsteriskIcon className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
 						</TooltipTrigger>
 						<TooltipContent>This value is an estimate, not a precise figure</TooltipContent>
@@ -532,50 +550,43 @@ const Metric: React.FC<{
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<span className="font-bold text-5xl">{roundedValueStr}</span>
+				<span className={cn("font-bold text-4xl sm:text-5xl", !info && "text-muted-foreground")}>
+					{info?.roundedValueStr ?? "–"}
+				</span>
+				{/* Moved with transforms, so a filter change slides the bar to its new reading. */}
 				<div className="h-2 relative bg-border rounded-xs">
-					<span
-						className="absolute top-0 w-1/3 h-full rounded-xs"
-						style={{
-							boxShadow: `0 0 10px 0 ${LevelColor[level]}`,
-							backgroundColor: LevelColor[level],
-							left: `${
-								match(level)
-									.with("poor", () => 0)
-									.with("okay", () => 1 / 3)
-									.with("good", () => 2 / 3)
-									.exhaustive() * 100
-							}%`,
-						}}
-					/>
-					<span
-						className="w-0.5 h-3 rounded-xs bg-foreground absolute -top-0.5"
-						style={{
-							left: `${normalizedValue * 100}%`,
-						}}
-					/>
-					<span
-						className="absolute -bottom-6 uppercase text-sm"
-						style={{
-							color: LevelColor[level],
-							...match<Level, CSSProperties>(level)
-								.with("poor", () => ({
-									left: "0",
-									transform: "translateX(0)",
-								}))
-								.with("okay", () => ({
-									left: "50%",
-									transform: "translateX(-50%)",
-								}))
-								.with("good", () => ({
-									left: "100%",
-									transform: "translateX(-100%)",
-								}))
-								.exhaustive(),
-						}}
-					>
-						{level}
-					</span>
+					{info && (
+						<>
+							<span
+								className="absolute top-0 left-0 w-1/3 h-full rounded-xs transition-[transform,background-color,box-shadow] duration-250 ease-out motion-reduce:transition-none"
+								style={{
+									boxShadow: `0 0 10px 0 ${LevelColor[info.level]}`,
+									backgroundColor: LevelColor[info.level],
+									transform: `translateX(${LevelStep[info.level] * 100}%)`,
+								}}
+							/>
+							<span
+								className="absolute inset-0 transition-transform duration-250 ease-out motion-reduce:transition-none"
+								style={{ transform: `translateX(${info.normalizedValue * 100}%)` }}
+							>
+								<span className="absolute -top-0.5 left-0 w-0.5 h-3 rounded-xs bg-foreground" />
+							</span>
+							<span
+								className="absolute inset-x-0 -bottom-6 transition-transform duration-250 ease-out motion-reduce:transition-none"
+								style={{ transform: `translateX(${LevelStep[info.level] * 50}%)` }}
+							>
+								<span
+									className="inline-block uppercase text-sm tracking-wide transition-[transform,color] duration-250 ease-out motion-reduce:transition-none"
+									style={{
+										color: LevelColor[info.level],
+										transform: `translateX(${LevelStep[info.level] * -50}%)`,
+									}}
+								>
+									{info.level}
+								</span>
+							</span>
+						</>
+					)}
 				</div>
 			</div>
 		</div>
@@ -666,26 +677,22 @@ const MapHistory: React.FC<{
 	maps: PlayerMapStats[] | null;
 }> = ({ maps }) => {
 	const sessions = useMemo(() => (maps ? groupMapsIntoSessions(maps) : null), [maps]);
-
-	const mapCountLabel = maps ? `— ${maps.length}` : null;
-	const sessionCountLabel = sessions ? `— ${sessions.length}` : null;
+	const sessionRule = `Maps you played within ${MaxSessionGapHours} hours are grouped into one session`;
 
 	return (
 		<Tabs defaultValue="maps" className="w-full flex items-center mx-auto gap-2">
 			<TabsList className="w-full gap-2 bg-card">
-				<TabsTrigger value="maps">Maps {mapCountLabel}</TabsTrigger>
+				<TabsTrigger value="maps">Maps {maps && `— ${maps.length.toLocaleString()}`}</TabsTrigger>
 
-				<TabsTrigger value="sessions">
-					Sessions {sessionCountLabel}
+				<TabsTrigger value="sessions" aria-description={sessionRule}>
+					Sessions {sessions && `— ${sessions.length.toLocaleString()}`}
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
 								<InfoIcon className="size-4 me-1 text-muted-foreground" />
 							</span>
 						</TooltipTrigger>
-						<TooltipContent>
-							Maps you played within {MaxSessionGapHours} hours are grouped into one session
-						</TooltipContent>
+						<TooltipContent>{sessionRule}</TooltipContent>
 					</Tooltip>
 				</TabsTrigger>
 			</TabsList>
@@ -726,7 +733,7 @@ const SortableTableHead: React.FC<{
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex h-12 w-full items-center justify-center gap-1 px-2 select-none -outline-offset-2 outline-foreground focus-visible:outline-solid"
+			className="flex h-12 w-full items-center justify-center gap-1 px-2 active:bg-muted/50 -outline-offset-2 outline-foreground focus-visible:outline-solid"
 		>
 			{children}
 
@@ -820,45 +827,50 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null }> = ({ maps }) => {
 		});
 	}, [maps, sortState]);
 
-	return (
-		<Table className="rounded-xs">
-			<TableHeader>
-				<TableRow className="[&>th]:text-center">
-					<SortableTableHead className="w-[30%]" {...register("datetime")}>
-						Datetime
-					</SortableTableHead>
-					<SortableTableHead className="w-[10%]" {...register("map")}>
-						Map
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("score")}>
-						Score
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
-						K—D
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("kd")}>
-						K/D
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("rating")}>
-						<RatingColumnHead />
-					</SortableTableHead>
-				</TableRow>
-			</TableHeader>
+	const { visible, hiddenCount, showMore } = usePaged(sortedMaps);
 
-			<TableBody>
-				{sortedMaps ? (
-					sortedMaps.map((map, index) => <MapRow key={index} map={map} />)
-				) : (
-					<TableSkeleton />
-				)}
-			</TableBody>
-		</Table>
+	return (
+		<>
+			<Table className="rounded-xs min-w-[36rem]">
+				<TableHeader>
+					<TableRow className="[&>th]:text-center">
+						<SortableTableHead className="w-[30%]" {...register("datetime")}>
+							Datetime
+						</SortableTableHead>
+						<SortableTableHead className="w-[10%]" {...register("map")}>
+							Map
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("score")}>
+							Score
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+							K—D
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("kd")}>
+							K/D
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("rating")}>
+							<RatingColumnHead />
+						</SortableTableHead>
+					</TableRow>
+				</TableHeader>
+
+				<TableBody>
+					{visible ? (
+						visible.map((map, index) => <MapRow key={index} map={map} />)
+					) : (
+						<TableSkeleton />
+					)}
+				</TableBody>
+			</Table>
+			<ShowMore hiddenCount={hiddenCount} onClick={showMore} />
+		</>
 	);
 };
 
+// Tables keep an average value neutral: a column full of yellow would shout.
 export const PerformanceColor: Record<Level, string> = {
-	good: "#09c100",
-	poor: "#fc1d1d",
+	...LevelColor,
 	okay: "#929a9e",
 };
 
@@ -876,14 +888,20 @@ export const Performance: React.FC<{
 	);
 };
 
+const TimeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: "short" });
+const DateTimeFormat = new Intl.DateTimeFormat(undefined, {
+	dateStyle: "short",
+	timeStyle: "short",
+});
+
 function readableMapDate(map: PlayerMapStats) {
 	// FACEIT API currently sets "Created At" to the same value as "Match Finished At".
 	// Until this is fixed, we use "Created At" if available, otherwise fallback to "Match Finished At".
 	const date = new Date(map["Created At"] ?? map["Match Finished At"]);
 
-	if (isToday(date)) return `Today, ${format(date, "HH:mm")}`;
-	if (isYesterday(date)) return `Yesterday, ${format(date, "HH:mm")}`;
-	return format(date, "dd/MM/yy, HH:mm");
+	if (isToday(date)) return `Today, ${TimeFormat.format(date)}`;
+	if (isYesterday(date)) return `Yesterday, ${TimeFormat.format(date)}`;
+	return DateTimeFormat.format(date);
 }
 
 const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
@@ -908,12 +926,10 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 				</a>
 			</TableCell>
 
-			<TableCell className="w-[10%] text-muted-foreground">
-				{MapAlias[map.Map as MapId] ?? "???"}
-			</TableCell>
+			<TableCell className="w-[10%] text-muted-foreground">{mapAlias(map.Map)}</TableCell>
 
 			<TableCell className="w-[15%]" style={{ color: scoreColor }}>
-				{map.Score}
+				{ownScoreFirst(map)}
 			</TableCell>
 
 			<TableCell className="w-[15%]">
@@ -930,6 +946,12 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 		</TableRow>
 	);
 };
+
+// FACEIT lists the two teams in lobby order, so the player's own score may come second.
+function ownScoreFirst(map: PlayerMapStats): string {
+	const scores = map.Score.split(" / ");
+	return scores[1] === map["Final Score"] ? scores.reverse().join(" / ") : map.Score;
+}
 
 function matchUrl(matchId: string) {
 	return `/matches/${matchId}`;
@@ -980,39 +1002,44 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null }> = ({ sess
 		});
 	}, [sortState, sessions]);
 
-	return (
-		<Table className="rounded-xs">
-			<TableHeader>
-				<TableRow className="[&>th]:text-center">
-					<SortableTableHead className="w-[30%]" {...register("datetime")}>
-						Datetime
-					</SortableTableHead>
-					<SortableTableHead className="w-[10%]" {...register("maps")}>
-						Maps
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("wins")}>
-						W/L
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
-						K—D
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("kd")}>
-						K/D
-					</SortableTableHead>
-					<SortableTableHead className="w-[15%]" {...register("rating")}>
-						<RatingColumnHead />
-					</SortableTableHead>
-				</TableRow>
-			</TableHeader>
+	const { visible, hiddenCount, showMore } = usePaged(sortedSessions);
 
-			<TableBody>
-				{sortedSessions ? (
-					sortedSessions.map((session, index) => <SessionRow key={index} session={session} />)
-				) : (
-					<TableSkeleton />
-				)}
-			</TableBody>
-		</Table>
+	return (
+		<>
+			<Table className="rounded-xs min-w-[36rem]">
+				<TableHeader>
+					<TableRow className="[&>th]:text-center">
+						<SortableTableHead className="w-[30%]" {...register("datetime")}>
+							Datetime
+						</SortableTableHead>
+						<SortableTableHead className="w-[10%]" {...register("maps")}>
+							Maps
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("wins")}>
+							W/L
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("kd-diff")}>
+							K—D
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("kd")}>
+							K/D
+						</SortableTableHead>
+						<SortableTableHead className="w-[15%]" {...register("rating")}>
+							<RatingColumnHead />
+						</SortableTableHead>
+					</TableRow>
+				</TableHeader>
+
+				<TableBody>
+					{visible ? (
+						visible.map((session, index) => <SessionRow key={index} session={session} />)
+					) : (
+						<TableSkeleton />
+					)}
+				</TableBody>
+			</Table>
+			<ShowMore hiddenCount={hiddenCount} onClick={showMore} />
+		</>
 	);
 };
 
@@ -1056,6 +1083,44 @@ const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 		</TableRow>
 	);
 };
+
+const PageSize = 50;
+
+function usePaged<T>(items: T[] | null) {
+	const [count, setCount] = useState(PageSize);
+
+	return {
+		visible: items?.slice(0, count) ?? null,
+		hiddenCount: Math.max((items?.length ?? 0) - count, 0),
+		showMore: () => setCount(count + PageSize),
+	};
+}
+
+const ShowMore: React.FC<{ hiddenCount: number; onClick: () => void }> = ({
+	hiddenCount,
+	onClick,
+}) =>
+	hiddenCount > 0 && (
+		<Button
+			// The next rows load by themselves as the button comes into view; pressing it still works.
+			ref={(button) => {
+				if (!button) return;
+
+				const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && onClick(), {
+					rootMargin: "200px",
+				});
+				observer.observe(button);
+				return () => observer.disconnect();
+			}}
+			className="w-full mt-2 text-base bg-card hover:bg-muted/50 active:scale-[0.99]"
+			onClick={onClick}
+		>
+			Show {Math.min(hiddenCount, PageSize)} more
+			<span className="ms-2 font-normal text-muted-foreground">
+				{hiddenCount.toLocaleString()} left
+			</span>
+		</Button>
+	);
 
 const TableSkeleton: React.FC = () =>
 	Array.from({ length: 10 }).map((_, index) => (
@@ -1175,68 +1240,92 @@ const ProfileSearchForm: React.FC<{
 		[navigate, query],
 	);
 
-	const onReset = useCallback((ev: React.MouseEvent<HTMLButtonElement>) => {
-		// Standard click sequence: mousedown → focus → mouseup → click.
-		// Focusing any element within <form> triggers a layout shift via :focus-within,
-		// which can prevent the click event from firing reliably.
-		// To fix this, we handle mousedown instead and preventDefault() to keep
-		// focus on the input rather than the button.
-		ev.preventDefault();
+	const onReset = useCallback(() => {
 		setSearch("");
 		inputRef.current?.focus();
 	}, []);
 
 	const isInitialSearch = search === initialValue && initialValue !== "";
+	// The full hint would be cut mid-word in a narrower field.
+	const placeholder = useMediaQuery("(min-width: 1024px)")
+		? "FACEIT username, FACEIT URL, Steam URL, or Steam ID"
+		: "Username or profile link";
 
 	return (
 		<form
 			onSubmit={handleSubmit}
 			className={cn(
-				"flex flex-col gap-2 group transition-[width] w-216 duration-300 ease-out max-xs:w-full",
-				isInitialSearch &&
-					"w-[24rem] focus-within:w-216 max-xs:w-[24rem] max-xs:focus-within:w-full",
+				"flex flex-col gap-2 group w-full max-w-216 transition-[max-width] duration-250 ease-out motion-reduce:transition-none",
+				isInitialSearch && "max-w-[24rem] focus-within:max-w-216",
 			)}
 		>
 			<div className="relative">
 				<ShieldUserIcon
 					className={cn(
-						"absolute left-4 top-1/2 -translate-y-1/2 size-8 hidden",
-						isInitialSearch && "block group-focus-within:hidden",
+						"absolute left-4 top-1/2 -translate-y-1/2 size-6 sm:size-8 pointer-events-none opacity-0 transition-opacity duration-250 ease-out",
+						isInitialSearch && "opacity-100 group-focus-within:opacity-0",
 					)}
 				/>
 				<input
 					value={search}
 					ref={inputRef}
 					onChange={(ev) => setSearch(ev.currentTarget.value)}
-					placeholder="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
+					placeholder={placeholder}
 					aria-label="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
 					autoCapitalize="none"
 					autoCorrect="off"
 					spellCheck={false}
 					enterKeyHint="search"
 					className={cn(
-						"w-full text-2xl bg-background border-2 rounded-xs border-foreground pl-4 pr-56 py-4 focus-visible:outline-solid outline-offset-2 outline-foreground",
-						isInitialSearch && "pl-14 pr-14 group-focus-within:pl-4 group-focus-within:pr-4",
+						"w-full text-base sm:text-2xl text-ellipsis bg-background border-2 rounded-xs border-foreground/50 focus-visible:border-foreground outline-none pl-4 pr-36 sm:pr-56 py-3 sm:py-4 transition-[padding,border-color] duration-250 ease-out motion-reduce:transition-none",
+						isInitialSearch &&
+							"pl-12 sm:pl-14 pr-12 sm:pr-14 group-focus-within:pl-4 group-focus-within:pr-36 sm:group-focus-within:pr-56",
 					)}
 				/>
-				<div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-					<Button type="button" variant="icon" onMouseDown={onReset} aria-label="Clear input">
-						<XIcon className="size-8" />
-					</Button>
+				<div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
+					{search && (
+						<Button
+							type="button"
+							variant="icon"
+							// Keeps focus in the field, so the form can't resize and move the button mid-click.
+							onMouseDown={(ev) => ev.preventDefault()}
+							onClick={onReset}
+							aria-label="Clear input"
+						>
+							<XIcon className="size-6 sm:size-8" />
+						</Button>
+					)}
 					<Button
 						type="submit"
-						className={cn(isInitialSearch && "hidden group-focus-within:inline-flex")}
+						className={cn(
+							"relative max-sm:text-base max-sm:px-3",
+							isInitialSearch && "hidden group-focus-within:inline-flex",
+						)}
 						disabled={!input || query.isLoading}
 					>
-						{query.isLoading && <Spinner className="h-6 w-6 me-2" />}
-						Show stats
+						<span
+							className={cn(
+								"transition-opacity duration-150 ease-out",
+								query.isLoading && "opacity-0",
+							)}
+						>
+							Show stats
+						</span>
+						{query.isLoading && (
+							<span className="absolute inset-0 animate-in fade-in-0 duration-150 ease-out">
+								<Spinner className="size-6" />
+							</span>
+						)}
 					</Button>
 				</div>
 			</div>
 
 			{query.error && (
-				<p role="alert" className="text-destructive inline-flex items-center text-left">
-					<CircleAlert className="h-5 w-5 me-2" />
+				<p
+					role="alert"
+					className="text-destructive inline-flex items-start text-left animate-in fade-in-0 slide-in-from-top-1 duration-150 ease-out"
+				>
+					<CircleAlert className="size-5 me-2 mt-0.5 shrink-0" />
 					{query.error instanceof PlayerLookupError
 						? query.error.message
 						: "We couldn't look up that player. Try again?"}
@@ -1248,6 +1337,17 @@ const ProfileSearchForm: React.FC<{
 
 function playerUrl(username: string) {
 	return `/players/${username}`;
+}
+
+function useMediaQuery(query: string): boolean {
+	return useSyncExternalStore(
+		(onChange) => {
+			const list = window.matchMedia(query);
+			list.addEventListener("change", onChange);
+			return () => list.removeEventListener("change", onChange);
+		},
+		() => window.matchMedia(query).matches,
+	);
 }
 
 function homeUrl() {
@@ -1282,6 +1382,7 @@ function savePlayerHistory(history: PlayerHistoryEntry[]) {
 const usePlayerHistory = create<{
 	history: PlayerHistoryEntry[];
 	addToHistory: (player: PlayerHistoryEntry) => void;
+	removeFromHistory: (id: string) => void;
 }>((set) => ({
 	history: loadPlayerHistory(),
 	addToHistory: (player) =>
@@ -1294,31 +1395,52 @@ const usePlayerHistory = create<{
 			savePlayerHistory(history);
 			return { history };
 		}),
+	removeFromHistory: (id) =>
+		set((state) => {
+			const history = state.history.filter((x) => x.id !== id);
+
+			savePlayerHistory(history);
+			return { history };
+		}),
 }));
 
-const PlayerHistory: React.FC = () => {
-	const { history } = usePlayerHistory();
+const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) => {
+	const { history, removeFromHistory } = usePlayerHistory();
 	const [, navigate] = useLocation();
 
-	if (history.length === 0) return null;
+	const others = history.filter((x) => x.nickname.toLowerCase() !== current?.toLowerCase());
+	if (others.length === 0) return null;
 
 	return (
 		<div className="flex items-center gap-4">
 			<HistoryIcon className="size-4 text-muted-foreground" />
 			<div className="flex flex-wrap justify-center gap-2">
-				{history.map((player) => (
-					<button
+				{others.map((player) => (
+					<div
 						key={player.id}
-						type="button"
-						onClick={() => navigate(playerUrl(player.nickname))}
-						className="animate-in zoom-in-75 duration-300 flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-colors"
+						className="group/chip relative animate-in fade-in-0 zoom-in-95 duration-150 ease-out"
 					>
-						<Avatar className="size-6 rounded-xs">
-							<AvatarImage src={player.avatar} alt={player.nickname} />
-							<AvatarFallback>{player.nickname[0]}</AvatarFallback>
-						</Avatar>
-						<span className="text-sm">{player.nickname}</span>
-					</button>
+						<button
+							type="button"
+							onClick={() => navigate(playerUrl(player.nickname))}
+							className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-[color,background-color,border-color,scale] duration-160 ease-out active:scale-[0.97]"
+						>
+							<Avatar className="size-6 rounded-xs">
+								<AvatarImage src={player.avatar} alt={player.nickname} />
+								<AvatarFallback>{player.nickname[0]}</AvatarFallback>
+							</Avatar>
+							<span className="text-sm">{player.nickname}</span>
+						</button>
+						{/* Shown on hover; touch has no hover, so it stays visible there. */}
+						<button
+							type="button"
+							onClick={() => removeFromHistory(player.id)}
+							aria-label={`Remove ${player.nickname} from recent players`}
+							className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-inset-2"
+						>
+							<XIcon className="size-3" />
+						</button>
+					</div>
 				))}
 			</div>
 		</div>
@@ -1425,13 +1547,33 @@ interface PlayerListResponse {
 	items: PlayerListItem[];
 }
 
+// FACEIT's exact lookup is case-sensitive, and its search is fuzzy: past the first
+// pages it keeps returning loosely related players without end.
+const MaxSearchPages = 2;
+
 async function fetchPlayer(
 	username: string,
 	opts?: { signal?: AbortSignal },
-): Promise<PlayerListItem | null> {
+): Promise<PlayerResponse | null> {
+	const exact = await fetchPlayerByNickname(username, opts);
+	if (exact) return exact;
+
 	const target = username.toLowerCase();
 
-	for (let page = 0; ; page++) {
+	// The exact lookup is case-sensitive ("s1mple" is "S1mple"), so the usual spellings go
+	// before the fuzzy search, which may never reach the player.
+	const spellings = new Set([
+		username.charAt(0).toUpperCase() + username.slice(1),
+		target,
+		username.toUpperCase(),
+	]);
+	spellings.delete(username);
+	const respelled = (
+		await Promise.all([...spellings].map((x) => fetchPlayerByNickname(x, opts)))
+	).find((x) => x !== null);
+	if (respelled) return respelled;
+
+	for (let page = 0; page < MaxSearchPages; page++) {
 		const { items } = await faceitApi
 			.get<PlayerListResponse>("search/players", {
 				searchParams: {
@@ -1449,6 +1591,21 @@ async function fetchPlayer(
 
 		if (items.length < FaceitQueryLimit) return null;
 	}
+
+	return null;
+}
+
+async function fetchPlayerByNickname(
+	nickname: string,
+	opts?: { signal?: AbortSignal },
+): Promise<PlayerResponse | null> {
+	const res = await faceitApi.get<PlayerResponse>("players", {
+		searchParams: { nickname },
+		signal: opts?.signal,
+		throwHttpErrors: (status) => status !== 404,
+	});
+
+	return res.status === 404 ? null : await res.json();
 }
 
 interface PlayerMapStats {
@@ -1527,7 +1684,7 @@ async function fetchMapHistory(
 	return history;
 }
 
-interface PlayerBySteamIdResponse {
+interface PlayerResponse {
 	player_id: string;
 	nickname: string;
 	avatar: string;
@@ -1537,8 +1694,8 @@ interface PlayerBySteamIdResponse {
 async function fetchPlayerBySteamId(
 	steamId: string,
 	opts?: { signal?: AbortSignal },
-): Promise<PlayerBySteamIdResponse | null> {
-	const res = await faceitApi.get<PlayerBySteamIdResponse>("players", {
+): Promise<PlayerResponse | null> {
+	const res = await faceitApi.get<PlayerResponse>("players", {
 		searchParams: { game: "cs2", game_player_id: steamId },
 		signal: opts?.signal,
 		// FACEIT answers 404 when no account is linked to the Steam ID.

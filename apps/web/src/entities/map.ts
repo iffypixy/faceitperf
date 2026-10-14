@@ -22,7 +22,22 @@ export const Maps = [
 ] as const;
 export type MapId = (typeof Maps)[number];
 
-export const MapLabel: Record<MapId, string> = {
+/** The map's display name. A map the app doesn't know yet shows its id without the prefix. */
+export function mapLabel(id: string): string {
+	const name = plainName(id);
+	return MapLabel[id as MapId] ?? name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+/** The map's short HLTV-style name, with the same fallback as `mapLabel`. */
+export function mapAlias(id: string): string {
+	return MapAlias[id as MapId] ?? plainName(id);
+}
+
+function plainName(id: string): string {
+	return id.replace(/^[a-z]{2}_/, "");
+}
+
+const MapLabel: Record<MapId, string> = {
 	de_mirage: "Mirage",
 	de_anubis: "Anubis",
 	de_inferno: "Inferno",
@@ -45,7 +60,7 @@ export const MapLabel: Record<MapId, string> = {
 	de_tuscan: "Tuscan",
 };
 
-export const MapAlias: Record<MapId, string> = {
+const MapAlias: Record<MapId, string> = {
 	de_mirage: "mrg",
 	de_anubis: "anb",
 	de_inferno: "inf",
@@ -56,14 +71,14 @@ export const MapAlias: Record<MapId, string> = {
 	de_ancient: "anc",
 	de_train: "trn",
 	de_canals: "can",
-	cs_office: "office",
-	cs_italy: "italy",
-	de_cobblestone: "cob",
-	de_cache: "cache",
+	cs_office: "off",
+	cs_italy: "ita",
+	de_cobblestone: "cbl",
+	de_cache: "cch",
 	de_aztec: "azt",
-	cs_agency: "agency",
-	de_jura: "jura",
-	de_grail: "grail",
+	cs_agency: "agn",
+	de_jura: "jur",
+	de_grail: "grl",
 	de_season: "ssn",
 	de_tuscan: "tcn",
 };
