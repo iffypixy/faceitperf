@@ -281,7 +281,6 @@ const MAPS = [
 	"grail",
 	"tuscan",
 	"season",
-	"cache",
 ];
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));

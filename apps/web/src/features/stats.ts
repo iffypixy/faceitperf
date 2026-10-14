@@ -61,7 +61,7 @@ export function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			const kpr = divide(kills, rounds);
 			const apr = divide(assists, rounds);
 
-			const adr = x.adr ?? estimateAdr(divide(kills, rounds), divide(assists, rounds));
+			const adr = x.adr ?? estimateAdr(kpr, apr);
 			const doubleKills =
 				x.doubleKills ??
 				estimateDoubleKpr(
@@ -142,12 +142,12 @@ function estimateKast(kpr: number, apr: number, dpr: number): number {
 
 function estimateRating(kpr: number, apr: number, dpr: number, adr: number, mkpr: number): number {
 	const rating =
-		0.6844811040150518 +
-		kpr * 0.65597945 +
-		apr * 0.31304591 -
-		dpr * 0.75999214 +
-		adr * 0.00370714 +
-		mkpr * 0.72169367;
+		0.6818764962620703 +
+		kpr * 0.66254728 +
+		apr * 0.32206339 -
+		dpr * 0.76366454 +
+		adr * 0.00358291 +
+		mkpr * 0.76960035;
 	return clamp(rating, 0);
 }
 
