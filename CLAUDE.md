@@ -12,8 +12,9 @@ faceitperf is an HLTV-style performance tracking tool for FACEIT CS2/CS:GO playe
 
 ### Repository structure
 
-- `apps/web/` - React frontend (Vite, TypeScript, TailwindCSS)
-- `rating/` - ML pipeline for deriving HLTV Rating 2.0 formulae (TypeScript, Python)
+- `apps/web/` - React frontend (Vite, TypeScript, TailwindCSS) and its Cloudflare Pages Functions (`functions/`)
+- `tools/rating/` - ML pipeline for deriving HLTV Rating 2.0 formulae (TypeScript, Python)
+- `tools/assets/` - Script that downloads flag and map images from HLTV into `apps/web/public/hltv/`
 
 ### Essential Commands
 
