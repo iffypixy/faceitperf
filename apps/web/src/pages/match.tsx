@@ -78,6 +78,7 @@ export const MatchPage: React.FC = () => {
 						voting,
 						faceit_url,
 						results,
+						detailed_results,
 						started_at,
 						finished_at,
 					} = x.data;
@@ -119,7 +120,10 @@ export const MatchPage: React.FC = () => {
 													</span>
 												</>
 											) : (
-												<span className="text-muted-foreground">–</span>
+												// As wide as a two-digit score, so the team names don't reflow when it arrives.
+												<span className="rounded-xs bg-muted-foreground/25 text-transparent animate-pulse">
+													00<span className="mx-2 sm:mx-3">:</span>00
+												</span>
 											)}
 										</p>
 									</div>
@@ -141,7 +145,12 @@ export const MatchPage: React.FC = () => {
 											team1={faction1.name}
 											team2={faction2.name}
 										/>
-										<MapHistory matchId={match_id} team1={team1} team2={team2} />
+										<MapHistory
+											matchId={match_id}
+											mapCount={detailed_results.length}
+											team1={team1}
+											team2={team2}
+										/>
 									</div>
 
 									<div className="flex flex-col gap-8">
@@ -305,18 +314,21 @@ interface TeamEntry {
 	name: string;
 }
 
-const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry }> = ({
-	matchId,
-	team1,
-	team2,
-}) => {
+const MapHistory: React.FC<{
+	matchId: string;
+	mapCount: number;
+	team1: TeamEntry;
+	team2: TeamEntry;
+}> = ({ matchId, mapCount, team1, team2 }) => {
 	const statsQuery = useStatsQuery(matchId);
 
 	return match(statsQuery)
 		.with({ status: "pending" }, () => (
-			<InfoBlock>
-				<Spinner />
-			</InfoBlock>
+			<ul>
+				{Array.from({ length: mapCount }).map((_, index) => (
+					<MapSkeleton key={index} />
+				))}
+			</ul>
 		))
 		.with({ status: "error" }, () => (
 			<InfoBlock>
@@ -373,6 +385,19 @@ const MapHistory: React.FC<{ matchId: string; team1: TeamEntry; team2: TeamEntry
 		))
 		.exhaustive();
 };
+
+// Mirrors a played map's banner and result, so the sections below don't move when stats arrive.
+const MapSkeleton: React.FC = () => (
+	<li className="flex flex-col animate-pulse">
+		<div className="aspect-[97/10] bg-card" />
+		<InfoBlock>
+			<div className="flex h-12 items-center justify-between">
+				<div className="h-4 w-24 rounded-xs bg-muted-foreground/25" />
+				<div className="h-4 w-24 rounded-xs bg-muted-foreground/25" />
+			</div>
+		</InfoBlock>
+	</li>
+);
 
 function mapImageUrl(map: string): string {
 	return `/hltv/maps/${map.slice(3)}.png`;
@@ -638,20 +663,12 @@ interface Match {
 	competition_type: string;
 	configured_at: number;
 	demo_url: string[];
-	detailed_results: [
-		{
-			asc_score: boolean;
-			factions: {
-				property1: {
-					score: number;
-				};
-				property2: {
-					score: number;
-				};
-			};
-			winner: string;
-		},
-	];
+	// One entry per map played.
+	detailed_results: {
+		asc_score: boolean;
+		factions: Record<"faction1" | "faction2", { score: number }>;
+		winner: string;
+	}[];
 	faceit_url: string;
 	finished_at: number;
 	game: string;
