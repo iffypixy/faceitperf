@@ -4,8 +4,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.model_selection import train_test_split
 
-df = pd.read_csv("./data/stats_all.csv")
-df["mkpr"] = df["2kpr"] + df["3kpr"] + df["4kpr"] + df["5kpr"]
+def load_stats(path):
+    df = pd.read_csv(path)
+    df["mkpr"] = df["2kpr"] + df["3kpr"] + df["4kpr"] + df["5kpr"]
+    return df
 
 def train_model(X, y, name):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -20,10 +22,12 @@ def train_model(X, y, name):
     print("R²:", r2_score(y_test, predicted))
     print("RMSE:", math.sqrt(mean_squared_error(y_test, predicted)))
 
-    return model.predict(X)
+df = load_stats("./data/stats_all.csv")
+train_model(df[["kpr", "apr", "dpr"]], df["kast"], "KAST")
+train_model(df[["kpr", "apr"]], df["adr"], "ADR")
+train_model(df[["kpr", "apr", "adr", "3kpr", "4kpr", "5kpr"]], df["2kpr"], "2KPR")
+train_model(df[["kpr", "apr", "adr", "mkpr"]], df["firepower"], "Firepower")
 
-df["kast_pred"] = train_model(df[["kpr", "apr", "dpr"]], df["kast"], "KAST")
-df["adr_pred"] = train_model(df[["kpr", "apr"]], df["adr"], "ADR")
-df["2kpr_pred"] = train_model(df[["kpr", "apr", "adr", "3kpr", "4kpr", "5kpr"]], df["2kpr"], "2KPR")
-df["firepower"] = train_model(df[["kpr", "apr", "adr", "mkpr"]], df["firepower"], "Firepower")
-df["rating_pred"] = train_model(df[["kpr", "apr", "dpr", "adr", "mkpr"]], df["rating"], "Rating")
+# Only players whose all-time rating is Rating 2.0, see README.
+df = load_stats("./data/stats_rating2.csv")
+train_model(df[["kpr", "apr", "dpr", "adr", "mkpr"]], df["rating"], "Rating")
