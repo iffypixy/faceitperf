@@ -49,6 +49,8 @@ export const MatchPage: React.FC = () => {
 
 	const query = useMatchQuery(matchId);
 	const statsQuery = useStatsQuery(matchId);
+	// The page fades in over its skeleton; a match already loaded shows at once.
+	const [startedEmpty] = useState(query.isPending);
 
 	useDocumentTitle(
 		query.data?.status === "FINISHED" ? matchTitle(query.data, statsQuery.data) : "Match",
@@ -57,7 +59,7 @@ export const MatchPage: React.FC = () => {
 	return (
 		<ContentTemplate>
 			{match(query)
-				.with({ status: "pending" }, () => <Spinner />)
+				.with({ status: "pending" }, () => <MatchSkeleton />)
 				// A match that hasn't finished has no results or end time to render.
 				.with(
 					{ status: "error" },
@@ -75,6 +77,7 @@ export const MatchPage: React.FC = () => {
 					const {
 						match_id,
 						best_of,
+						competition_name,
 						teams: { faction1, faction2 },
 						voting,
 						faceit_url,
@@ -85,6 +88,7 @@ export const MatchPage: React.FC = () => {
 					} = x.data;
 
 					const serverInfo = inferServerInfo(voting);
+					const locationPoolSize = voting?.location?.entities.length ?? 0;
 					const score = headlineScore(x.data, statsQuery.data);
 					const startDate = new Date(started_at * 1000);
 					const endDate = new Date(finished_at * 1000);
@@ -102,8 +106,13 @@ export const MatchPage: React.FC = () => {
 
 					return (
 						<Container>
-							<div className="flex flex-col gap-8">
-								<div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-4 items-start bg-card p-4 sm:p-8">
+							<div
+								className={cn(
+									"flex flex-col gap-8",
+									startedEmpty && "animate-in fade-in-0 duration-150 ease-out",
+								)}
+							>
+								<div className={MatchHeaderGrid}>
 									<TeamCard avatar={faction1.avatar} name={faction1.name} />
 									<div className="self-center">
 										<h1 className="sr-only">
@@ -115,25 +124,28 @@ export const MatchPage: React.FC = () => {
 													<span style={{ color: outcomeColor(results.winner === "faction1") }}>
 														{score[0]}
 													</span>
-													<span className="mx-2 sm:mx-3 text-muted-foreground">:</span>
+													<span className="mx-1 sm:mx-3 text-muted-foreground">:</span>
 													<span style={{ color: outcomeColor(results.winner === "faction2") }}>
 														{score[1]}
 													</span>
 												</>
 											) : (
-												// As wide as a two-digit score, so the team names don't reflow when it arrives.
-												<span className="rounded-xs bg-muted-foreground/25 text-transparent animate-pulse">
-													00<span className="mx-2 sm:mx-3">:</span>00
-												</span>
+												<ScoreSkeleton />
 											)}
 										</p>
 									</div>
 									<TeamCard avatar={faction2.avatar} name={faction2.name} />
-									<p className="col-span-3 text-center text-sm text-muted-foreground">
-										{MatchDateFormat.format(startDate)}
-										<span className="mx-1.5">·</span>
-										{formatDistanceStrict(endDate, startDate, { unit: "minute" })}
-									</p>
+									{/* The event gets its own line, as on HLTV, so neither line breaks mid-thought. */}
+									<div className="col-span-3 flex flex-col items-center gap-0.5 text-center text-sm text-muted-foreground">
+										{competition_name && (
+											<p className="font-medium text-foreground/80">{competition_name}</p>
+										)}
+										<p>
+											{MatchDateFormat.format(startDate)}
+											<span className="mx-1.5">·</span>
+											{formatDistanceStrict(endDate, startDate, { unit: "minute" })}
+										</p>
+									</div>
 								</div>
 
 								<div className="grid md:grid-cols-2 gap-8">
@@ -143,7 +155,7 @@ export const MatchPage: React.FC = () => {
 										<Veto
 											type="map"
 											matchId={match_id}
-											hasVeto={(voting?.map?.entities.length ?? 0) > 1}
+											poolSize={voting?.map?.entities.length ?? 0}
 											team1={faction1.name}
 											team2={faction2.name}
 										/>
@@ -156,28 +168,34 @@ export const MatchPage: React.FC = () => {
 									</div>
 
 									<div className="flex flex-col gap-8">
-										<div className="flex flex-col gap-2">
-											<h2 className="font-bold">Server</h2>
-											<Veto
-												type="location"
-												matchId={match_id}
-												hasVeto={(voting?.location?.entities.length ?? 0) > 1}
-												team1={faction1.name}
-												team2={faction2.name}
-											/>
-											{serverInfo && (
-												<InfoBlock>
-													<div className="flex items-center gap-2">
-														<img
-															src={flagUrl(serverInfo.countryCode)}
-															alt={serverInfo.countryCode}
-															className="border border-background"
-														/>
-														<p>{serverInfo.location}</p>
-													</div>
-												</InfoBlock>
-											)}
-										</div>
+										{/* FACEIT's public API names no server for EU, NA and SEA queue matches since
+										    late July 2026, so this is often left out rather than shown empty. */}
+										{(serverInfo || locationPoolSize > 1) && (
+											<div className="flex flex-col gap-2">
+												<h2 className="font-bold">Server</h2>
+												<Veto
+													type="location"
+													matchId={match_id}
+													poolSize={locationPoolSize}
+													team1={faction1.name}
+													team2={faction2.name}
+												/>
+												{serverInfo && (
+													<InfoBlock>
+														<div className="flex items-center gap-2">
+															<img
+																src={flagUrl(serverInfo.countryCode)}
+																alt={serverInfo.countryCode}
+																width={30}
+																height={20}
+																className="border border-background"
+															/>
+															<p>{serverInfo.location}</p>
+														</div>
+													</InfoBlock>
+												)}
+											</div>
+										)}
 
 										<div className="flex flex-col gap-2">
 											<h2 className="font-bold">Match room</h2>
@@ -241,6 +259,38 @@ function inferServerInfo(voting: Match["voting"]) {
 	return { location, countryCode };
 }
 
+// Phones narrow the gaps around the score, so a 360px screen still fits names like "team__TwentyOne_".
+const MatchHeaderGrid =
+	"grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2 gap-y-4 sm:gap-x-4 items-start bg-card p-4 sm:p-8";
+
+// As wide as a two-digit score, so the team names don't reflow when it arrives.
+const ScoreSkeleton: React.FC = () => (
+	<span className="rounded-xs bg-muted-foreground/25 text-transparent animate-pulse">
+		00<span className="mx-1 sm:mx-3">:</span>00
+	</span>
+);
+
+// The header's shape while the match loads, rather than a lone spinner on an empty page.
+const MatchSkeleton: React.FC = () => (
+	<Container>
+		<div className={MatchHeaderGrid}>
+			<TeamCardSkeleton />
+			<p className="self-center text-4xl sm:text-5xl font-bold tracking-tight tabular-nums">
+				<ScoreSkeleton />
+			</p>
+			<TeamCardSkeleton />
+			<div className="col-span-3 h-5 w-72 max-w-full mx-auto rounded-xs bg-muted-foreground/25 animate-pulse" />
+		</div>
+	</Container>
+);
+
+const TeamCardSkeleton: React.FC = () => (
+	<div className="flex flex-col items-center gap-2 animate-pulse">
+		<div className="size-12 sm:size-16 rounded-xs bg-muted-foreground/25" />
+		<div className="h-6 w-28 max-w-full rounded-xs bg-muted-foreground/25" />
+	</div>
+);
+
 const TeamCard: React.FC<{ avatar: string; name: string }> = ({ avatar, name }) => (
 	<div className="flex flex-col items-center gap-2">
 		<TeamAvatar src={avatar} name={name} className="w-12 sm:w-16" />
@@ -260,65 +310,67 @@ function withBreaks(name: string): ReactNode[] {
 
 // FACEIT holds a veto only when more than one option was in the pool; matchmaking often
 // picks the map itself. Asking anyway costs a Function request, and those are capped daily.
+// Like HLTV, a match without a veto shows nothing in its place.
 const Veto: React.FC<{
 	type: "map" | "location";
 	matchId: string;
-	hasVeto: boolean;
+	poolSize: number;
 	team1: string;
 	team2: string;
-}> = ({ type, matchId, hasVeto, team1, team2 }) => {
+}> = ({ type, matchId, poolSize, team1, team2 }) => {
+	const hasVeto = poolSize > 1;
 	const vetoProcessQuery = useVetoProcessQuery(matchId, hasVeto);
 
-	if (!hasVeto)
-		return (
+	if (!hasVeto) return null;
+
+	return match(vetoProcessQuery)
+		.with({ status: "pending" }, () => (
+			// A veto has one line per option in the pool, so nothing below moves when it arrives.
 			<InfoBlock>
-				<NoVeto />
+				<ol className="flex flex-col animate-pulse">
+					{Array.from({ length: poolSize }).map((_, index) => (
+						<li key={index} className="h-6 flex items-center">
+							<div className="h-4 w-2/3 rounded-xs bg-muted-foreground/25" />
+						</li>
+					))}
+				</ol>
 			</InfoBlock>
-		);
+		))
+		.with({ status: "error" }, () => null)
+		.with({ status: "success" }, (x) => {
+			const veto = x.data.payload.tickets.find((x) => x.entity_type === type);
+			if (!veto) return null;
 
-	return (
-		<InfoBlock>
-			{match(vetoProcessQuery)
-				.with({ status: "pending" }, () => <Spinner />)
-				.with({ status: "error" }, () => <NoVeto />)
-				.with({ status: "success" }, (x) => {
-					const veto = x.data.payload.tickets.find((x) => x.entity_type === type);
-					if (!veto) return <NoVeto />;
+			return (
+				<InfoBlock>
+					<ol className="list-decimal pl-4">
+						{veto.entities.map((x, index, { length }) => {
+							const team = match(x.selected_by)
+								.with("faction1", () => team1)
+								.with("faction2", () => team2)
+								.exhaustive();
 
-					return (
-						<ol className="list-decimal pl-4">
-							{veto.entities.map((x, index, { length }) => {
-								const team = match(x.selected_by)
-									.with("faction1", () => team1)
-									.with("faction2", () => team2)
-									.exhaustive();
+							const action = match(x.status)
+								.with("drop", () => "removed")
+								.with("pick", () => "picked")
+								.exhaustive();
 
-								const action = match(x.status)
-									.with("drop", () => "removed")
-									.with("pick", () => "picked")
-									.exhaustive();
+							const entity = match(type)
+								.with("map", () => mapLabel(x.guid))
+								.with("location", () => x.guid)
+								.exhaustive();
 
-								const entity = match(type)
-									.with("map", () => mapLabel(x.guid))
-									.with("location", () => x.guid)
-									.exhaustive();
+							const text =
+								index === length - 1 ? `${entity} was left over` : `${team} ${action} ${entity}`;
 
-								const text =
-									index === length - 1 ? `${entity} was left over` : `${team} ${action} ${entity}`;
-
-								return <li key={x.guid}>{text}</li>;
-							})}
-						</ol>
-					);
-				})
-				.exhaustive()}
-		</InfoBlock>
-	);
+							return <li key={x.guid}>{text}</li>;
+						})}
+					</ol>
+				</InfoBlock>
+			);
+		})
+		.exhaustive();
 };
-
-const NoVeto: React.FC = () => (
-	<p className="text-muted-foreground">No veto available for this match.</p>
-);
 
 interface TeamEntry {
 	id: string;
@@ -427,7 +479,11 @@ const TeamMapResult: React.FC<{
 		<div className="flex flex-col min-w-0">
 			<p
 				title={name}
-				className={cn("truncate", outcome === "win" ? "font-bold" : "text-muted-foreground")}
+				// Phones have room for the avatar and score only; the avatar's alt text keeps the name.
+				className={cn(
+					"truncate max-sm:hidden",
+					outcome === "win" ? "font-bold" : "text-muted-foreground",
+				)}
 			>
 				{name}
 			</p>
@@ -583,6 +639,8 @@ const MatchStats: React.FC<{
 
 	const [mapFilter, setMapFilter] = useState("all");
 	const [view, setView] = useHistoryState<StatsView>("statsView", "overview");
+	// The player whose history row opened this match, set by that row's link.
+	const [fromPlayer] = useHistoryState<string | null>("fromPlayer", null);
 
 	return match(query)
 		.with({ status: "pending" }, () => <Spinner />)
@@ -630,12 +688,14 @@ const MatchStats: React.FC<{
 							name={team1.name}
 							players={players1}
 							view={shownView}
+							highlighted={fromPlayer}
 						/>
 						<PlayerTable
 							avatar={team2.avatar}
 							name={team2.name}
 							players={players2}
 							view={shownView}
+							highlighted={fromPlayer}
 						/>
 					</div>
 				</div>
@@ -709,16 +769,18 @@ const TopPerformers: React.FC<{ players: PlayerEntry[] }> = ({ players }) => {
 				"grid grid-cols-2 gap-2",
 				leaders.length === 4 && "sm:grid-cols-4",
 				leaders.length === 5 && "sm:grid-cols-5",
-				leaders.length === 6 && "sm:grid-cols-3",
+				leaders.length === 6 && "sm:grid-cols-3 md:grid-cols-6",
 			)}
 		>
 			{leaders.map(({ label, text, player }) => (
 				<div
 					key={label}
-					className="flex flex-col gap-1 min-w-0 p-4 bg-card rounded-xs max-sm:odd:last:col-span-2"
+					className="flex flex-col gap-1 min-w-0 p-4 md:py-3 bg-card rounded-xs max-sm:odd:last:col-span-2"
 				>
-					<p className="text-muted-foreground text-sm uppercase tracking-wide">{label}</p>
-					<p className="text-2xl font-bold">{text}</p>
+					<p className="text-muted-foreground text-sm md:text-xs uppercase tracking-wide">
+						{label}
+					</p>
+					<p className="text-2xl md:text-xl font-bold">{text}</p>
 					<PlayerName id={player.id} nickname={player.nickname} />
 				</div>
 			))}
@@ -731,7 +793,8 @@ const PlayerTable: React.FC<{
 	avatar: string;
 	players: Array<PlayerEntry>;
 	view: StatsView;
-}> = ({ name, avatar, players, view }) => {
+	highlighted: string | null;
+}> = ({ name, avatar, players, view, highlighted }) => {
 	const columns =
 		view === "detailed"
 			? DetailedColumns
@@ -770,8 +833,23 @@ const PlayerTable: React.FC<{
 
 			<TableBody>
 				{players.map((player) => (
-					<TableRow key={player.id} className="[&>td]:text-center">
-						<TableCell className={nameClassName}>
+					<TableRow
+						key={player.id}
+						className={cn(
+							"[&>td]:text-center",
+							// In the profile card's blue-grey, so you find yourself among the ten at a glance.
+							player.id === highlighted && "odd:bg-primary even:bg-primary hover:bg-primary",
+						)}
+					>
+						<TableCell
+							className={cn(
+								nameClassName,
+								// The pinned name cell paints its own background on phones.
+								player.id === highlighted &&
+									view === "detailed" &&
+									"max-sm:bg-primary max-sm:[tr:nth-child(even)>&]:bg-primary",
+							)}
+						>
 							<PlayerName id={player.id} nickname={player.nickname} />
 						</TableCell>
 						{columns.map((column, index) => (
@@ -859,9 +937,18 @@ const PlayerName: React.FC<{ id: string; nickname: string }> = ({ id, nickname }
 
 	return (
 		<div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-			{country && (
-				<img src={flagUrl(country)} alt={country} className="w-5 sm:w-6 border border-background" />
-			)}
+			{/* The flag's place is kept while the player loads, so the name doesn't slide over. */}
+			<span className="w-5 sm:w-6 shrink-0">
+				{country && (
+					<img
+						src={flagUrl(country)}
+						alt={country}
+						width={30}
+						height={20}
+						className="block w-full border border-background"
+					/>
+				)}
+			</span>
 			<Link
 				href={playerUrl(nickname)}
 				title={nickname}
@@ -884,7 +971,8 @@ const TeamAvatar: React.FC<{
 }> = ({ src, name, className }) => (
 	<Avatar className={cn("h-auto shrink-0 rounded-xs", className)}>
 		<AvatarImage src={src} alt={name} />
-		<AvatarFallback>
+		{/* Only a slow image shows the placeholder; a quick one never flashes it. */}
+		<AvatarFallback delayMs={400}>
 			<UsersIcon className="size-1/2 text-muted-foreground" />
 		</AvatarFallback>
 	</Avatar>

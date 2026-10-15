@@ -499,6 +499,8 @@ const PlayerCard: React.FC<{
 						<img
 							src={flagUrl(player.country)}
 							alt={player.country}
+							width={30}
+							height={20}
 							className="w-7 shrink-0 border border-card"
 						/>
 						<span className="truncate">{player.nickname}</span>
@@ -1056,7 +1058,12 @@ const MapRow = memo(function MapRow({ map }: { map: PlayerMapStats }) {
 	return (
 		<TableRow className="[&>td]:text-center">
 			<TableCell className="sm:w-[30%] text-muted-foreground">
-				<Link href={matchUrl(map["Match Id"])} className="text-primary-foreground">
+				{/* The match page highlights the player whose history this row is from. */}
+				<Link
+					href={matchUrl(map["Match Id"])}
+					state={{ fromPlayer: map["Player Id"] }}
+					className="text-primary-foreground"
+				>
 					<MapDate map={map} />
 				</Link>
 			</TableCell>
