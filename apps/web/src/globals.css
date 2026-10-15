@@ -85,11 +85,37 @@
 	}
 
 	body {
+		position: relative;
 		font-family: "BricolageGrotesque", sans-serif;
-		background-image: url("~/shared/assets/images/grid.svg");
 		@apply text-base;
 		@apply bg-background;
 		@apply text-foreground;
+	}
+
+	/* Behind the top of the page: a graph-paper grid that fades out before long content, and a faint
+	   HLTV-blue light. Both stop at the page's end, so a short page doesn't grow a scrollbar. */
+	body::before,
+	body::after {
+		content: "";
+		position: absolute;
+		inset: 0 0 auto;
+		z-index: -1;
+		pointer-events: none;
+	}
+
+	body::before {
+		height: min(1100px, 100%);
+		background-image: url("~/shared/assets/images/grid.svg");
+		/* Puts one of the tile's bold lines down the middle, so the grid sits symmetric around the
+		   centred content at every width. */
+		background-position: calc(50% + 45px) 0;
+		mask-image: radial-gradient(ellipse 75% 70% at 50% 0%, #000 25%, transparent);
+	}
+
+	body::after {
+		height: min(700px, 100%);
+		/* The HLTV blue (--hltv) at 16%. */
+		background: radial-gradient(ellipse 55% 60% at 50% 0%, rgb(43 110 164 / 16%), transparent 70%);
 	}
 
 	button:not(:disabled),

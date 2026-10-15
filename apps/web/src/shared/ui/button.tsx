@@ -8,7 +8,9 @@ const buttonVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-foreground hover:bg-primary/75 py-2 px-4",
+				// Hover lightens, as everywhere else in the app.
+				default:
+					"bg-primary text-foreground hover:bg-[color-mix(in_oklab,var(--primary),white_8%)] py-2 px-4",
 				// The icon alone is a small target, so the tappable area reaches a little past it.
 				icon: "relative text-foreground/75 hover:text-foreground after:absolute after:-inset-2",
 			},
