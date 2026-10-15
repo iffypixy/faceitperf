@@ -432,7 +432,7 @@ const FilterMenu = <T extends string | number>({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="start"
-				className="bg-card rounded-xs border-0 shadow-md min-w-(--radix-dropdown-menu-trigger-width)"
+				className="rounded-xs min-w-(--radix-dropdown-menu-trigger-width)"
 			>
 				<DropdownMenuRadioGroup
 					value={String(value)}
@@ -808,10 +808,10 @@ const MapHistory = memo(function MapHistory({
 	return (
 		<Tabs value={tab} onValueChange={setTab} className="w-full flex items-center mx-auto gap-2">
 			<TabsList className="w-full gap-2 bg-card">
-				<TabsTrigger value="maps">Maps {maps && `— ${maps.length.toLocaleString()}`}</TabsTrigger>
+				<TabsTrigger value="maps">Maps {maps && `– ${maps.length.toLocaleString()}`}</TabsTrigger>
 
 				<TabsTrigger value="sessions" aria-description={sessionRule}>
-					Sessions {sessions && `— ${sessions.length.toLocaleString()}`}
+					Sessions {sessions && `– ${sessions.length.toLocaleString()}`}
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
@@ -834,14 +834,6 @@ const MapHistory = memo(function MapHistory({
 	);
 });
 
-// Phones show the day only (see MapDate), so the column is named for it there.
-const DateColumnHead: React.FC = () => (
-	<>
-		<span className="sm:hidden">Date</span>
-		<span className="max-sm:hidden">Datetime</span>
-	</>
-);
-
 export const RatingColumnHead: React.FC = () => <StackedColumnHead title="Rating" detail="2.0" />;
 
 export const StackedColumnHead: React.FC<{ title: string; detail: string }> = ({
@@ -849,7 +841,7 @@ export const StackedColumnHead: React.FC<{ title: string; detail: string }> = ({
 	detail,
 }) => (
 	<span className="flex flex-col items-center">
-		{title} <span className="text-sm max-sm:text-xs font-normal -mt-2">{detail}</span>
+		{title} <span className="text-xs font-normal -mt-2">{detail}</span>
 	</span>
 );
 
@@ -962,7 +954,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
 						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
-							<DateColumnHead />
+							Date
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[10%]" {...register("map")}>
 							Map
@@ -971,7 +963,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 							Score
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("kd-diff")}>
-							K—D
+							K–D
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("kd")}>
 							K/D
@@ -1076,7 +1068,7 @@ const MapRow = memo(function MapRow({ map }: { map: PlayerMapStats }) {
 			</TableCell>
 
 			<TableCell className="sm:w-[15%]">
-				{map.Kills}—{map.Deaths}
+				{map.Kills}–{map.Deaths}
 			</TableCell>
 
 			<TableCell className="sm:w-[15%]">
@@ -1141,7 +1133,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
 						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
-							<DateColumnHead />
+							Date
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[10%]" {...register("maps")}>
 							Maps
@@ -1150,7 +1142,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 							W/L
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("kd-diff")}>
-							K—D
+							K–D
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("kd")}>
 							K/D
@@ -1208,7 +1200,7 @@ const SessionRow = memo(function SessionRow({ session }: { session: PlayerMapSta
 			</TableCell>
 
 			<TableCell className="sm:w-[15%]">
-				{performance.kills}—{performance.deaths}
+				{performance.kills}–{performance.deaths}
 			</TableCell>
 
 			<TableCell className="sm:w-[15%]">
@@ -1477,7 +1469,7 @@ const ProfileSearchForm: React.FC<{
 					spellCheck={false}
 					enterKeyHint="search"
 					className={cn(
-						"w-full text-base sm:text-2xl text-ellipsis bg-background border-2 rounded-xs border-foreground/50 focus-visible:border-foreground outline-none pl-4 pr-36 sm:pr-56 py-3 sm:py-4 transition-[padding,border-color] duration-250 ease-out motion-reduce:transition-none",
+						"w-full text-base sm:text-2xl text-ellipsis placeholder:text-foreground/55 bg-background border-2 rounded-xs border-foreground/50 focus-visible:border-foreground outline-none pl-4 pr-36 sm:pr-56 py-3 sm:py-4 transition-[padding,border-color] duration-250 ease-out motion-reduce:transition-none",
 						isInitialSearch &&
 							"pl-12 sm:pl-14 pr-12 sm:pr-14 group-focus-within:pl-4 group-focus-within:pr-36 sm:group-focus-within:pr-56",
 					)}
