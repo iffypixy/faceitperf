@@ -88,8 +88,6 @@ export const MatchPage: React.FC = () => {
 						finished_at,
 					} = x.data;
 
-					const serverInfo = inferServerInfo(voting);
-					const locationPoolSize = voting?.location?.entities.length ?? 0;
 					const score = headlineScore(x.data, statsQuery.data);
 					const startDate = new Date(started_at * 1000);
 					const endDate = new Date(finished_at * 1000);
@@ -169,35 +167,12 @@ export const MatchPage: React.FC = () => {
 									</div>
 
 									<div className="flex flex-col gap-8">
-										{/* FACEIT's public API names no server for EU, NA and SEA queue matches since
-										    late July 2026, so this is often left out rather than shown empty. */}
-										{(serverInfo || locationPoolSize > 1) && (
-											<div className="flex flex-col gap-2">
-												<h2 className="font-bold">Server</h2>
-												<Veto
-													type="location"
-													matchId={match_id}
-													poolSize={locationPoolSize}
-													team1={faction1.name}
-													team2={faction2.name}
-												/>
-												{serverInfo && (
-													<InfoBlock>
-														<div className="flex items-center gap-2">
-															<img
-																src={flagUrl(serverInfo.countryCode)}
-																// The location is written beside it.
-																alt=""
-																width={30}
-																height={20}
-																className="border border-background"
-															/>
-															<p>{serverInfo.location}</p>
-														</div>
-													</InfoBlock>
-												)}
-											</div>
-										)}
+										<Server
+											matchId={match_id}
+											vote={voting?.location}
+											team1={faction1.name}
+											team2={faction2.name}
+										/>
 
 										<div className="flex flex-col gap-2">
 											<h2 className="font-bold">Match room</h2>
@@ -246,19 +221,99 @@ function outcomeColor(hasWon: boolean): string {
 	return hasWon ? PerformanceColor.good : PerformanceColor.poor;
 }
 
-function inferServerInfo(voting: Match["voting"]) {
-	if (!voting || !voting.location) return null;
+type ServerVote = NonNullable<Match["voting"]>["location"];
 
-	const location = voting.location.pick[0];
+// Teams used to vote on the server, and the vote named it. Since late July 2026 the EU, NA and SEA
+// queues assign the server without one, so it's asked from FACEIT's own match API instead.
+const Server: React.FC<{
+	matchId: string;
+	vote: ServerVote;
+	team1: string;
+	team2: string;
+}> = ({ matchId, vote, team1, team2 }) => {
+	const assignedQuery = useAssignedServerQuery(matchId, !vote);
+	const location = vote ? vote.pick[0] : assignedQuery.data;
 
-	const locationInfo = voting.location.entities.find((x) => x.guid === location);
-	if (!locationInfo) return null;
+	if (!location && !assignedQuery.isPending) return null;
 
-	const countryCodeMatch = locationInfo.image_sm.match(/\/([a-z]{2})\.jpg/i);
-	const countryCode = countryCodeMatch ? countryCodeMatch[1].toLowerCase() : null;
-	if (!countryCode) return null;
+	return (
+		<div className="flex flex-col gap-2">
+			<h2 className="font-bold">Server</h2>
+			<Veto
+				type="location"
+				matchId={matchId}
+				poolSize={vote?.entities.length ?? 0}
+				team1={team1}
+				team2={team2}
+			/>
+			<InfoBlock>
+				{location ? (
+					<ServerName location={location} />
+				) : (
+					<div className="h-6 flex items-center animate-pulse">
+						<div className="h-4 w-32 rounded-xs bg-muted-foreground/25" />
+					</div>
+				)}
+			</InfoBlock>
+		</div>
+	);
+};
 
-	return { location, countryCode };
+const ServerName: React.FC<{ location: string }> = ({ location }) => {
+	const { name, country } = serverLocation(location);
+
+	return (
+		<div className="flex items-center gap-2">
+			{country && (
+				<img
+					src={flagUrl(country)}
+					// The name is written beside it.
+					alt=""
+					width={30}
+					height={20}
+					className="border border-background"
+				/>
+			)}
+			<p>{name}</p>
+		</div>
+	);
+};
+
+// FACEIT's servers by id, named and flagged as its server votes showed them (gathered from 344
+// matches in every region). An assigned server comes as the id alone.
+const ServerLocations: Record<string, { name: string; country: string }> = {
+	Germany: { name: "Germany", country: "de" },
+	Netherlands: { name: "Netherlands", country: "nl" },
+	France: { name: "France", country: "fr" },
+	UK: { name: "UK", country: "gb" },
+	Sweden: { name: "Sweden", country: "se" },
+	Finland: { name: "Finland", country: "fi" },
+	Moscow: { name: "Moscow", country: "ru" },
+	Novosibirsk: { name: "Novosibirsk", country: "ru" },
+	Yekaterinburg: { name: "Yekaterinburg", country: "ru" },
+	Vladivostok: { name: "Vladivostok", country: "ru" },
+	Kazakhstan: { name: "Kazakhstan", country: "kz" },
+	Chicago: { name: "Chicago", country: "us" },
+	Dallas: { name: "Dallas", country: "us" },
+	Denver: { name: "Denver", country: "us" },
+	SanJose: { name: "San Jose", country: "us" },
+	Virginia: { name: "Virginia", country: "us" },
+	"ESEA-NewYork": { name: "New York", country: "us" },
+	SaoPaulo: { name: "São Paulo", country: "br" },
+	BuenosAires: { name: "Buenos Aires", country: "ar" },
+	Chile: { name: "Santiago", country: "cl" },
+	Sydney: { name: "Sydney", country: "au" },
+	Singapore: { name: "Singapore", country: "sg" },
+};
+
+/** A server id's name and flag. A server FACEIT added since keeps its id, spaced out, and no flag. */
+function serverLocation(location: string): { name: string; country: string | null } {
+	return (
+		ServerLocations[location] ?? {
+			name: location.replace(/([a-z])([A-Z])/g, "$1 $2"),
+			country: null,
+		}
+	);
 }
 
 // Phones narrow the gaps around the score, so a 360px screen still fits names like "team__TwentyOne_".
@@ -359,7 +414,7 @@ const Veto: React.FC<{
 
 							const entity = match(type)
 								.with("map", () => mapLabel(x.guid))
-								.with("location", () => x.guid)
+								.with("location", () => serverLocation(x.guid).name)
 								.exhaustive();
 
 							const text =
@@ -508,6 +563,7 @@ const ErrorMessage: React.FC = () => <p className="text-destructive">Data unavai
 const queryKeys = createQueryKeys("match", {
 	matchById: (matchId: string) => ["match", matchId],
 	vetoProcessByMatchId: (matchId: string) => ["vetoProcess", matchId],
+	assignedServerByMatchId: (matchId: string) => ["assignedServer", matchId],
 	statsByMatchId: (matchId: string) => ["stats", matchId],
 	playerById: (playerId: string) => ["player", playerId],
 });
@@ -524,6 +580,17 @@ function useVetoProcessQuery(matchId: string, enabled: boolean) {
 		queryKey: queryKeys.vetoProcessByMatchId(matchId).queryKey,
 		queryFn: () => fetchVetoProcess(matchId),
 		enabled,
+	});
+}
+
+function useAssignedServerQuery(matchId: string, enabled: boolean) {
+	return useQuery({
+		queryKey: queryKeys.assignedServerByMatchId(matchId).queryKey,
+		queryFn: () => fetchAssignedServer(matchId),
+		enabled,
+		// A finished match's server never changes, and each ask is a Function request.
+		staleTime: Infinity,
+		retry: false,
 	});
 }
 
@@ -1130,6 +1197,11 @@ interface VetoProcessResponse {
 			vote_type: "drop_pick";
 		}[];
 	};
+}
+
+async function fetchAssignedServer(matchId: string) {
+	const { location } = await api.get<{ location: string }>(`/faceit/location/${matchId}`).json();
+	return location;
 }
 
 async function fetchVetoProcess(matchId: string) {
