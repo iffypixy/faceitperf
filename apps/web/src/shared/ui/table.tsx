@@ -12,7 +12,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 			<table
 				data-slot="table"
 				className={cn(
-					"w-full caption-bottom bg-background border-collapse border-spacing-0 overflow-hidden",
+					"w-full caption-bottom bg-background border-collapse border-spacing-0 overflow-hidden tabular-nums",
 					className,
 				)}
 				{...props}
@@ -56,7 +56,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 		<tr
 			data-slot="table-row"
 			className={cn(
-				"hover:bg-muted data-[state=selected]:bg-muted odd:bg-card/50 even:bg-card border-b border-border",
+				"hover:bg-muted data-[state=selected]:bg-muted odd:bg-card/50 even:bg-card border-b border-border sm:border-border/35",
 				className,
 			)}
 			{...props}
@@ -64,13 +64,15 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	);
 }
 
-// On phones, text and spacing shrink a step so a whole table fits the screen, as on HLTV.
+// On phones, text and spacing shrink a step so a whole table fits the screen, as on HLTV, and the
+// column rules hold the narrow columns apart. Wider screens drop them and quiet the headers, so the
+// numbers lead.
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 	return (
 		<th
 			data-slot="table-head"
 			className={cn(
-				"text-foreground h-12 px-2 max-sm:px-1.5 max-sm:text-[13px] text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				"text-foreground h-12 px-2 max-sm:px-1.5 max-sm:text-[13px] sm:text-sm sm:font-semibold sm:text-muted-foreground text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r sm:border-r-0 last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
@@ -83,7 +85,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"p-2 max-sm:px-1.5 max-sm:text-[13px] max-sm:leading-5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r last:border-r-0 border-border",
+				"p-2 max-sm:px-1.5 max-sm:text-[13px] max-sm:leading-5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r sm:border-r-0 last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
