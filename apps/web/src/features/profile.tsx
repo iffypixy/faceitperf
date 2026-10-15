@@ -591,13 +591,25 @@ const MetricLabel: Record<MetricType, string> = {
 
 const InvertedMetrics: MetricType[] = ["dpr"];
 
-const MetricValueRange: Record<MetricType, [number, number]> = {
+type CardMetricType = Exclude<MetricType, "kdDiff">;
+type TableMetricType = "rating" | "kd" | "kdDiff";
+
+// The card judges averages over many maps, which sit in a narrow band. Each range is as strict as
+// Rating 2.0's: across 654 players of every level (October 2026), each rates about 2% of them
+// poor, 70% okay and 28% good.
+const CardValueRange: Record<CardMetricType, [number, number]> = {
+	rating: [0.5, 1.5],
+	kd: [0.3, 1.5],
+	dpr: [0.6, 0.9],
+	kast: [60, 80],
+	kpr: [0.3, 1],
+	adr: [40, 105],
+};
+
+// Tables judge a single map, session or match, whose numbers swing far wider.
+const TableValueRange: Record<TableMetricType, [number, number]> = {
 	rating: [0.5, 1.5],
 	kd: [0.5, 1.5],
-	dpr: [0.5, 1],
-	kast: [50, 100],
-	kpr: [0.5, 1],
-	adr: [50, 100],
 	kdDiff: [-1, 1],
 };
 
@@ -611,11 +623,10 @@ export function roundMetricValue(type: MetricType, value: number): string {
 		.exhaustive();
 }
 
-function metricInfo(metric: MetricType, value: number) {
+function metricInfo(metric: MetricType, value: number, [min, max]: [number, number]) {
 	const roundedValueStr = roundMetricValue(metric, value);
 	const roundedValue = Number(roundedValueStr);
 
-	const [min, max] = MetricValueRange[metric];
 	const range = max - min;
 
 	let normalizedValue = clamp((roundedValue - min) / range, 0, 1);
@@ -648,11 +659,14 @@ const LevelStep: Record<Level, number> = {
 };
 
 const Metric: React.FC<{
-	type: MetricType;
+	type: CardMetricType;
 	value: number | null;
 	approximate?: boolean;
 }> = ({ type, value, approximate }) => {
-	const info = useMemo(() => (value === null ? null : metricInfo(type, value)), [type, value]);
+	const info = useMemo(
+		() => (value === null ? null : metricInfo(type, value, CardValueRange[type])),
+		[type, value],
+	);
 
 	return (
 		<div className="flex flex-col gap-3 min-w-0">
@@ -1008,11 +1022,14 @@ export const PerformanceColor: Record<Level, string> = {
 };
 
 export const Performance: React.FC<{
-	metric: MetricType;
+	metric: TableMetricType;
 	value: number;
 	render?: (value: number) => ReactNode;
 }> = ({ metric, value, render }) => {
-	const { level, roundedValueStr } = useMemo(() => metricInfo(metric, value), [metric, value]);
+	const { level, roundedValueStr } = useMemo(
+		() => metricInfo(metric, value, TableValueRange[metric]),
+		[metric, value],
+	);
 
 	return (
 		<span className="font-bold" style={{ color: PerformanceColor[level] }}>
