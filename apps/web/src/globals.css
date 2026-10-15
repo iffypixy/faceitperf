@@ -67,6 +67,8 @@
 @layer base {
 	html {
 		box-sizing: border-box;
+		/* Keeps what keyboard focus scrolls to clear of the sticky header. */
+		scroll-padding-top: 6rem;
 		/* Controls show their own pressed state, so the phone's grey tap flash would double it. */
 		-webkit-tap-highlight-color: transparent;
 		/* iOS otherwise enlarges text in landscape, which pushes table columns apart. */
@@ -109,6 +111,12 @@
 	[role="button"] {
 		user-select: none;
 		-webkit-user-select: none;
+	}
+
+	/* One visible focus style for every control, for keyboard users only. */
+	:focus-visible {
+		outline: 2px solid var(--primary-foreground);
+		outline-offset: 2px;
 	}
 
 	a:active {

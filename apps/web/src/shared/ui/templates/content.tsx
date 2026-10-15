@@ -1,5 +1,5 @@
 import { CircleQuestionMark, GiftIcon, SendIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { ChangelogDialog, hasReadChangelog, markChangelogAsRead } from "~/features/changelog";
 import {
@@ -35,13 +35,17 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children })
 			</Container>
 		</header>
 
-		<main className="grid flex-1 grid-cols-1 py-8 sm:py-12">{children}</main>
+		{/* Focusable so navigation can move focus to the new page (see Routes). */}
+		<main tabIndex={-1} className="grid flex-1 grid-cols-1 py-8 sm:py-12 outline-none">
+			{children}
+		</main>
 	</div>
 );
 
 const HelpButton: React.FC = () => {
 	const [isChangelogOpen, setIsChangelogOpen] = useState(false);
 	const [hasRead, setHasRead] = useState(hasReadChangelog);
+	const buttonRef = useRef<HTMLButtonElement>(null);
 
 	const openChangelog = () => {
 		markChangelogAsRead();
@@ -53,7 +57,12 @@ const HelpButton: React.FC = () => {
 		<>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="icon" title="Help" className="rounded-full p-2 bg-background relative">
+					<Button
+						ref={buttonRef}
+						variant="icon"
+						title="Help"
+						className="rounded-full p-2 bg-background relative"
+					>
 						<CircleQuestionMark className="size-6" />
 						{!hasRead && <NotificationDot />}
 					</Button>
@@ -64,15 +73,24 @@ const HelpButton: React.FC = () => {
 						<GiftIcon className="size-4" /> What's new?
 					</DropdownMenuItem>
 
-					<a href="https://t.me/iffypixy" target="_blank" rel="noopener noreferrer">
-						<DropdownMenuItem>
+					<DropdownMenuItem asChild>
+						<a href="https://t.me/iffypixy" target="_blank" rel="noopener noreferrer">
 							<SendIcon className="size-4" /> Contact me
-						</DropdownMenuItem>
-					</a>
+						</a>
+					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			<ChangelogDialog open={isChangelogOpen} onOpenChange={setIsChangelogOpen} />
+			<ChangelogDialog
+				open={isChangelogOpen}
+				onOpenChange={setIsChangelogOpen}
+				// The dialog opens from a menu item that's gone by the time it closes, so focus goes
+				// back to the button that opened the menu.
+				onCloseAutoFocus={(ev) => {
+					ev.preventDefault();
+					buttonRef.current?.focus();
+				}}
+			/>
 		</>
 	);
 };

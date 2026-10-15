@@ -39,9 +39,13 @@ export function markChangelogAsRead() {
 export const ChangelogDialog: React.FC<{
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-}> = ({ open, onOpenChange }) => (
+	onCloseAutoFocus: (ev: Event) => void;
+}> = ({ open, onOpenChange, onCloseAutoFocus }) => (
 	<Dialog open={open} onOpenChange={onOpenChange}>
-		<DialogContent className="sm:max-w-[480px] grid-rows-[auto_minmax(0,1fr)]">
+		<DialogContent
+			className="sm:max-w-[480px] grid-rows-[auto_minmax(0,1fr)]"
+			onCloseAutoFocus={onCloseAutoFocus}
+		>
 			<DialogHeader>
 				<DialogTitle className="flex flex-row items-center">
 					<GiftIcon className="size-6 me-2" /> What's new?

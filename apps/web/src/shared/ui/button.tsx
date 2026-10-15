@@ -9,7 +9,8 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default: "bg-primary text-foreground hover:bg-primary/75 py-2 px-4",
-				icon: "text-foreground/75 hover:text-foreground",
+				// The icon alone is a small target, so the tappable area reaches a little past it.
+				icon: "relative text-foreground/75 hover:text-foreground after:absolute after:-inset-2",
 			},
 		},
 		defaultVariants: {
