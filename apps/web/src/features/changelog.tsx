@@ -1,5 +1,6 @@
 import { GiftIcon } from "lucide-react";
 
+import ScreenshotMatchStats from "~/shared/assets/images/screenshots/match-stats.webp";
 import ScreenshotProfile from "~/shared/assets/images/screenshots/profile.webp";
 import ScreenshotSortableTables from "~/shared/assets/images/screenshots/sortable-tables.webp";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/shared/ui";
@@ -10,6 +11,13 @@ const Changelog: Array<{
 	image: string;
 	date: string;
 }> = [
+	{
+		title: "Every match, HLTV style",
+		description:
+			"Match pages now show HLTV's leaders and detailed stats, from opening duels to utility damage, with your own row highlighted. Profiles load faster and fit any phone.",
+		image: ScreenshotMatchStats,
+		date: "2026-10-15T12:00:00.000Z",
+	},
 	{
 		title: "Find your best and worst maps instantly",
 		description: "Click any column to sort your maps and sessions however you want.",
