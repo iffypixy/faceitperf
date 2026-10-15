@@ -659,8 +659,16 @@ const Switcher = <T extends string>({
 				key={x.value}
 				className={cn("text-primary-foreground", x.value === selected && "font-bold")}
 			>
-				<button type="button" onClick={() => onSelect(x.value)} className="active:opacity-70">
-					{x.label}
+				{/* The bold copy keeps each option as wide as when selected, so picking one moves nothing. */}
+				<button
+					type="button"
+					onClick={() => onSelect(x.value)}
+					className="inline-grid active:opacity-70"
+				>
+					<span className="col-start-1 row-start-1">{x.label}</span>
+					<span aria-hidden className="col-start-1 row-start-1 invisible font-bold">
+						{x.label}
+					</span>
 				</button>
 			</li>
 		))}

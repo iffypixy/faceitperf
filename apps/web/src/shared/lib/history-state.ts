@@ -52,6 +52,14 @@ export function useScrollRestoration() {
 	}, [location]);
 }
 
+/**
+ * Whether the current history entry is being returned to (Back, Forward, a reload) rather than
+ * opened for the first time. Only entries whose page was scrolled are recognised.
+ */
+export function isRestoredEntry(): boolean {
+	return window.history.state?.scrollY !== undefined;
+}
+
 function patchHistoryState(patch: Record<string, unknown>) {
 	window.history.replaceState({ ...window.history.state, ...patch }, "");
 }

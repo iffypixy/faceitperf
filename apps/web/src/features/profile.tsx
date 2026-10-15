@@ -14,8 +14,10 @@ import {
 import type React from "react";
 import {
 	type FormEvent,
+	memo,
 	type ReactNode,
 	useCallback,
+	useDeferredValue,
 	useEffect,
 	useMemo,
 	useRef,
@@ -26,10 +28,11 @@ import { match, P } from "ts-pattern";
 import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
-import { computePlayerPerformance, type MapStats } from "~/features/stats";
+import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
+import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
-import { useHistoryState } from "~/shared/lib/history-state";
+import { isRestoredEntry, useHistoryState } from "~/shared/lib/history-state";
 import { clamp, divide } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -38,11 +41,11 @@ import {
 	AvatarImage,
 	Container,
 	ContentTemplate,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuTrigger,
 	Table,
 	TableBody,
 	TableCell,
@@ -202,8 +205,15 @@ const Profile: React.FC<{
 	// The filter outlives the maps it was picked for (another player or version), so once the
 	// history is complete, a value those maps don't offer falls back to "all". Until then, a
 	// value no loaded map reaches yet is kept.
-	const selectedTime = !isComplete || timeValues.includes(filter.time) ? filter.time : "all";
-	const selectedMap = !isComplete || mapValues.includes(filter.map) ? filter.map : "all";
+	const offeredTime = (time: TimeFilterValue) =>
+		!isComplete || timeValues.includes(time) ? time : "all";
+	const offeredMap = (map: MapFilterValue) =>
+		!isComplete || mapValues.includes(map) ? map : "all";
+
+	// A pick shows in its menu at once; the stats it selects follow a frame later.
+	const shownFilter = useDeferredValue(filter);
+	const selectedTime = offeredTime(shownFilter.time);
+	const selectedMap = offeredMap(shownFilter.map);
 
 	// The history arrives newest first, so a time filter has all its maps as soon as the
 	// loaded ones reach back past its start.
@@ -221,6 +231,9 @@ const Profile: React.FC<{
 		[maps, selectedTime, selectedMap],
 	);
 
+	// Back lands on the page as it was left, without the entrances of a first visit.
+	const [isRestored] = useState(isRestoredEntry);
+
 	if (mapsQuery.isError)
 		return (
 			<p role="alert" className="text-destructive text-xl inline-flex items-center mx-auto">
@@ -233,20 +246,29 @@ const Profile: React.FC<{
 		.with({ status: "error" }, () => null)
 		.with({ status: "pending" }, () => <Spinner />)
 		.with({ status: "success" }, (x) => (
-			<div className="w-full flex flex-col mx-auto gap-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-out">
+			<div
+				className={cn(
+					"w-full flex flex-col mx-auto gap-4",
+					!isRestored && "animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-out",
+				)}
+			>
 				<div className="flex flex-col gap-2">
 					<FilterGroup
 						timeValues={timeValues}
 						mapValues={mapValues}
-						selectedTime={selectedTime}
-						selectedMap={selectedMap}
+						selectedTime={offeredTime(filter.time)}
+						selectedMap={offeredMap(filter.map)}
 						selectedVersion={filter.version}
 						onTimeChange={(time) => setFilter({ ...filter, time })}
 						onMapChange={(map) => setFilter({ ...filter, map })}
 						onVersionChange={(version) => setFilter({ ...filter, version })}
 					/>
-					<PlayerCard player={x.data} version={filter.version}>
-						{filteredMaps && !isLoading ? <MetricBox maps={filteredMaps} /> : <MetricBoxSkeleton />}
+					<PlayerCard player={x.data} version={filter.version} isRestored={isRestored}>
+						{filteredMaps && !isLoading ? (
+							<MetricBox maps={filteredMaps} isRestored={isRestored} />
+						) : (
+							<MetricBoxSkeleton />
+						)}
 					</PlayerCard>
 				</div>
 
@@ -322,92 +344,126 @@ const FilterGroup: React.FC<{
 	onTimeChange,
 	onMapChange,
 	onVersionChange,
+}) => (
+	<div className="grid grid-cols-2 sm:grid-cols-[12rem_8rem_6rem] items-center bg-card gap-x-3 gap-y-4 sm:gap-x-8 p-4 rounded-xs">
+		<div className="flex flex-col col-span-2 sm:col-span-1">
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">Time</p>
+			<FilterMenu
+				label="Time"
+				value={selectedTime}
+				values={timeValues}
+				valueLabel={timeFilterLabel}
+				onValueChange={onTimeChange}
+			/>
+		</div>
+
+		<div className="flex flex-col">
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">Map</p>
+			<FilterMenu
+				label="Map"
+				value={selectedMap}
+				values={mapValues}
+				valueLabel={mapFilterLabel}
+				onValueChange={onMapChange}
+			/>
+		</div>
+
+		<div className="flex flex-col">
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">Version</p>
+			<FilterMenu
+				label="Version"
+				value={selectedVersion}
+				values={GameVersions}
+				valueLabel={gameVersionLabel}
+				onValueChange={onVersionChange}
+			/>
+		</div>
+	</div>
+);
+
+function gameVersionLabel(version: GameVersion): string {
+	return match(version)
+		.with("cs2", () => "CS2")
+		.with("csgo", () => "CS:GO")
+		.exhaustive();
+}
+
+// A menu rather than a select: a select is modal, and locking the page behind it took up to a
+// second to open on phones.
+const FilterMenu = <T extends string | number>({
+	label,
+	value,
+	values,
+	valueLabel,
+	onValueChange,
+}: {
+	label: string;
+	value: T;
+	values: readonly T[];
+	valueLabel: (value: T) => string;
+	onValueChange: (value: T) => void;
 }) => {
-	const onSelectedTimeChange = useCallback(
-		(valueStr: string) => {
-			// Convert to number if it represents a year; otherwise keep as string.
-			const valueNumber = Number(valueStr);
-			const value = !Number.isNaN(valueNumber) ? valueNumber : valueStr;
-			onTimeChange(value as TimeFilterValue);
-		},
-		[onTimeChange],
-	);
+	const [isOpen, setIsOpen] = useState(false);
+	// Radix opens a menu on pointer down, which on touch also fires when a scroll starts on the
+	// button, so a tap opens it on release instead. Holds whether the menu was open when the tap began.
+	const tapStart = useRef<boolean | null>(null);
 
 	return (
-		<div className="grid grid-cols-2 sm:grid-cols-[12rem_8rem_6rem] items-center bg-card gap-x-3 gap-y-4 sm:gap-x-8 p-4 rounded-xs">
-			<div className="flex flex-col col-span-2 sm:col-span-1">
-				<p className="text-muted-foreground text-sm uppercase tracking-wide">Time</p>
-
-				<Select value={selectedTime.toString()} onValueChange={onSelectedTimeChange}>
-					<SelectTrigger className="w-full" aria-label="Time">
-						{/* Spelled out: while the history loads, the chosen value may not be on offer yet. */}
-						<SelectValue>{timeFilterLabel(selectedTime)}</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{timeValues.map((x) => (
-							<SelectItem key={x} value={x.toString()}>
-								{timeFilterLabel(x)}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
-			<div className="flex flex-col">
-				<p className="text-muted-foreground text-sm uppercase tracking-wide">Map</p>
-
-				<Select value={selectedMap} onValueChange={onMapChange}>
-					<SelectTrigger className="w-full" aria-label="Map">
-						<SelectValue>{mapFilterLabel(selectedMap)}</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{mapValues.map((x) => (
-							<SelectItem key={x} value={x}>
-								{mapFilterLabel(x)}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
-			<div className="flex flex-col">
-				<p className="text-muted-foreground text-sm uppercase tracking-wide">Version</p>
-
-				<Select
-					value={selectedVersion}
-					onValueChange={(value: GameVersion) => onVersionChange(value)}
+		<DropdownMenu modal={false} open={isOpen} onOpenChange={setIsOpen}>
+			<DropdownMenuTrigger asChild>
+				<button
+					type="button"
+					aria-label={label}
+					onPointerDown={(ev) => {
+						tapStart.current = ev.pointerType === "mouse" ? null : isOpen;
+						if (tapStart.current !== null) ev.preventDefault();
+					}}
+					onClick={() => {
+						if (tapStart.current === null) return;
+						setIsOpen(!tapStart.current);
+						tapStart.current = null;
+					}}
+					className="w-full h-9 flex items-center justify-between gap-2 px-3 py-2 whitespace-nowrap font-bold text-foreground bg-border/30 hover:bg-border/50 border-b border-border shadow-2xs transition-[color,box-shadow,background] outline-hidden focus-visible:ring-[3px] focus-visible:ring-border/50"
 				>
-					<SelectTrigger className="w-full" aria-label="Version">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{GameVersions.map((x) => {
-							const label = match(x)
-								.with("cs2", () => "CS2")
-								.with("csgo", () => "CS:GO")
-								.exhaustive();
-
-							return (
-								<SelectItem key={x} value={x}>
-									{label}
-								</SelectItem>
-							);
-						})}
-					</SelectContent>
-				</Select>
-			</div>
-		</div>
+					{/* Spelled out: while the history loads, the chosen value may not be on offer yet. */}
+					{valueLabel(value)}
+					<ChevronDownIcon className="size-4 opacity-50 text-muted-foreground" />
+				</button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				align="start"
+				className="bg-card rounded-xs border-0 shadow-md min-w-(--radix-dropdown-menu-trigger-width)"
+			>
+				<DropdownMenuRadioGroup
+					value={String(value)}
+					onValueChange={(picked) => {
+						const pickedValue = values.find((x) => String(x) === picked);
+						assert(pickedValue !== undefined);
+						onValueChange(pickedValue);
+					}}
+				>
+					{values.map((x) => (
+						<DropdownMenuRadioItem key={x} value={String(x)}>
+							{valueLabel(x)}
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 };
 
 const PlayerCard: React.FC<{
 	player: Pick<PlayerListItem, "player_id" | "avatar" | "nickname" | "country">;
 	version: GameVersion;
+	isRestored: boolean;
 	children: ReactNode;
-}> = ({ player, version, children }) => {
+}> = ({ player, version, isRestored, children }) => {
 	const detailsQuery = usePlayerDetailsQuery(player.player_id);
 	const elo = detailsQuery.data?.games[version];
-	const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);
+	// The photo fades in once loaded, unless the browser already has it; another player's photo is
+	// a new image, so the previous one never shows under the new name.
+	const [loadedAvatar, setLoadedAvatar] = useState<string | null>(null);
 
 	return (
 		<div className="grid md:grid-cols-[auto_1fr] bg-primary rounded-xs">
@@ -419,12 +475,17 @@ const PlayerCard: React.FC<{
 			>
 				{player.avatar && (
 					<img
+						key={player.avatar}
 						src={player.avatar}
 						alt=""
-						onLoad={() => setIsAvatarLoaded(true)}
+						ref={(img) => {
+							if (img?.complete && img.naturalWidth > 0) setLoadedAvatar(player.avatar);
+						}}
+						onLoad={() => setLoadedAvatar(player.avatar)}
 						className={cn(
-							"size-full object-cover transition-opacity duration-300 ease-out",
-							!isAvatarLoaded && "opacity-0",
+							"size-full object-cover",
+							loadedAvatar !== player.avatar && "opacity-0",
+							!isRestored && "transition-opacity duration-300 ease-out",
 						)}
 					/>
 				)}
@@ -446,7 +507,7 @@ const PlayerCard: React.FC<{
 					{/* The line keeps its place while it loads, so the name above doesn't jump. */}
 					<p className="h-5 text-sm text-shadow-image text-white/75">
 						{elo && (
-							<span className="animate-in fade-in-0 duration-200 ease-out">
+							<span className={cn(!isRestored && "animate-in fade-in-0 duration-200 ease-out")}>
 								Level {elo.skill_level}
 								<span className="mx-1.5">·</span>
 								{elo.faceit_elo.toLocaleString()} ELO
@@ -469,13 +530,20 @@ function playerFaceitUrl(username: string) {
 const MetricGrid =
 	"grid grid-cols-2 sm:grid-cols-3 gap-x-6 sm:gap-x-12 gap-y-10 pb-5 md:h-full md:content-between";
 
-const MetricBox: React.FC<{ maps: PlayerMapStats[] }> = ({ maps }) => {
+// Memoised, like MapHistory: a filter pick renders the profile once before the stats it selects.
+const MetricBox = memo(function MetricBox({
+	maps,
+	isRestored,
+}: {
+	maps: PlayerMapStats[];
+	isRestored: boolean;
+}) {
 	const performance = usePlayerPerformance(maps);
 	// With no maps there is nothing to judge, so the values stay blank instead of reading "poor".
 	const hasMaps = maps.length > 0;
 
 	return (
-		<div className={cn(MetricGrid, "animate-in fade-in-0 duration-200 ease-out")}>
+		<div className={cn(MetricGrid, !isRestored && "animate-in fade-in-0 duration-200 ease-out")}>
 			<Metric type="rating" value={hasMaps ? performance.rating : null} approximate />
 			<Metric type="dpr" value={hasMaps ? performance.dpr : null} />
 			<Metric type="kast" value={hasMaps ? performance.kast : null} approximate />
@@ -484,7 +552,7 @@ const MetricBox: React.FC<{ maps: PlayerMapStats[] }> = ({ maps }) => {
 			<Metric type="kpr" value={hasMaps ? performance.kpr : null} />
 		</div>
 	);
-};
+});
 
 const MetricBoxSkeleton: React.FC = () => (
 	<div className={MetricGrid}>
@@ -723,13 +791,19 @@ const HuntGGWidget: React.FC = () => {
 	);
 };
 
-const MapHistory: React.FC<{
+const MapHistory = memo(function MapHistory({
+	maps,
+	isLoading,
+}: {
 	maps: PlayerMapStats[] | null;
 	isLoading: boolean;
-}> = ({ maps, isLoading }) => {
+}) {
 	const sessions = useMemo(() => (maps ? groupMapsIntoSessions(maps) : null), [maps]);
 	const sessionRule = `Maps you played within ${MaxSessionGapHours} hours are grouped into one session`;
 	const [tab, setTab] = useHistoryState("historyTab", "maps");
+	// The tab lights up on press and the table it shows follows a frame later. Both panels stay
+	// mounted, so switching doesn't make Radix measure the freshly inserted table.
+	const shownTab = useDeferredValue(tab);
 
 	return (
 		<Tabs value={tab} onValueChange={setTab} className="w-full flex items-center mx-auto gap-2">
@@ -749,16 +823,16 @@ const MapHistory: React.FC<{
 				</TabsTrigger>
 			</TabsList>
 
-			<TabsContent value="maps" className="w-full">
-				<MapsTable maps={maps} isLoading={isLoading} />
+			<TabsContent value="maps" forceMount hidden={shownTab !== "maps"} className="w-full">
+				{shownTab === "maps" && <MapsTable maps={maps} isLoading={isLoading} />}
 			</TabsContent>
 
-			<TabsContent value="sessions" className="w-full">
-				<SessionsTable sessions={sessions} isLoading={isLoading} />
+			<TabsContent value="sessions" forceMount hidden={shownTab !== "sessions"} className="w-full">
+				{shownTab === "sessions" && <SessionsTable sessions={sessions} isLoading={isLoading} />}
 			</TabsContent>
 		</Tabs>
 	);
-};
+});
 
 // Phones show the day only (see MapDate), so the column is named for it there.
 const DateColumnHead: React.FC = () => (
@@ -859,23 +933,25 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 		column: "datetime",
 		direction: "desc",
 	});
+	// The header's arrow flips on press; the rows re-sort a frame later.
+	const shownSort = useDeferredValue(sortState);
 
 	const sortedMaps = useMemo(
 		() =>
 			maps &&
 			sortBy(
 				maps,
-				match(sortState.column)
+				match(shownSort.column)
 					.with("datetime", () => (x: PlayerMapStats) => Date.parse(x["Created At"]))
 					.with("map", () => (x: PlayerMapStats) => mapLabel(x.Map))
 					.with("score", () => (x: PlayerMapStats) => Number(x.Rounds))
 					.with("kd-diff", () => (x: PlayerMapStats) => Number(x.Kills) - Number(x.Deaths))
 					.with("kd", () => (x: PlayerMapStats) => divide(Number(x.Kills), Number(x.Deaths)))
-					.with("rating", () => (x: PlayerMapStats) => aggregatePlayerPerformance([x]).rating)
+					.with("rating", () => (x: PlayerMapStats) => mapPerformance(x).rating)
 					.exhaustive(),
-				sortState.direction,
+				shownSort.direction,
 			),
-		[maps, sortState],
+		[maps, shownSort],
 	);
 
 	const { visible, hiddenCount, showMore } = usePaged("mapsShown", sortedMaps);
@@ -907,7 +983,7 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 				</TableHeader>
 
 				<HistoryTableBody
-					rows={visible?.map((map, index) => <MapRow key={index} map={map} />)}
+					rows={visible?.map((map) => <MapRow key={mapKey(map)} map={map} />)}
 					isLoading={isLoading}
 				/>
 			</Table>
@@ -959,8 +1035,26 @@ function readableDay(date: Date): string {
 	return DateFormat.format(date);
 }
 
-const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
-	const performance = usePlayerPerformance([map]);
+// The maps of a best-of-three share a match id; the round tells them apart.
+function mapKey(map: PlayerMapStats): string {
+	return `${map["Match Id"]}/${map["Match Round"]}`;
+}
+
+// A map's figures are read on every sort and every render while the history streams in, and a
+// rating takes real work, so each is computed once.
+const MapPerformance = new WeakMap<PlayerMapStats, PlayerPerformance>();
+
+function mapPerformance(map: PlayerMapStats): PlayerPerformance {
+	const cached = MapPerformance.get(map);
+	if (cached) return cached;
+
+	const performance = aggregatePlayerPerformance([map]);
+	MapPerformance.set(map, performance);
+	return performance;
+}
+
+const MapRow = memo(function MapRow({ map }: { map: PlayerMapStats }) {
+	const performance = mapPerformance(map);
 
 	const scoreColor = match(map.Result)
 		.with("1", () => PerformanceColor.good)
@@ -994,7 +1088,7 @@ const MapRow: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 			</TableCell>
 		</TableRow>
 	);
-};
+});
 
 // FACEIT lists the two teams in lobby order, so the player's own score may come second.
 function ownScoreFirst(map: PlayerMapStats): string {
@@ -1016,13 +1110,14 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 		column: "datetime",
 		direction: "desc",
 	});
+	const shownSort = useDeferredValue(sortState);
 
 	const sortedSessions = useMemo(
 		() =>
 			sessions &&
 			sortBy(
 				sessions,
-				match(sortState.column)
+				match(shownSort.column)
 					.with("datetime", () => (x: PlayerMapStats[]) => Date.parse(x[0]["Created At"]))
 					.with("maps", () => (x: PlayerMapStats[]) => x.length)
 					.with("wins", () => (x: PlayerMapStats[]) => x.filter((m) => m.Result === "1").length)
@@ -1033,9 +1128,9 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 					.with("kd", () => (x: PlayerMapStats[]) => aggregatePlayerPerformance(x).kd)
 					.with("rating", () => (x: PlayerMapStats[]) => aggregatePlayerPerformance(x).rating)
 					.exhaustive(),
-				sortState.direction,
+				shownSort.direction,
 			),
-		[sessions, sortState],
+		[sessions, shownSort],
 	);
 
 	const { visible, hiddenCount, showMore } = usePaged("sessionsShown", sortedSessions);
@@ -1067,7 +1162,9 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 				</TableHeader>
 
 				<HistoryTableBody
-					rows={visible?.map((session, index) => <SessionRow key={index} session={session} />)}
+					rows={visible?.map((session) => (
+						<SessionRow key={mapKey(session[0])} session={session} />
+					))}
 					isLoading={isLoading}
 				/>
 			</Table>
@@ -1076,7 +1173,7 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 	);
 };
 
-const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
+const SessionRow = memo(function SessionRow({ session }: { session: PlayerMapStats[] }) {
 	const performance = usePlayerPerformance(session);
 	const maps = useMemo(() => session.slice().reverse(), [session]);
 	const wins = session.filter((x) => x.Result === "1").length;
@@ -1123,7 +1220,7 @@ const SessionRow: React.FC<{ session: PlayerMapStats[] }> = ({ session }) => {
 			</TableCell>
 		</TableRow>
 	);
-};
+});
 
 const PageSize = 50;
 
@@ -1360,10 +1457,13 @@ const ProfileSearchForm: React.FC<{
 			)}
 		>
 			<div className="relative">
+				{/* The icon leaves before the text slides under it, and comes back once the text has
+				    made room; each direction takes the timing of the state it moves into. */}
 				<ShieldUserIcon
 					className={cn(
-						"absolute left-4 top-1/2 -translate-y-1/2 size-6 sm:size-8 pointer-events-none opacity-0 transition-opacity duration-250 ease-out",
-						isInitialSearch && "opacity-100 group-focus-within:opacity-0",
+						"absolute left-4 top-1/2 -translate-y-1/2 size-6 sm:size-8 pointer-events-none opacity-0 transition-opacity duration-75 ease-out",
+						isInitialSearch &&
+							"opacity-100 duration-150 delay-150 group-focus-within:opacity-0 group-focus-within:duration-75 group-focus-within:delay-0",
 					)}
 				/>
 				<input
@@ -1399,7 +1499,9 @@ const ProfileSearchForm: React.FC<{
 						type="submit"
 						className={cn(
 							"relative max-sm:text-base max-sm:px-3",
-							isInitialSearch && "hidden group-focus-within:inline-flex",
+							// Fades in once the field has widened enough to hold it.
+							isInitialSearch &&
+								"hidden group-focus-within:inline-flex group-focus-within:animate-in fade-in-0 zoom-in-97 fill-mode-backwards [--tw-animation-delay:100ms]",
 						)}
 						disabled={!input || query.isLoading}
 					>
@@ -1523,6 +1625,8 @@ const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) =
 	const [, navigate] = useLocation();
 
 	const others = history.filter((x) => x.nickname.toLowerCase() !== current?.toLowerCase());
+	// Only a player who joins the list while it's on screen animates in; the rest are already known.
+	const [shownAtMount] = useState(() => new Set(others.map((x) => x.id)));
 	if (others.length === 0) return null;
 
 	return (
@@ -1531,7 +1635,10 @@ const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) =
 			{others.map((player) => (
 				<div
 					key={player.id}
-					className="group/chip relative animate-in fade-in-0 zoom-in-95 duration-150 ease-out"
+					className={cn(
+						"group/chip relative",
+						!shownAtMount.has(player.id) && "animate-in fade-in-0 zoom-in-95 duration-150 ease-out",
+					)}
 				>
 					<button
 						type="button"
