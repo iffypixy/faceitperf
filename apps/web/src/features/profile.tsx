@@ -456,7 +456,8 @@ const PlayerCard: React.FC<{
 				</div>
 			</a>
 
-			<div className="p-6 sm:p-12 md:h-96">{children}</div>
+			{/* The bars' markers slide on layers as wide as the bar, which reach past it and would widen the page on phones. */}
+			<div className="p-6 sm:p-12 md:h-96 overflow-x-clip">{children}</div>
 		</div>
 	);
 };
@@ -1525,37 +1526,35 @@ const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) =
 	if (others.length === 0) return null;
 
 	return (
-		<div className="flex items-center gap-4">
+		<div className="flex flex-wrap items-center justify-center gap-2">
 			<HistoryIcon className="size-4 text-muted-foreground" />
-			<div className="flex flex-wrap justify-center gap-2">
-				{others.map((player) => (
-					<div
-						key={player.id}
-						className="group/chip relative animate-in fade-in-0 zoom-in-95 duration-150 ease-out"
+			{others.map((player) => (
+				<div
+					key={player.id}
+					className="group/chip relative animate-in fade-in-0 zoom-in-95 duration-150 ease-out"
+				>
+					<button
+						type="button"
+						onClick={() => navigate(playerUrl(player.nickname))}
+						className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-[color,background-color,border-color,scale] duration-160 ease-out active:scale-[0.97]"
 					>
-						<button
-							type="button"
-							onClick={() => navigate(playerUrl(player.nickname))}
-							className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-[color,background-color,border-color,scale] duration-160 ease-out active:scale-[0.97]"
-						>
-							<Avatar className="size-6 rounded-xs">
-								<AvatarImage src={player.avatar} alt={player.nickname} />
-								<AvatarFallback>{player.nickname[0]}</AvatarFallback>
-							</Avatar>
-							<span className="text-sm">{player.nickname}</span>
-						</button>
-						{/* Shown on hover; touch has no hover, so it stays visible there. */}
-						<button
-							type="button"
-							onClick={() => removeFromHistory(player.id)}
-							aria-label={`Remove ${player.nickname} from recent players`}
-							className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-inset-2"
-						>
-							<XIcon className="size-3" />
-						</button>
-					</div>
-				))}
-			</div>
+						<Avatar className="size-6 rounded-xs">
+							<AvatarImage src={player.avatar} alt={player.nickname} />
+							<AvatarFallback>{player.nickname[0]}</AvatarFallback>
+						</Avatar>
+						<span className="text-sm">{player.nickname}</span>
+					</button>
+					{/* Shown on hover; touch has no hover, so it stays visible there. */}
+					<button
+						type="button"
+						onClick={() => removeFromHistory(player.id)}
+						aria-label={`Remove ${player.nickname} from recent players`}
+						className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-inset-2"
+					>
+						<XIcon className="size-3" />
+					</button>
+				</div>
+			))}
 		</div>
 	);
 };
