@@ -5,6 +5,8 @@
 	--background: #090909;
 	--foreground: #e4e4e7;
 	--card: #1a1c20;
+	/* Menus float above the card they open from, so they sit a step lighter. */
+	--popover: #24272d;
 	--primary: #2a3641;
 	--primary-foreground: #9ec8f1;
 	--muted: #27272a;
@@ -18,51 +20,13 @@
 	color-scheme: dark;
 }
 
+/* One variable file holds every weight, and the browser picks the optical size from each text size:
+   tighter, sharper letters for the big numbers, more open ones for small table text. */
 @font-face {
 	font-family: "BricolageGrotesque";
-	font-weight: 400;
+	font-weight: 400 800;
 	font-display: swap;
-	src:
-		local("Bricolage Grotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Regular.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
-	font-weight: 500;
-	font-display: swap;
-	src:
-		local("Bricolage Grotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Medium.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
-	font-weight: 600;
-	font-display: swap;
-	src:
-		local("Bricolage Grotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-SemiBold.woff2")
-		format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
-	font-weight: 700;
-	font-display: swap;
-	src:
-		local("Bricolage Grotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-Bold.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "BricolageGrotesque";
-	font-weight: 800;
-	font-display: swap;
-	src:
-		local("Bricolage Grotesque"),
-		url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque-ExtraBold.woff2")
-		format("woff2");
+	src: url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque.woff2") format("woff2");
 }
 
 @theme inline {
@@ -70,6 +34,7 @@
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
 	--color-card-foreground: var(--foreground);
+	--color-popover: var(--popover);
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);
 	--color-muted: var(--muted);

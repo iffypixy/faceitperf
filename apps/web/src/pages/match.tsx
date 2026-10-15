@@ -750,7 +750,9 @@ const PlayerTable: React.FC<{
 		<Table className={cn("sm:min-w-[36rem]", view === "detailed" && "max-sm:overflow-visible")}>
 			<TableHeader>
 				<TableRow className="[&>th]:text-center">
-					<TableHead className={cn(nameClassName, "max-sm:bg-card")}>
+					<TableHead
+						className={cn(nameClassName, "max-sm:bg-card sm:text-base sm:text-foreground")}
+					>
 						<div className="flex items-center gap-2">
 							<TeamAvatar src={avatar} name={name} className="w-6 sm:w-8" />
 							<p className="font-bold text-left max-sm:whitespace-normal max-sm:leading-tight max-sm:line-clamp-2 max-sm:wrap-anywhere">
@@ -790,8 +792,8 @@ interface Column {
 }
 
 const KillsDeathsColumn: Column = {
-	head: "K—D",
-	cell: (x) => `${x.stats.kills}—${x.stats.deaths}`,
+	head: "K–D",
+	cell: (x) => `${x.stats.kills}–${x.stats.deaths}`,
 };
 
 const DiffColumn: Column = {
@@ -842,7 +844,7 @@ const OverviewColumns: Column[] = [
 // The stats the overview leaves out, in the same six columns, so switching views keeps the grid.
 const DetailedColumns: Column[] = [
 	{ head: "Assists", cell: (x) => x.assists },
-	{ head: "FK—FD", cell: (x) => x.details && `${x.details.firstKills}—${x.details.firstDeaths}` },
+	{ head: "FK–FD", cell: (x) => x.details && `${x.details.firstKills}–${x.details.firstDeaths}` },
 	{ head: <StackedColumnHead title="AWP" detail="kills" />, cell: (x) => x.details?.sniperKills },
 	{ head: <StackedColumnHead title="Multi" detail="kills" />, cell: (x) => x.details?.multiKills },
 	{
