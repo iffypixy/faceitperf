@@ -8,6 +8,7 @@ import { Link, useParams } from "wouter";
 import { mapLabel } from "~/entities/map";
 import {
 	aggregatePlayerPerformance,
+	countryName,
 	flagUrl,
 	Performance,
 	PerformanceColor,
@@ -185,7 +186,8 @@ export const MatchPage: React.FC = () => {
 														<div className="flex items-center gap-2">
 															<img
 																src={flagUrl(serverInfo.countryCode)}
-																alt={serverInfo.countryCode}
+																// The location is written beside it.
+																alt=""
 																width={30}
 																height={20}
 																className="border border-background"
@@ -293,7 +295,7 @@ const TeamCardSkeleton: React.FC = () => (
 
 const TeamCard: React.FC<{ avatar: string; name: string }> = ({ avatar, name }) => (
 	<div className="flex flex-col items-center gap-2">
-		<TeamAvatar src={avatar} name={name} className="w-12 sm:w-16" />
+		<TeamAvatar src={avatar} alt="" className="w-12 sm:w-16" />
 		<p title={name} className="max-w-full font-bold text-center line-clamp-2 break-words">
 			{withBreaks(name)}
 		</p>
@@ -475,7 +477,7 @@ const TeamMapResult: React.FC<{
 	reverse?: boolean;
 }> = ({ avatar, name, score, outcome, reverse }) => (
 	<div className={cn("flex items-start gap-3", reverse && "flex-row-reverse text-right")}>
-		<TeamAvatar src={avatar} name={name} className="w-8" />
+		<TeamAvatar src={avatar} alt={name} className="w-8" />
 		<div className="flex flex-col min-w-0">
 			<p
 				title={name}
@@ -723,7 +725,7 @@ const Switcher = <T extends string>({
 				<button
 					type="button"
 					onClick={() => onSelect(x.value)}
-					className="inline-grid active:opacity-70"
+					className="inline-grid py-2 -my-2 active:opacity-70"
 				>
 					<span className="col-start-1 row-start-1">{x.label}</span>
 					<span aria-hidden className="col-start-1 row-start-1 invisible font-bold">
@@ -817,7 +819,7 @@ const PlayerTable: React.FC<{
 						className={cn(nameClassName, "max-sm:bg-card sm:text-base sm:text-foreground")}
 					>
 						<div className="flex items-center gap-2">
-							<TeamAvatar src={avatar} name={name} className="w-6 sm:w-8" />
+							<TeamAvatar src={avatar} alt="" className="w-6 sm:w-8" />
 							<p className="font-bold text-left max-sm:whitespace-normal max-sm:leading-tight max-sm:line-clamp-2 max-sm:wrap-anywhere">
 								{withBreaks(name)}
 							</p>
@@ -942,7 +944,7 @@ const PlayerName: React.FC<{ id: string; nickname: string }> = ({ id, nickname }
 				{country && (
 					<img
 						src={flagUrl(country)}
-						alt={country}
+						alt={countryName(country)}
 						width={30}
 						height={20}
 						className="block w-full border border-background"
@@ -964,13 +966,14 @@ function playerUrl(username: string) {
 	return `/players/${username}`;
 }
 
+// `alt` is empty where the team's name is written beside the avatar.
 const TeamAvatar: React.FC<{
 	src: string;
-	name: string;
+	alt: string;
 	className?: string;
-}> = ({ src, name, className }) => (
+}> = ({ src, alt, className }) => (
 	<Avatar className={cn("h-auto shrink-0 rounded-xs", className)}>
-		<AvatarImage src={src} alt={name} />
+		<AvatarImage src={src} alt={alt} />
 		{/* Only a slow image shows the placeholder; a quick one never flashes it. */}
 		<AvatarFallback delayMs={400}>
 			<UsersIcon className="size-1/2 text-muted-foreground" />
