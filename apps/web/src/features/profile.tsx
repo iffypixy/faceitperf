@@ -423,7 +423,7 @@ const FilterMenu = <T extends string | number>({
 						setIsOpen(!tapStart.current);
 						tapStart.current = null;
 					}}
-					className="w-full h-9 flex items-center justify-between gap-2 px-3 py-2 whitespace-nowrap font-bold text-foreground bg-border/30 hover:bg-border/50 border-b border-border shadow-2xs transition-[color,box-shadow,background] outline-hidden focus-visible:ring-[3px] focus-visible:ring-border/50"
+					className="w-full h-9 flex items-center justify-between gap-2 px-3 py-2 whitespace-nowrap font-bold text-foreground bg-border/30 hover:bg-border/50 border-b border-border shadow-2xs transition-[color,box-shadow,background]"
 				>
 					{/* Spelled out: while the history loads, the chosen value may not be on offer yet. */}
 					{valueLabel(value)}
@@ -498,7 +498,7 @@ const PlayerCard: React.FC<{
 					>
 						<img
 							src={flagUrl(player.country)}
-							alt={player.country}
+							alt={countryName(player.country)}
 							width={30}
 							height={20}
 							className="w-7 shrink-0 border border-card"
@@ -661,7 +661,10 @@ const Metric: React.FC<{
 
 				{approximate && (
 					<Tooltip>
-						<TooltipTrigger aria-label="About this estimate">
+						<TooltipTrigger
+							aria-label="About this estimate"
+							className="relative after:absolute after:-inset-3"
+						>
 							<AsteriskIcon className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
 						</TooltipTrigger>
 						<TooltipContent>This value is an estimate, not a precise figure</TooltipContent>
@@ -788,7 +791,7 @@ const HuntGGWidget: React.FC = () => {
 			title="hunt.gg"
 			src={HuntIframeSrc}
 			loading="lazy"
-			className="w-full aspect-[24/7] rounded-xs border-none bg-card focus-visible:outline-solid outline-1 outline-card"
+			className="w-full aspect-[24/7] rounded-xs border-none bg-card"
 		/>
 	);
 };
@@ -825,11 +828,23 @@ const MapHistory = memo(function MapHistory({
 				</TabsTrigger>
 			</TabsList>
 
-			<TabsContent value="maps" forceMount hidden={shownTab !== "maps"} className="w-full">
+			<TabsContent
+				value="maps"
+				tabIndex={-1}
+				forceMount
+				hidden={shownTab !== "maps"}
+				className="w-full"
+			>
 				{shownTab === "maps" && <MapsTable maps={maps} isLoading={isLoading} />}
 			</TabsContent>
 
-			<TabsContent value="sessions" forceMount hidden={shownTab !== "sessions"} className="w-full">
+			<TabsContent
+				value="sessions"
+				tabIndex={-1}
+				forceMount
+				hidden={shownTab !== "sessions"}
+				className="w-full"
+			>
 				{shownTab === "sessions" && <SessionsTable sessions={sessions} isLoading={isLoading} />}
 			</TabsContent>
 		</Tabs>
@@ -867,7 +882,7 @@ const SortableTableHead: React.FC<{
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex h-12 w-full items-center justify-center gap-1 px-2 max-sm:px-1.5 active:bg-muted/50 -outline-offset-2 outline-foreground focus-visible:outline-solid"
+			className="flex h-12 w-full items-center justify-center gap-1 px-2 max-sm:px-1.5 hover:bg-muted/50 active:bg-muted/50 transition-[background-color] -outline-offset-2"
 		>
 			{children}
 
@@ -1056,13 +1071,14 @@ const MapRow = memo(function MapRow({ map }: { map: PlayerMapStats }) {
 		.otherwise(() => PerformanceColor.okay);
 
 	return (
-		<TableRow className="[&>td]:text-center">
+		<TableRow className="relative [&>td]:text-center">
 			<TableCell className="sm:w-[30%] text-muted-foreground">
 				{/* The match page highlights the player whose history this row is from. */}
 				<Link
 					href={matchUrl(map["Match Id"])}
 					state={{ fromPlayer: map["Player Id"] }}
-					className="text-primary-foreground"
+					// Stretched over the row, so the whole row opens the match; it's still one link.
+					className="text-primary-foreground after:absolute after:inset-0"
 				>
 					<MapDate map={map} />
 				</Link>
@@ -1471,6 +1487,8 @@ const ProfileSearchForm: React.FC<{
 					onChange={(ev) => setSearch(ev.currentTarget.value)}
 					placeholder={placeholder}
 					aria-label="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
+					aria-invalid={query.isError}
+					aria-describedby={query.isError ? "search-error" : undefined}
 					autoCapitalize="none"
 					autoCorrect="off"
 					spellCheck={false}
@@ -1523,6 +1541,7 @@ const ProfileSearchForm: React.FC<{
 
 			{query.error && (
 				<p
+					id="search-error"
 					role="alert"
 					className="text-destructive inline-flex items-start text-left animate-in fade-in-0 slide-in-from-top-1 duration-150 ease-out"
 				>
@@ -1645,17 +1664,19 @@ const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) =
 						className="flex items-center gap-2 py-1.5 px-3 border border-muted-foreground/25 rounded-xs hover:border-foreground/50 hover:bg-muted/50 transition-[color,background-color,border-color,scale] duration-160 ease-out active:scale-[0.97]"
 					>
 						<Avatar className="size-6 rounded-xs">
-							<AvatarImage src={player.avatar} alt={player.nickname} />
-							<AvatarFallback>{player.nickname[0]}</AvatarFallback>
+							{/* The name is written beside it, so the picture is decoration. */}
+							<AvatarImage src={player.avatar} alt="" />
+							<AvatarFallback aria-hidden>{player.nickname[0]}</AvatarFallback>
 						</Avatar>
 						<span className="text-sm">{player.nickname}</span>
 					</button>
-					{/* Shown on hover; touch has no hover, so it stays visible there. */}
+					{/* Shown on hover; touch has no hover, so it stays visible there. Its tap area reaches up
+					    and right, away from the name, so a tap meant for the player doesn't remove them. */}
 					<button
 						type="button"
 						onClick={() => removeFromHistory(player.id)}
 						aria-label={`Remove ${player.nickname} from recent players`}
-						className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-inset-2"
+						className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-top-3 after:-right-3 after:bottom-0 after:left-0"
 					>
 						<XIcon className="size-3" />
 					</button>
@@ -1991,6 +2012,18 @@ export function aggregatePlayerPerformance(maps: PlayerMapStatsInput[]) {
 
 function usePlayerPerformance(maps: PlayerMapStatsInput[]) {
 	return useMemo(() => aggregatePlayerPerformance(maps), [maps]);
+}
+
+const RegionNames = new Intl.DisplayNames(["en"], { type: "region" });
+
+/** The country's name for a flag's alt text: "Russia" rather than "ru", which is read out letter by letter. */
+export function countryName(countryCode: string): string {
+	// Alt text must never break the page; a code Intl rejects is still better than nothing.
+	try {
+		return RegionNames.of(countryCode.toUpperCase()) ?? countryCode;
+	} catch {
+		return countryCode;
+	}
 }
 
 export function flagUrl(countryCode: string): string {
