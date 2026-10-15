@@ -489,7 +489,9 @@ const PlayerCard: React.FC<{
 						)}
 					/>
 				)}
-				<div className="absolute inset-0 bg-background/50" />
+				{/* Darkest behind the name and light over the rest, so photos stay vivid and a white
+				    avatar doesn't glare next to the stats. */}
+				<div className="absolute inset-0 bg-linear-to-t from-background/85 via-background/55 via-40% to-background/30" />
 
 				<div className="absolute bottom-8 w-full flex flex-col items-center gap-1">
 					<h1
