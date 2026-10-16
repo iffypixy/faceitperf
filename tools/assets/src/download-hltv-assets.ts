@@ -6,6 +6,8 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 chromium.use(StealthPlugin());
 
+// HLTV has no flag for AQ, AX, BL, BQ, CW, EH, GG, IM, JE, MF, SX and UM, which FACEIT players can
+// pick. Those in apps/web/public/hltv/flags are country-flag-icons' 3:2 flags with HLTV's shading.
 const COUNTRY_CODES = [
 	"AF",
 	"AX",
@@ -129,7 +131,6 @@ const COUNTRY_CODES = [
 	"KI",
 	"KW",
 	"KG",
-	"KX",
 	"LA",
 	"LV",
 	"LB",
