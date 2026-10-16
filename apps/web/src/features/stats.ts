@@ -18,7 +18,7 @@ export interface PlayerPerformance {
 }
 
 // ADR and double kills were added late June 2024.
-export interface MapStats {
+interface MapStats {
 	rounds: number;
 	kills: number;
 	deaths: number;
@@ -31,7 +31,45 @@ export interface MapStats {
 	pentaKills: number;
 }
 
-export function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
+/** A map's figures as FACEIT's history and match stats report them. */
+export interface PlayerMapStatsInput {
+	Kills: string;
+	Deaths: string;
+	Assists: string;
+	Rounds: string;
+	Headshots: string;
+	ADR?: string;
+	"Double Kills"?: string;
+	"Triple Kills": string;
+	"Quadro Kills": string;
+	"Penta Kills": string;
+}
+
+export function aggregatePlayerPerformance(maps: PlayerMapStatsInput[]): PlayerPerformance {
+	return computePlayerPerformance(maps.map(normalizeMapStats));
+}
+
+function normalizeMapStats(x: PlayerMapStatsInput): MapStats {
+	return {
+		kills: Number(x.Kills),
+		deaths: Number(x.Deaths),
+		assists: Number(x.Assists),
+		rounds: Number(x.Rounds),
+		headshots: Number(x.Headshots),
+		adr: safeNumber(x.ADR),
+		doubleKills: safeNumber(x["Double Kills"]),
+		tripleKills: Number(x["Triple Kills"]),
+		quadroKills: Number(x["Quadro Kills"]),
+		pentaKills: Number(x["Penta Kills"]),
+	};
+}
+
+function safeNumber(x: string | undefined) {
+	if (x === undefined) return undefined;
+	return Number(x);
+}
+
+function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 	const {
 		kills,
 		deaths,
