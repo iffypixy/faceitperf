@@ -4,10 +4,9 @@ import { ExternalLinkIcon, UsersIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { match, P } from "ts-pattern";
 import { Link, useParams } from "wouter";
+import { countryName, flagUrl } from "~/entities/country";
 import { mapLabel } from "~/entities/map";
 import {
-	countryName,
-	flagUrl,
 	Performance,
 	PerformanceColor,
 	RatingColumnHead,

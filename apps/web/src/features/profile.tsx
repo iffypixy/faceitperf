@@ -27,7 +27,9 @@ import {
 import { match, P } from "ts-pattern";
 import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
+import { countryName, flagUrl } from "~/entities/country";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
+import { RecentSearches, recordSearch } from "~/features/recent-searches";
 import {
 	aggregatePlayerPerformance,
 	type PlayerMapStatsInput,
@@ -37,7 +39,7 @@ import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
 import { isRestoredEntry, useHistoryState } from "~/shared/lib/history-state";
-import { language, locale, translate } from "~/shared/lib/language";
+import { locale, translate } from "~/shared/lib/language";
 import { clamp, divide } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -171,7 +173,7 @@ export const ProfileSearch: React.FC = () => {
 						<PlayerHistory current={username} />
 					</div>
 
-					{username && <Profile username={username} />}
+					{username ? <Profile username={username} /> : <RecentSearches />}
 				</div>
 			</Container>
 		</ContentTemplate>
@@ -1559,6 +1561,7 @@ const ProfileSearchForm: React.FC<{
 			const { data, isSuccess } = await query.refetch();
 			if (!isSuccess) return;
 
+			recordSearch(data.player_id);
 			navigate(playerUrl(data.nickname));
 
 			// Navigation doesn't force remount for this component (-> no blur),
@@ -2083,20 +2086,4 @@ async function fetchPlayerDetails(
 
 function usePlayerPerformance(maps: PlayerMapStatsInput[]) {
 	return useMemo(() => aggregatePlayerPerformance(maps), [maps]);
-}
-
-const RegionNames = new Intl.DisplayNames([language], { type: "region" });
-
-/** The country's name for a flag's alt text: "Russia" rather than "ru", which is read out letter by letter. */
-export function countryName(countryCode: string): string {
-	// Alt text must never break the page; a code Intl rejects is still better than nothing.
-	try {
-		return RegionNames.of(countryCode.toUpperCase()) ?? countryCode;
-	} catch {
-		return countryCode;
-	}
-}
-
-export function flagUrl(countryCode: string): string {
-	return `/hltv/flags/${countryCode.toUpperCase()}.gif`;
 }
