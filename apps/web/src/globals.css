@@ -29,6 +29,16 @@
 	src: url("~/shared/assets/fonts/BricolageGrotesque/BricolageGrotesque.woff2") format("woff2");
 }
 
+/* Bricolage has no Cyrillic, so Russian letters come from Onest, a grotesque of the same x-height.
+   Only a page with Cyrillic on it downloads the file. */
+@font-face {
+	font-family: "Onest";
+	font-weight: 400 800;
+	font-display: swap;
+	src: url("~/shared/assets/fonts/Onest/Onest.woff2") format("woff2");
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -86,7 +96,7 @@
 
 	body {
 		position: relative;
-		font-family: "BricolageGrotesque", sans-serif;
+		font-family: "BricolageGrotesque", "Onest", sans-serif;
 		@apply text-base;
 		@apply bg-background;
 		@apply text-foreground;

@@ -6,11 +6,19 @@ import ReactGA from "react-ga4";
 import { Routes } from "~/pages/routes";
 import { Env } from "~/shared/env";
 import { assert } from "~/shared/lib/assert";
+import { language, translate } from "~/shared/lib/language";
 import { queryClient } from "~/shared/lib/query";
 import { Center, TooltipProvider } from "~/shared/ui";
 import "~/globals.css";
 
 ReactGA.initialize(Env.VITE_GA_MEASUREMENT_ID);
+
+document.documentElement.lang = language;
+
+const t = translate({
+	en: { title: "Something went wrong.", reload: "Reload the page" },
+	ru: { title: "Что-то пошло не так.", reload: "Перезагрузить страницу" },
+});
 
 // Without it, any render error (Google Translate rewriting the page is a common one) leaves
 // a blank screen. React still logs the error itself.
@@ -26,13 +34,13 @@ class ErrorBoundary extends Component<PropsWithChildren, { hasError: boolean }> 
 
 		return (
 			<Center className="min-h-dvh flex-col gap-4 px-4 text-center">
-				<h1 className="text-2xl">Something went wrong.</h1>
+				<h1 className="text-2xl">{t.title}</h1>
 				<button
 					type="button"
 					onClick={() => window.location.reload()}
 					className="text-primary-foreground"
 				>
-					Reload the page
+					{t.reload}
 				</button>
 			</Center>
 		);

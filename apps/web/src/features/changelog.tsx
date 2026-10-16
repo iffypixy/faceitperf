@@ -3,6 +3,7 @@ import { GiftIcon } from "lucide-react";
 import ScreenshotMatchStats from "~/shared/assets/images/screenshots/match-stats.webp";
 import ScreenshotProfile from "~/shared/assets/images/screenshots/profile.webp";
 import ScreenshotSortableTables from "~/shared/assets/images/screenshots/sortable-tables.webp";
+import { translate } from "~/shared/lib/language";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/shared/ui";
 
 const Changelog: Array<{
@@ -12,22 +13,35 @@ const Changelog: Array<{
 	date: string;
 }> = [
 	{
-		title: "Every match, HLTV style",
-		description:
-			"Match pages now show HLTV's leaders and detailed stats, from opening duels to utility damage, with your own row highlighted. Profiles load faster and fit any phone.",
+		title: translate({ en: "Every match, HLTV style", ru: "Каждый матч в стиле HLTV" }),
+		description: translate({
+			en: "Match pages now show HLTV's leaders and detailed stats, from opening duels to utility damage, with your own row highlighted. Profiles load faster and fit any phone.",
+			ru: "На странице матча теперь лидеры и подробная статистика, как на HLTV, от первых дуэлей до урона гранатами, а ваша строка подсвечена. Профили загружаются быстрее и помещаются на любом телефоне.",
+		}),
 		image: ScreenshotMatchStats,
 		date: "2026-10-15T12:00:00.000Z",
 	},
 	{
-		title: "Find your best and worst maps instantly",
-		description: "Click any column to sort your maps and sessions however you want.",
+		title: translate({
+			en: "Find your best and worst maps instantly",
+			ru: "Лучшие и худшие карты в один клик",
+		}),
+		description: translate({
+			en: "Click any column to sort your maps and sessions however you want.",
+			ru: "Нажмите на любой столбец, чтобы отсортировать карты и сессии.",
+		}),
 		image: ScreenshotSortableTables,
 		date: "2025-12-23T18:30:38.709Z",
 	},
 	{
-		title: "Smarter stats, cleaner look, more control",
-		description:
-			"Calculations are now more accurate, the UI has received a major overhaul, and you can explore your stats with new time, map, and version filters.",
+		title: translate({
+			en: "Smarter stats, cleaner look, more control",
+			ru: "Точнее расчёты, новый вид, больше фильтров",
+		}),
+		description: translate({
+			en: "Calculations are now more accurate, the UI has received a major overhaul, and you can explore your stats with new time, map, and version filters.",
+			ru: "Расчёты стали точнее, интерфейс полностью обновился, а статистику можно смотреть с новыми фильтрами по времени, карте и версии.",
+		}),
 		image: ScreenshotProfile,
 		date: "2025-11-14T11:00:00.000Z",
 	},
@@ -56,7 +70,7 @@ export const ChangelogDialog: React.FC<{
 		>
 			<DialogHeader>
 				<DialogTitle className="flex flex-row items-center">
-					<GiftIcon className="size-6 me-2" /> What's new?
+					<GiftIcon className="size-6 me-2" /> {translate({ en: "What's new?", ru: "Что нового?" })}
 				</DialogTitle>
 			</DialogHeader>
 

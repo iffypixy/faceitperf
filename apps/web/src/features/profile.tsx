@@ -37,6 +37,7 @@ import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
 import { isRestoredEntry, useHistoryState } from "~/shared/lib/history-state";
+import { language, locale, translate } from "~/shared/lib/language";
 import { clamp, divide } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -67,10 +68,98 @@ import {
 import { Button } from "~/shared/ui/button";
 import { Spinner } from "~/shared/ui/loader";
 
+const t = translate({
+	en: {
+		home: "Home",
+		heading: (faceit: ReactNode, hltv: ReactNode) => (
+			<>
+				Your {faceit} stats, {hltv} style.
+			</>
+		),
+		time: "Time",
+		map: "Map",
+		version: "Version",
+		allTime: "All",
+		lastMonth: "Last month",
+		lastThreeMonths: "Last 3 months",
+		lastSixMonths: "Last 6 months",
+		lastTwelveMonths: "Last 12 months",
+		allMaps: "All",
+		mapsError: "We couldn't load the maps. Try refreshing?",
+		level: "Level",
+		aboutEstimate: "About this estimate",
+		estimate: "This value is an estimate, not a precise figure",
+		levels: { poor: "poor", okay: "okay", good: "good" },
+		maps: "Maps",
+		sessions: "Sessions",
+		sessionRule: (hours: number) =>
+			`Maps you played within ${hours} hours are grouped into one session`,
+		date: "Date",
+		score: "Score",
+		today: "Today",
+		yesterday: "Yesterday",
+		noMaps: "No maps for these filters",
+		showMore: (count: number) => `Show ${count} more`,
+		left: (count: string) => `${count} left`,
+		search: "FACEIT username, FACEIT URL, Steam URL, or Steam ID",
+		searchShort: "Username or profile link",
+		clear: "Clear input",
+		submit: "Show stats",
+		invalidInput:
+			"Hmm… that doesn't look like a valid FACEIT username, FACEIT URL, Steam URL, or Steam ID.",
+		noPlayer: "That player doesn't seem to exist.",
+		noSteamPlayer: "We couldn't resolve a FACEIT player from that Steam profile.",
+		lookupError: "We couldn't look up that player. Try again?",
+		removeRecent: (username: string) => `Remove ${username} from recent players`,
+	},
+	ru: {
+		home: "Главная",
+		heading: (faceit: ReactNode, hltv: ReactNode) => (
+			<>
+				Статистика {faceit} в стиле {hltv}.
+			</>
+		),
+		time: "Период",
+		map: "Карта",
+		version: "Версия",
+		allTime: "Всё время",
+		lastMonth: "Последний месяц",
+		lastThreeMonths: "Последние 3 месяца",
+		lastSixMonths: "Последние 6 месяцев",
+		lastTwelveMonths: "Последние 12 месяцев",
+		allMaps: "Все",
+		mapsError: "Не удалось загрузить карты. Попробуйте обновить страницу.",
+		level: "Уровень",
+		aboutEstimate: "Об этой оценке",
+		estimate: "Это оценка, а не точное значение",
+		levels: { poor: "слабо", okay: "средне", good: "хорошо" },
+		maps: "Карты",
+		sessions: "Сессии",
+		sessionRule: (hours: number) =>
+			`Карты, сыгранные с перерывом до ${hours} часов, объединяются в одну сессию`,
+		date: "Дата",
+		score: "Счёт",
+		today: "Сегодня",
+		yesterday: "Вчера",
+		noMaps: "По этим фильтрам карт нет",
+		showMore: (count: number) => `Показать ещё ${count}`,
+		left: (count: string) => `осталось ${count}`,
+		search: "Ник, ссылка на FACEIT или Steam, Steam ID",
+		searchShort: "Ник или ссылка",
+		clear: "Очистить поле",
+		submit: "Найти",
+		invalidInput: "Хм… это не похоже на ник, ссылку на FACEIT или Steam либо Steam ID.",
+		noPlayer: "Похоже, такого игрока нет.",
+		noSteamPlayer: "Не удалось найти игрока FACEIT по этому профилю Steam.",
+		lookupError: "Не удалось найти игрока. Попробуйте ещё раз.",
+		removeRecent: (username: string) => `Убрать ${username} из недавних`,
+	},
+});
+
 export const ProfileSearch: React.FC = () => {
 	const { username } = useParams<{ username: string }>();
 
-	useDocumentTitle(username ?? "Home");
+	useDocumentTitle(username ?? t.home);
 
 	return (
 		<ContentTemplate>
@@ -90,9 +179,11 @@ export const ProfileSearch: React.FC = () => {
 };
 
 const Heading: React.FC = () => (
-	<h1 className="text-2xl sm:text-3xl tracking-tight text-center">
-		Your <span className="text-faceit font-medium">FACEIT</span> stats,{" "}
-		<span className="text-hltv font-medium">HLTV</span> style.
+	<h1 className="text-2xl sm:text-3xl tracking-tight text-center text-balance">
+		{t.heading(
+			<span className="text-faceit font-medium">FACEIT</span>,
+			<span className="text-hltv font-medium">HLTV</span>,
+		)}
 	</h1>
 );
 
@@ -142,11 +233,11 @@ function timeFilterStart(value: TimeFilterValue): Date | null {
 
 function timeFilterLabel(value: TimeFilterValue): string {
 	return match(value)
-		.with("all", () => "All")
-		.with("lastMonth", () => "Last month")
-		.with("lastThreeMonths", () => "Last 3 months")
-		.with("lastSixMonths", () => "Last 6 months")
-		.with("lastTwelveMonths", () => "Last 12 months")
+		.with("all", () => t.allTime)
+		.with("lastMonth", () => t.lastMonth)
+		.with("lastThreeMonths", () => t.lastThreeMonths)
+		.with("lastSixMonths", () => t.lastSixMonths)
+		.with("lastTwelveMonths", () => t.lastTwelveMonths)
 		.with(P.number, (x) => x.toString())
 		.exhaustive();
 }
@@ -154,7 +245,7 @@ function timeFilterLabel(value: TimeFilterValue): string {
 type MapFilterValue = "all" | MapId;
 
 function mapFilterLabel(value: MapFilterValue): string {
-	return value === "all" ? "All" : mapLabel(value);
+	return value === "all" ? t.allMaps : mapLabel(value);
 }
 
 const GameVersions = ["cs2", "csgo"] as const;
@@ -242,7 +333,7 @@ const Profile: React.FC<{
 		return (
 			<p role="alert" className="text-destructive text-xl inline-flex items-center mx-auto">
 				<CircleAlert className="size-5 me-2" />
-				We couldn't load the maps. Try refreshing?
+				{t.mapsError}
 			</p>
 		);
 
@@ -351,9 +442,9 @@ const FilterGroup: React.FC<{
 }) => (
 	<div className="grid grid-cols-2 sm:grid-cols-[12rem_8rem_6rem] items-center bg-card gap-x-3 gap-y-4 sm:gap-x-8 p-4 rounded-xs">
 		<div className="flex flex-col col-span-2 sm:col-span-1">
-			<p className="text-muted-foreground text-sm uppercase tracking-wide">Time</p>
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">{t.time}</p>
 			<FilterMenu
-				label="Time"
+				label={t.time}
 				value={selectedTime}
 				values={timeValues}
 				valueLabel={timeFilterLabel}
@@ -362,9 +453,9 @@ const FilterGroup: React.FC<{
 		</div>
 
 		<div className="flex flex-col">
-			<p className="text-muted-foreground text-sm uppercase tracking-wide">Map</p>
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">{t.map}</p>
 			<FilterMenu
-				label="Map"
+				label={t.map}
 				value={selectedMap}
 				values={mapValues}
 				valueLabel={mapFilterLabel}
@@ -373,9 +464,9 @@ const FilterGroup: React.FC<{
 		</div>
 
 		<div className="flex flex-col">
-			<p className="text-muted-foreground text-sm uppercase tracking-wide">Version</p>
+			<p className="text-muted-foreground text-sm uppercase tracking-wide">{t.version}</p>
 			<FilterMenu
-				label="Version"
+				label={t.version}
 				value={selectedVersion}
 				values={GameVersions}
 				valueLabel={gameVersionLabel}
@@ -516,9 +607,9 @@ const PlayerCard: React.FC<{
 					<p className="h-5 text-sm text-shadow-image text-white/75">
 						{elo && (
 							<span className={cn(!isRestored && "animate-in fade-in-0 duration-200 ease-out")}>
-								Level {elo.skill_level}
+								{t.level} {elo.skill_level}
 								<span className="mx-1.5">·</span>
-								{elo.faceit_elo.toLocaleString()} ELO
+								{elo.faceit_elo.toLocaleString(locale)} ELO
 							</span>
 						)}
 					</p>
@@ -682,12 +773,12 @@ const Metric: React.FC<{
 				{approximate && (
 					<Tooltip>
 						<TooltipTrigger
-							aria-label="About this estimate"
+							aria-label={t.aboutEstimate}
 							className="relative after:absolute after:-inset-3"
 						>
 							<AsteriskIcon className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
 						</TooltipTrigger>
-						<TooltipContent>This value is an estimate, not a precise figure</TooltipContent>
+						<TooltipContent>{t.estimate}</TooltipContent>
 					</Tooltip>
 				)}
 			</div>
@@ -725,7 +816,7 @@ const Metric: React.FC<{
 										transform: `translateX(${LevelStep[info.level] * -50}%)`,
 									}}
 								>
-									{info.level}
+									{t.levels[info.level]}
 								</span>
 							</span>
 						</>
@@ -824,7 +915,7 @@ const MapHistory = memo(function MapHistory({
 	isLoading: boolean;
 }) {
 	const sessions = useMemo(() => (maps ? groupMapsIntoSessions(maps) : null), [maps]);
-	const sessionRule = `Maps you played within ${MaxSessionGapHours} hours are grouped into one session`;
+	const sessionRule = t.sessionRule(MaxSessionGapHours);
 	const [tab, setTab] = useHistoryState("historyTab", "maps");
 	// The tab lights up on press and the table it shows follows a frame later. Both panels stay
 	// mounted, so switching doesn't make Radix measure the freshly inserted table.
@@ -833,10 +924,12 @@ const MapHistory = memo(function MapHistory({
 	return (
 		<Tabs value={tab} onValueChange={setTab} className="w-full flex items-center mx-auto gap-2">
 			<TabsList className="w-full gap-2 bg-card">
-				<TabsTrigger value="maps">Maps {maps && `– ${maps.length.toLocaleString()}`}</TabsTrigger>
+				<TabsTrigger value="maps">
+					{t.maps} {maps && `– ${maps.length.toLocaleString(locale)}`}
+				</TabsTrigger>
 
 				<TabsTrigger value="sessions" aria-description={sessionRule}>
-					Sessions {sessions && `– ${sessions.length.toLocaleString()}`}
+					{t.sessions} {sessions && `– ${sessions.length.toLocaleString(locale)}`}
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<span>
@@ -991,13 +1084,13 @@ const MapsTable: React.FC<{ maps: PlayerMapStats[] | null; isLoading: boolean }>
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
 						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
-							Date
+							{t.date}
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[10%]" {...register("map")}>
-							Map
+							{t.map}
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("score")}>
-							Score
+							{t.score}
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("kd-diff")}>
 							K–D
@@ -1044,8 +1137,8 @@ export const Performance: React.FC<{
 	);
 };
 
-const DateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "short" });
-const TimeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: "short" });
+const DateFormat = new Intl.DateTimeFormat(locale, { dateStyle: "short" });
+const TimeFormat = new Intl.DateTimeFormat(locale, { timeStyle: "short" });
 
 // Phones show the day only, so every column fits; the match page has the time.
 const MapDate: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
@@ -1062,8 +1155,8 @@ const MapDate: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
 };
 
 function readableDay(date: Date): string {
-	if (isToday(date)) return "Today";
-	if (isYesterday(date)) return "Yesterday";
+	if (isToday(date)) return t.today;
+	if (isYesterday(date)) return t.yesterday;
 	return DateFormat.format(date);
 }
 
@@ -1179,10 +1272,10 @@ const SessionsTable: React.FC<{ sessions: PlayerMapStats[][] | null; isLoading: 
 				<TableHeader>
 					<TableRow className="[&>th]:text-center">
 						<SortableTableHead className="sm:w-[30%]" {...register("datetime")}>
-							Date
+							{t.date}
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[10%]" {...register("maps")}>
-							Maps
+							{t.maps}
 						</SortableTableHead>
 						<SortableTableHead className="sm:w-[15%]" {...register("wins")}>
 							W/L
@@ -1291,9 +1384,9 @@ const ShowMore: React.FC<{ hiddenCount: number; onClick: () => void }> = ({
 			className="w-full mt-2 text-base bg-card hover:bg-muted/50 active:scale-[0.99]"
 			onClick={onClick}
 		>
-			Show {Math.min(hiddenCount, PageSize)} more
+			{t.showMore(Math.min(hiddenCount, PageSize))}
 			<span className="ms-2 font-normal text-muted-foreground">
-				{hiddenCount.toLocaleString()} left
+				{t.left(hiddenCount.toLocaleString(locale))}
 			</span>
 		</Button>
 	);
@@ -1320,7 +1413,7 @@ const HistoryTableBody: React.FC<{ rows: ReactNode[] | undefined; isLoading: boo
 			) : (
 				<TableRow>
 					<TableCell colSpan={6} className="p-8 text-center text-muted-foreground">
-						No maps for these filters
+						{t.noMaps}
 					</TableCell>
 				</TableRow>
 			)}
@@ -1482,9 +1575,7 @@ const ProfileSearchForm: React.FC<{
 
 	const isInitialSearch = search === initialValue && initialValue !== "";
 	// The full hint would be cut mid-word in a narrower field.
-	const placeholder = useMediaQuery("(min-width: 1024px)")
-		? "FACEIT username, FACEIT URL, Steam URL, or Steam ID"
-		: "Username or profile link";
+	const placeholder = useMediaQuery("(min-width: 1024px)") ? t.search : t.searchShort;
 
 	return (
 		<form
@@ -1509,7 +1600,7 @@ const ProfileSearchForm: React.FC<{
 					ref={inputRef}
 					onChange={(ev) => setSearch(ev.currentTarget.value)}
 					placeholder={placeholder}
-					aria-label="FACEIT username, FACEIT URL, Steam URL, or Steam ID"
+					aria-label={t.search}
 					aria-invalid={query.isError}
 					aria-describedby={query.isError ? "search-error" : undefined}
 					autoCapitalize="none"
@@ -1530,7 +1621,7 @@ const ProfileSearchForm: React.FC<{
 							// Keeps focus in the field, so the form can't resize and move the button mid-click.
 							onMouseDown={(ev) => ev.preventDefault()}
 							onClick={onReset}
-							aria-label="Clear input"
+							aria-label={t.clear}
 						>
 							<XIcon className="size-6 sm:size-8" />
 						</Button>
@@ -1551,7 +1642,7 @@ const ProfileSearchForm: React.FC<{
 								query.isLoading && "opacity-0",
 							)}
 						>
-							Show stats
+							{t.submit}
 						</span>
 						{query.isLoading && (
 							<span className="absolute inset-0 animate-in fade-in-0 duration-150 ease-out">
@@ -1569,9 +1660,7 @@ const ProfileSearchForm: React.FC<{
 					className="text-destructive inline-flex items-start text-left animate-in fade-in-0 slide-in-from-top-1 duration-150 ease-out"
 				>
 					<CircleAlert className="size-5 me-2 mt-0.5 shrink-0" />
-					{query.error instanceof PlayerLookupError
-						? query.error.message
-						: "We couldn't look up that player. Try again?"}
+					{query.error instanceof PlayerLookupError ? query.error.message : t.lookupError}
 				</p>
 			)}
 		</form>
@@ -1698,7 +1787,7 @@ const PlayerHistory: React.FC<{ current: string | undefined }> = ({ current }) =
 					<button
 						type="button"
 						onClick={() => removeFromHistory(player.id)}
-						aria-label={`Remove ${player.nickname} from recent players`}
+						aria-label={t.removeRecent(player.nickname)}
 						className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-muted border border-muted-foreground/25 text-muted-foreground hover:text-foreground active:text-foreground opacity-0 group-hover/chip:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 transition-opacity after:absolute after:-top-3 after:-right-3 after:bottom-0 after:left-0"
 					>
 						<XIcon className="size-3" />
@@ -1753,20 +1842,17 @@ class PlayerLookupError extends Error {}
 function playerByInput(input: string, opts?: { signal?: AbortSignal }) {
 	return match(parseInput(input))
 		.with({ kind: "invalid" }, () => {
-			throw new PlayerLookupError(
-				"Hmm… that doesn't look like a valid FACEIT username, FACEIT URL, Steam URL, or Steam ID.",
-			);
+			throw new PlayerLookupError(t.invalidInput);
 		})
 		.with({ kind: "faceit-username" }, async (x) => {
 			const player = await fetchPlayer(x.username, opts);
-			if (!player) throw new PlayerLookupError("That player doesn't seem to exist.");
+			if (!player) throw new PlayerLookupError(t.noPlayer);
 			return player;
 		})
 		.with({ kind: "steam-id" }, { kind: "steam-custom-id" }, async (x) => {
 			const steamId = x.kind === "steam-id" ? x.id : await steamIdByCustomId(x.customId, opts);
 			const player = steamId && (await fetchPlayerBySteamId(steamId, opts));
-			if (!player)
-				throw new PlayerLookupError("We couldn't resolve a FACEIT player from that Steam profile.");
+			if (!player) throw new PlayerLookupError(t.noSteamPlayer);
 			return player;
 		})
 		.exhaustive();
@@ -1999,7 +2085,7 @@ function usePlayerPerformance(maps: PlayerMapStatsInput[]) {
 	return useMemo(() => aggregatePlayerPerformance(maps), [maps]);
 }
 
-const RegionNames = new Intl.DisplayNames(["en"], { type: "region" });
+const RegionNames = new Intl.DisplayNames([language], { type: "region" });
 
 /** The country's name for a flag's alt text: "Russia" rather than "ru", which is read out letter by letter. */
 export function countryName(countryCode: string): string {
