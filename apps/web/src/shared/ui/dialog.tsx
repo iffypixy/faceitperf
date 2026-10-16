@@ -3,6 +3,7 @@ import { XIcon } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "~/shared/lib/cn";
+import { translate } from "~/shared/lib/language";
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
 	return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -62,7 +63,7 @@ function DialogContent({
 						className="data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 active:opacity-100 after:absolute after:-inset-3 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
 					>
 						<XIcon />
-						<span className="sr-only">Close</span>
+						<span className="sr-only">{translate({ en: "Close", ru: "Закрыть" })}</span>
 					</DialogPrimitive.Close>
 				)}
 			</DialogPrimitive.Content>

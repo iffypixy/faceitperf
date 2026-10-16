@@ -1,6 +1,5 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useQuery } from "@tanstack/react-query";
-import { formatDistanceStrict } from "date-fns";
 import { ExternalLinkIcon, UsersIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { match, P } from "ts-pattern";
@@ -24,6 +23,7 @@ import { api, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
 import { useHistoryState } from "~/shared/lib/history-state";
+import { locale, translate } from "~/shared/lib/language";
 import { toSignedString } from "~/shared/lib/numbers";
 import { useDocumentTitle } from "~/shared/lib/use-document-title";
 import {
@@ -42,9 +42,74 @@ import {
 } from "~/shared/ui";
 import { Spinner } from "~/shared/ui/loader";
 
-const MatchDateFormat = new Intl.DateTimeFormat(undefined, {
+const t = translate({
+	en: {
+		match: "Match",
+		notFound: "This match doesn't exist or isn't available right now.",
+		search: "Search for a player",
+		maps: "Maps",
+		server: "Server",
+		matchRoom: "Match room",
+		openOnFaceit: "Open on FACEIT",
+		removed: (team: string, entity: string) => `${team} removed ${entity}`,
+		picked: (team: string, entity: string) => `${team} picked ${entity}`,
+		leftOver: (entity: string) => `${entity} was left over`,
+		unavailable: "Data unavailable.",
+		allMaps: "All maps",
+		overview: "Overview",
+		detailed: "Detailed",
+		mostKills: "Most kills",
+		highestAdr: "Highest ADR",
+		mostAssists: "Most assists",
+		mostAwpKills: "Most AWP kills",
+		mostFirstKills: "Most first kills",
+		bestRating: "Best rating",
+		assists: "Assists",
+		awpDetail: "kills",
+		multi: "Multi",
+		multiDetail: "kills",
+		utility: "Utility",
+		utilityDetail: "damage",
+	},
+	ru: {
+		match: "Матч",
+		notFound: "Такого матча нет, или он сейчас недоступен.",
+		search: "Найти игрока",
+		maps: "Карты",
+		server: "Сервер",
+		matchRoom: "Комната матча",
+		openOnFaceit: "Открыть на FACEIT",
+		removed: (team: string, entity: string) => `${team} убирает ${entity}`,
+		picked: (team: string, entity: string) => `${team} выбирает ${entity}`,
+		leftOver: (entity: string) => `${entity} остаётся`,
+		unavailable: "Данные недоступны.",
+		allMaps: "Все карты",
+		overview: "Обзор",
+		detailed: "Подробно",
+		mostKills: "Больше всего убийств",
+		highestAdr: "Лучший ADR",
+		mostAssists: "Больше всего ассистов",
+		mostAwpKills: "Больше всего убийств с AWP",
+		mostFirstKills: "Больше всего первых убийств",
+		bestRating: "Лучший рейтинг",
+		assists: "Ассисты",
+		awpDetail: "убийства",
+		multi: "Мульти",
+		multiDetail: "киллы",
+		utility: "Урон",
+		utilityDetail: "гранатами",
+	},
+});
+
+const MatchDateFormat = new Intl.DateTimeFormat(locale, {
 	dateStyle: "long",
 	timeStyle: "short",
+});
+
+const DurationFormat = new Intl.NumberFormat(locale, {
+	style: "unit",
+	unit: "minute",
+	unitDisplay: "long",
 });
 
 export const MatchPage: React.FC = () => {
@@ -56,7 +121,7 @@ export const MatchPage: React.FC = () => {
 	const [startedEmpty] = useState(query.isPending);
 
 	useDocumentTitle(
-		query.data?.status === "FINISHED" ? matchTitle(query.data, statsQuery.data) : "Match",
+		query.data?.status === "FINISHED" ? matchTitle(query.data, statsQuery.data) : t.match,
 	);
 
 	return (
@@ -69,9 +134,9 @@ export const MatchPage: React.FC = () => {
 					{ status: "success", data: { status: P.not("FINISHED") } },
 					() => (
 						<Center className="flex-col gap-4 px-4 text-center">
-							<h1 className="text-2xl">This match doesn't exist or isn't available right now.</h1>
+							<h1 className="text-2xl">{t.notFound}</h1>
 							<Link href="/" className="text-primary-foreground">
-								Search for a player
+								{t.search}
 							</Link>
 						</Center>
 					),
@@ -92,7 +157,6 @@ export const MatchPage: React.FC = () => {
 
 					const score = headlineScore(x.data, statsQuery.data);
 					const startDate = new Date(started_at * 1000);
-					const endDate = new Date(finished_at * 1000);
 
 					const team1: TeamEntry = {
 						id: faction1.faction_id,
@@ -144,14 +208,14 @@ export const MatchPage: React.FC = () => {
 										<p>
 											{MatchDateFormat.format(startDate)}
 											<span className="mx-1.5">·</span>
-											{formatDistanceStrict(endDate, startDate, { unit: "minute" })}
+											{DurationFormat.format(Math.round((finished_at - started_at) / 60))}
 										</p>
 									</div>
 								</div>
 
 								<div className="grid md:grid-cols-2 gap-8">
 									<div className="flex flex-col gap-2">
-										<h2 className="font-bold">Maps</h2>
+										<h2 className="font-bold">{t.maps}</h2>
 										<InfoBlock>Best of {best_of}</InfoBlock>
 										<Veto
 											type="map"
@@ -177,14 +241,14 @@ export const MatchPage: React.FC = () => {
 										/>
 
 										<div className="flex flex-col gap-2">
-											<h2 className="font-bold">Match room</h2>
+											<h2 className="font-bold">{t.matchRoom}</h2>
 											<a
 												href={faceit_url.replace("{lang}", "en")}
 												target="_blank"
 												rel="noopener noreferrer"
 												className="flex items-center justify-between p-4 bg-card rounded-xs text-primary-foreground hover:bg-muted/50 transition-colors"
 											>
-												Open on FACEIT
+												{t.openOnFaceit}
 												<ExternalLinkIcon className="size-4" />
 											</a>
 										</div>
@@ -240,7 +304,7 @@ const Server: React.FC<{
 
 	return (
 		<div className="flex flex-col gap-2">
-			<h2 className="font-bold">Server</h2>
+			<h2 className="font-bold">{t.server}</h2>
 			<Veto
 				type="location"
 				matchId={matchId}
@@ -409,18 +473,18 @@ const Veto: React.FC<{
 								.with("faction2", () => team2)
 								.exhaustive();
 
-							const action = match(x.status)
-								.with("drop", () => "removed")
-								.with("pick", () => "picked")
-								.exhaustive();
-
 							const entity = match(type)
 								.with("map", () => mapLabel(x.guid))
 								.with("location", () => serverLocation(x.guid).name)
 								.exhaustive();
 
 							const text =
-								index === length - 1 ? `${entity} was left over` : `${team} ${action} ${entity}`;
+								index === length - 1
+									? t.leftOver(entity)
+									: match(x.status)
+											.with("drop", () => t.removed(team, entity))
+											.with("pick", () => t.picked(team, entity))
+											.exhaustive();
 
 							return <li key={x.guid}>{text}</li>;
 						})}
@@ -560,7 +624,7 @@ const InfoBlock: React.FC<{ children: ReactNode }> = ({ children }) => (
 	<div className="p-4 bg-card rounded-xs">{children}</div>
 );
 
-const ErrorMessage: React.FC = () => <p className="text-destructive">Data unavailable.</p>;
+const ErrorMessage: React.FC = () => <p className="text-destructive">{t.unavailable}</p>;
 
 const queryKeys = createQueryKeys("match", {
 	matchById: (matchId: string) => ["match", matchId],
@@ -642,7 +706,7 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 	>();
 
 	for (const map of maps) {
-		const team = map.teams.find((t) => t.team_id === teamId);
+		const team = map.teams.find((x) => x.team_id === teamId);
 		if (!team) continue;
 
 		for (const p of team.players) {
@@ -733,7 +797,7 @@ const MatchStats: React.FC<{
 							<Switcher
 								options={["all", ...x.data.rounds.map((x) => x.round_stats.Map)].map((x) => ({
 									value: x,
-									label: x === "all" ? "All maps" : mapLabel(x),
+									label: x === "all" ? t.allMaps : mapLabel(x),
 								}))}
 								selected={mapFilter}
 								onSelect={setMapFilter}
@@ -741,8 +805,8 @@ const MatchStats: React.FC<{
 							{hasDetails && (
 								<Switcher
 									options={[
-										{ value: "overview", label: "Overview" },
-										{ value: "detailed", label: "Detailed" },
+										{ value: "overview", label: t.overview },
+										{ value: "detailed", label: t.detailed },
 									]}
 									selected={view}
 									onSelect={setView}
@@ -812,13 +876,13 @@ const Leaders: Array<{
 	value: (x: PlayerEntry) => number | undefined;
 	format: (value: number) => string;
 }> = [
-	{ label: "Most kills", value: (x) => x.stats.kills, format: String },
-	{ label: "Highest ADR", value: (x) => x.stats.adr, format: (x) => roundMetricValue("adr", x) },
-	{ label: "Most assists", value: (x) => x.assists, format: String },
-	{ label: "Most AWP kills", value: (x) => x.details?.sniperKills, format: String },
-	{ label: "Most first kills", value: (x) => x.details?.firstKills, format: String },
+	{ label: t.mostKills, value: (x) => x.stats.kills, format: String },
+	{ label: t.highestAdr, value: (x) => x.stats.adr, format: (x) => roundMetricValue("adr", x) },
+	{ label: t.mostAssists, value: (x) => x.assists, format: String },
+	{ label: t.mostAwpKills, value: (x) => x.details?.sniperKills, format: String },
+	{ label: t.mostFirstKills, value: (x) => x.details?.firstKills, format: String },
 	{
-		label: "Best rating",
+		label: t.bestRating,
 		value: (x) => x.stats.rating,
 		format: (x) => roundMetricValue("rating", x),
 	},
@@ -848,7 +912,8 @@ const TopPerformers: React.FC<{ players: PlayerEntry[] }> = ({ players }) => {
 					key={label}
 					className="flex flex-col gap-1 min-w-0 p-4 md:py-3 bg-card rounded-xs max-sm:odd:last:col-span-2"
 				>
-					<p className="text-muted-foreground text-sm md:text-xs uppercase tracking-wide">
+					{/* A label that wraps pushes nothing down: values and names line up along the row. */}
+					<p className="mb-auto text-muted-foreground text-sm md:text-xs uppercase tracking-wide">
 						{label}
 					</p>
 					<p className="text-2xl md:text-xl font-bold">{text}</p>
@@ -992,12 +1057,18 @@ const OverviewColumns: Column[] = [
 
 // The stats the overview leaves out, in the same six columns, so switching views keeps the grid.
 const DetailedColumns: Column[] = [
-	{ head: "Assists", cell: (x) => x.assists },
+	{ head: t.assists, cell: (x) => x.assists },
 	{ head: "FK–FD", cell: (x) => x.details && `${x.details.firstKills}–${x.details.firstDeaths}` },
-	{ head: <StackedColumnHead title="AWP" detail="kills" />, cell: (x) => x.details?.sniperKills },
-	{ head: <StackedColumnHead title="Multi" detail="kills" />, cell: (x) => x.details?.multiKills },
 	{
-		head: <StackedColumnHead title="Utility" detail="damage" />,
+		head: <StackedColumnHead title="AWP" detail={t.awpDetail} />,
+		cell: (x) => x.details?.sniperKills,
+	},
+	{
+		head: <StackedColumnHead title={t.multi} detail={t.multiDetail} />,
+		cell: (x) => x.details?.multiKills,
+	},
+	{
+		head: <StackedColumnHead title={t.utility} detail={t.utilityDetail} />,
 		cell: (x) => x.details?.utilityDamage,
 	},
 	RatingColumn,
