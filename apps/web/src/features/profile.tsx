@@ -286,6 +286,12 @@ const Profile: React.FC<{
 		addToHistory({ id: player_id, avatar, nickname, country });
 	}, [playerQuery.data, addToHistory]);
 
+	// Every profile opened counts, once, however it was reached.
+	const playerId = playerQuery.data?.player_id;
+	useEffect(() => {
+		if (playerId) recordSearch(playerId);
+	}, [playerId]);
+
 	const maps = mapsQuery.data?.maps ?? null;
 	const isComplete = mapsQuery.data?.isComplete ?? false;
 
@@ -1561,7 +1567,6 @@ const ProfileSearchForm: React.FC<{
 			const { data, isSuccess } = await query.refetch();
 			if (!isSuccess) return;
 
-			recordSearch(data.player_id);
 			navigate(playerUrl(data.nickname));
 
 			// Navigation doesn't force remount for this component (-> no blur),
