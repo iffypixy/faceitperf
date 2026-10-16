@@ -1,4 +1,5 @@
 import { cn } from "~/shared/lib/cn";
+import { translate } from "~/shared/lib/language";
 import { Center } from "./templates";
 
 const SpokeCount = 8;
@@ -9,7 +10,7 @@ export const Spinner: React.FC<{ className?: string }> = ({ className }) => (
 	<Center role="status">
 		<svg
 			role="img"
-			aria-label="Loading"
+			aria-label={translate({ en: "Loading", ru: "Загрузка" })}
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
