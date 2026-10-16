@@ -28,7 +28,11 @@ import { match, P } from "ts-pattern";
 import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
-import { computePlayerPerformance, type MapStats, type PlayerPerformance } from "~/features/stats";
+import {
+	aggregatePlayerPerformance,
+	type PlayerMapStatsInput,
+	type PlayerPerformance,
+} from "~/features/stats";
 import { api, FaceitQueryLimit, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
@@ -1989,44 +1993,6 @@ async function fetchPlayerDetails(
 	return await faceitApi
 		.get<PlayerDetailsResponse>(`players/${playerId}`, { signal: opts?.signal })
 		.json();
-}
-
-function safeNumber(x: string | undefined) {
-	if (x === undefined) return undefined;
-	return Number(x);
-}
-
-export type PlayerMapStatsInput = Pick<
-	PlayerMapStats,
-	| "Kills"
-	| "Deaths"
-	| "Assists"
-	| "Rounds"
-	| "Headshots"
-	| "ADR"
-	| "Double Kills"
-	| "Triple Kills"
-	| "Quadro Kills"
-	| "Penta Kills"
->;
-
-function normalizeMapStats(x: PlayerMapStatsInput): MapStats {
-	return {
-		kills: Number(x.Kills),
-		deaths: Number(x.Deaths),
-		assists: Number(x.Assists),
-		rounds: Number(x.Rounds),
-		headshots: Number(x.Headshots),
-		adr: safeNumber(x.ADR),
-		doubleKills: safeNumber(x["Double Kills"]),
-		tripleKills: Number(x["Triple Kills"]),
-		quadroKills: Number(x["Quadro Kills"]),
-		pentaKills: Number(x["Penta Kills"]),
-	};
-}
-
-export function aggregatePlayerPerformance(maps: PlayerMapStatsInput[]) {
-	return computePlayerPerformance(maps.map(normalizeMapStats));
 }
 
 function usePlayerPerformance(maps: PlayerMapStatsInput[]) {

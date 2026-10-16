@@ -7,17 +7,19 @@ import { match, P } from "ts-pattern";
 import { Link, useParams } from "wouter";
 import { mapLabel } from "~/entities/map";
 import {
-	aggregatePlayerPerformance,
 	countryName,
 	flagUrl,
 	Performance,
 	PerformanceColor,
-	type PlayerMapStatsInput,
 	RatingColumnHead,
 	roundMetricValue,
 	StackedColumnHead,
 } from "~/features/profile";
-import type { PlayerPerformance } from "~/features/stats";
+import {
+	aggregatePlayerPerformance,
+	type PlayerMapStatsInput,
+	type PlayerPerformance,
+} from "~/features/stats";
 import { api, faceitApi } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { cn } from "~/shared/lib/cn";
