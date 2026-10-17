@@ -125,10 +125,6 @@ importers:
         version: 5.9.2
 
   tools/rating:
-    dependencies:
-      playwright:
-        specifier: ^1.56.1
-        version: 1.57.0
     devDependencies:
       '@types/node':
         specifier: ^24.10.0
