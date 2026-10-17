@@ -726,7 +726,7 @@ function buildPlayers(maps: MatchStats["rounds"], teamId: string): Array<PlayerE
 			const player = playerByIdMap.get(p.player_id);
 			assert(player);
 
-			player.stats.push({ ...p.player_stats, Rounds: map.round_stats.Rounds });
+			player.stats.push({ ...p.player_stats, Rounds: map.round_stats.Rounds, Game: map.game_id });
 			player.assists += Number(p.player_stats.Assists);
 			player.details = addDetails(player.details, p.player_stats);
 		}
@@ -1318,14 +1318,15 @@ interface MatchStats {
 					"K/R Ratio": string;
 					"Headshots %": string;
 					Kills: string;
-					"Double Kills": string;
 					"Triple Kills": string;
 					"Quadro Kills": string;
 					Assists: string;
 					Headshots: string;
 					Result: string;
 					"K/D Ratio": string;
-					ADR: string;
+					// ADR and double kills are missing from matches before late June 2024.
+					ADR?: string;
+					"Double Kills"?: string;
 					// The ones below are missing from CS:GO matches.
 					"First Kills"?: string;
 					"Entry Count"?: string;

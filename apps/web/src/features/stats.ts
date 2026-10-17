@@ -17,8 +17,9 @@ export interface PlayerPerformance {
 	mkpr: number;
 }
 
-// ADR and double kills were added late June 2024.
+// FACEIT added ADR and double kills in late June 2024, and CS:GO maps have neither.
 interface MapStats {
+	csgo: boolean;
 	rounds: number;
 	kills: number;
 	deaths: number;
@@ -33,6 +34,7 @@ interface MapStats {
 
 /** A map's figures as FACEIT's history and match stats report them. */
 export interface PlayerMapStatsInput {
+	Game: string;
 	Kills: string;
 	Deaths: string;
 	Assists: string;
@@ -51,6 +53,7 @@ export function aggregatePlayerPerformance(maps: PlayerMapStatsInput[]): PlayerP
 
 function normalizeMapStats(x: PlayerMapStatsInput): MapStats {
 	return {
+		csgo: x.Game === "csgo",
 		kills: Number(x.Kills),
 		deaths: Number(x.Deaths),
 		assists: Number(x.Assists),
@@ -77,6 +80,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 		headshots,
 		rounds,
 		assists,
+		ratingAssists,
 		doubleKills,
 		tripleKills,
 		quadroKills,
@@ -84,6 +88,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 	} = stats.reduce<{
 		kills: number;
 		assists: number;
+		ratingAssists: number;
 		deaths: number;
 		rounds: number;
 		damage: number;
@@ -97,15 +102,16 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			const { rounds, kills, assists, deaths, headshots, tripleKills, quadroKills, pentaKills } = x;
 
 			const kpr = divide(kills, rounds);
-			const apr = divide(assists, rounds);
+			// CS2 counts about 60% of the flash assists that CS:GO leaves out, and the fits take
+			// assists the CS2 way.
+			const ratingAssists = x.csgo ? assists * 1.16 : assists;
 
-			const adr = x.adr ?? estimateAdr(kpr, apr);
+			const adr =
+				x.adr ?? estimateAdr(x.csgo, kpr, divide(ratingAssists, rounds), divide(deaths, rounds));
 			const doubleKills =
 				x.doubleKills ??
 				estimateDoubleKpr(
 					kpr,
-					apr,
-					adr,
 					divide(tripleKills, rounds),
 					divide(quadroKills, rounds),
 					divide(pentaKills, rounds),
@@ -115,6 +121,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			total.rounds += rounds;
 			total.damage += adr * rounds;
 			total.assists += assists;
+			total.ratingAssists += ratingAssists;
 			total.deaths += deaths;
 			total.headshots += headshots;
 			total.doubleKills += doubleKills;
@@ -130,6 +137,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			damage: 0,
 			rounds: 0,
 			assists: 0,
+			ratingAssists: 0,
 			headshots: 0,
 			doubleKills: 0,
 			tripleKills: 0,
@@ -145,10 +153,11 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 	const apr = divide(assists, rounds);
 	const adr = divide(damage, rounds);
 	const mkpr = divide(doubleKills + tripleKills + quadroKills + pentaKills, rounds);
+	const ratingApr = divide(ratingAssists, rounds);
 
-	const kast = stats.length > 0 ? estimateKast(kpr, apr, dpr) : 0;
-	const rating = stats.length > 0 ? estimateRating(kpr, apr, dpr, adr, mkpr) : 0;
-	const firepower = stats.length > 0 ? estimateFirepower(kpr, apr, adr, mkpr) : 0;
+	const kast = stats.length > 0 ? estimateKast(kpr, ratingApr, dpr) : 0;
+	const rating = stats.length > 0 ? estimateRating(kpr, ratingApr, dpr, adr, mkpr) : 0;
+	const firepower = stats.length > 0 ? estimateFirepower(kpr, adr, mkpr) : 0;
 
 	return {
 		kills,
@@ -168,52 +177,43 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 	};
 }
 
-function estimateAdr(kpr: number, apr: number): number {
-	const adr = 3.3276314054649703 + kpr * 86.61895172 + apr * 78.64156577;
-	return clamp(adr, 0);
+// Rating, KAST and firepower are fitted on HLTV pros, with assists and damage counted the way FACEIT
+// counts them in CS2. The ADR and double kill estimates for older maps are fitted on recent FACEIT
+// maps, and the ADR estimate for CS:GO maps on HLTV's CS:GO maps, as CS:GO maps had more damage for
+// the same kills, assists and deaths. tools/rating has the data and the fits.
+function estimateAdr(csgo: boolean, kpr: number, apr: number, dpr: number): number {
+	if (csgo) return clamp(2.61 + 81.4 * kpr + 55.2 * apr + 13.7 * dpr, 0);
+	return clamp(-3.36 + 82.1 * kpr + 46.3 * apr + 17.4 * dpr, 0);
 }
 
 function estimateKast(kpr: number, apr: number, dpr: number): number {
-	const kast = 85.77576693024515 + kpr * 14.59741003 + apr * 39.57510705 - dpr * 46.21062528;
-	return clamp(kast, 0, 100);
+	return clamp(80.7 + 20.2 * kpr + 33.8 * apr - 44.2 * dpr, 0, 100);
 }
 
 function estimateRating(kpr: number, apr: number, dpr: number, adr: number, mkpr: number): number {
-	const rating =
-		0.6818764962620703 +
-		kpr * 0.66254728 +
-		apr * 0.32206339 -
-		dpr * 0.76366454 +
-		adr * 0.00358291 +
-		mkpr * 0.76960035;
-	return clamp(rating, 0);
+	// The fits saw no map above 150 ADR, and the curve would keep steepening past it.
+	const damage = clamp(adr, 0, 150);
+	return clamp(
+		0.879 +
+			0.751 * kpr +
+			0.272 * apr -
+			0.887 * dpr +
+			0.000417 * damage +
+			0.0000314 * damage ** 2 +
+			0.0574 * mkpr,
+		0,
+	);
 }
 
-function estimateFirepower(kpr: number, apr: number, adr: number, mkpr: number): number {
-	const firepower =
-		-187.0508572575841 +
-		kpr * 160.34947296 -
-		apr * 15.18186891 +
-		adr * 1.36153342 +
-		mkpr * 228.48279068;
-	return clamp(firepower, 0, 100);
+function estimateFirepower(kpr: number, adr: number, mkpr: number): number {
+	return clamp(-194 + 128 * kpr + 1.3 * adr + 406 * mkpr, 0, 100);
 }
 
 function estimateDoubleKpr(
 	kpr: number,
-	apr: number,
-	adr: number,
 	tripleKpr: number,
 	quadroKpr: number,
 	pentaKpr: number,
 ): number {
-	const doubleKpr =
-		-0.05357045289282321 +
-		kpr * 0.279077598 -
-		apr * 0.00786663351 +
-		adr * 0.000195105388 -
-		tripleKpr * 0.617993888 -
-		quadroKpr * 0.946751056 +
-		pentaKpr * 0.419746708;
-	return clamp(doubleKpr, 0, 1);
+	return clamp(-0.0822 + 0.367 * kpr - 1.02 * tripleKpr - 1.36 * quadroKpr - 1.7 * pentaKpr, 0, 1);
 }
