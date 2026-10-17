@@ -699,9 +699,9 @@ const InvertedMetrics: MetricType[] = ["dpr"];
 type CardMetricType = Exclude<MetricType, "kdDiff">;
 type TableMetricType = "rating" | "kd" | "kdDiff";
 
-// The card judges averages over many maps, which sit in a narrow band. Each range is as strict as
-// Rating 2.0's: across 654 players of every level (October 2026), each rates about 2% of them
-// poor, 70% okay and 28% good.
+// The card judges averages over many maps, which sit in a narrow band. Each range is about as strict
+// as Rating 2.0's: across 363 players of every level (October 2026), each rates 1–7% of them poor
+// and 18–25% good.
 const CardValueRange: Record<CardMetricType, [number, number]> = {
 	rating: [0.5, 1.5],
 	kd: [0.3, 1.5],
@@ -1994,11 +1994,11 @@ interface PlayerMapStats {
 	Score: string;
 	"Second Half Score": string;
 	Team: string;
-	"Double Kills": string;
+	"Double Kills"?: string;
 	"Triple Kills": string;
 	"Updated At": string;
 	Winner: string;
-	ADR: string;
+	ADR?: string;
 	"Match Finished At": number;
 }
 
