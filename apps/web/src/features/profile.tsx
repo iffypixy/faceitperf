@@ -2032,12 +2032,18 @@ async function fetchMapHistory(
 			if (maps.length < FaceitQueryLimit) {
 				// The pages after a short one are empty; awaiting them still surfaces a failure.
 				await Promise.all(pages);
-				return history;
+				return ratedMaps(history);
 			}
 
-			onPage(history.slice());
+			onPage(ratedMaps(history));
 		}
 	}
+}
+
+// Rating 2.0 is for 5v5, so other modes, like Wingman, are left out of the maps the history returns.
+// The history itself keeps them, as its last map is where the next page starts.
+function ratedMaps(history: PlayerMapStats[]): PlayerMapStats[] {
+	return history.filter((x) => x["Game Mode"] === "5v5");
 }
 
 async function fetchMapsPage(

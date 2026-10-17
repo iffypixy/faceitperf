@@ -73,8 +73,8 @@ async function fetchPlayer(username, env) {
 	return respelled.find((x) => x !== null) ?? null;
 }
 
-// The profile's "Last month" filter. The whole history, which the profile opens with, takes
-// seconds to download and more CPU than the free plan allows.
+// The profile's "Last month" filter, over the 5v5 maps it rates. The whole history, which the
+// profile opens with, takes seconds to download and more CPU than the free plan allows.
 async function fetchLastMonthMaps(playerId, env) {
 	const start = addMonths(new Date(), -1);
 	const maps = [];
@@ -87,7 +87,8 @@ async function fetchLastMonthMaps(playerId, env) {
 		);
 		maps.push(...items.map((x) => x.stats));
 
-		if (items.length < 100) return maps.filter((x) => new Date(x["Created At"]) > start);
+		if (items.length < 100)
+			return maps.filter((x) => x["Game Mode"] === "5v5" && new Date(x["Created At"]) > start);
 	}
 }
 
