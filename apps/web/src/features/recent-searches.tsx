@@ -11,8 +11,13 @@ const t = translate({
 	ru: { label: "Недавние поиски" },
 });
 
-/** Adds a player to the feed of recent searches. */
+// Back from a match opens the profile again, and each record is a Function request.
+const recorded = new Set<string>();
+
+/** Adds a player to the feed of recent searches, once per visit. */
 export function recordSearch(playerId: string) {
+	if (recorded.has(playerId)) return;
+	recorded.add(playerId);
 	api
 		.post("/faceit/lookups", { json: { playerId } })
 		// A lost search only leaves the feed a player short.
@@ -26,7 +31,7 @@ export const RecentSearches: React.FC = () => {
 		queryFn: () => api.get("/faceit/lookups").json<Search[]>(),
 		refetchInterval: PollMs,
 		// Back on the tab, the row catches up with what was searched meanwhile.
-		refetchOnWindowFocus: "always",
+		refetchOnWindowFocus: true,
 		// Back on the home page, the row starts afresh, rather than from an old list it then catches
 		// up on name by name.
 		gcTime: 0,
@@ -82,7 +87,7 @@ interface Search {
 
 // How often the row checks for new searches. Every check is a Function request, which the free
 // plan caps per day.
-const PollMs = 30 * 1000;
+const PollMs = 60 * 1000;
 
 // The row's source: it pings as each new search comes in, which shows even with the row scrolled
 // along, and keeps pinging while the row loads.
