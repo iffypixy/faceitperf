@@ -42,14 +42,15 @@ export const RecentSearches: React.FC = () => {
 	if (searches ? searches.length === 0 : query.isError) return null;
 
 	return (
-		<div className="w-full max-w-216 mx-auto h-8 flex items-center gap-3">
-			<LiveDot isLoading={!searches} />
+		// The row's height is kept while it loads, so the page doesn't move when it comes in.
+		<div className="w-full max-w-216 mx-auto h-8 flex items-center">
 			{searches && (
 				// Vertical swipes still scroll the page, and a sideways one at either end doesn't go back a
-				// page. New names mustn't move it, hence no scroll anchoring.
+				// page. New names mustn't move it, hence no scroll anchoring. It reaches past the row by the
+				// list's padding, so the first flag lines up with the search box.
 				<div
 					ref={mountRow}
-					className="min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [overflow-anchor:none] scroll-px-[8%] select-none [mask-image:linear-gradient(to_right,transparent,#000_var(--fade-before),#000_calc(100%_-_var(--fade-after)),transparent)] animate-in fade-in-0 duration-300 ease-out"
+					className="min-w-0 -mx-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [overflow-anchor:none] scroll-px-[8%] select-none [mask-image:linear-gradient(to_right,transparent,#000_var(--fade-before),#000_calc(100%_-_var(--fade-after)),transparent)] animate-in fade-in-0 duration-300 ease-out"
 				>
 					{/* Positioned, so the items' offsets count from the list, and padded for the focus ring
 					    of a name at either end. */}
@@ -88,32 +89,6 @@ interface Search {
 // How often the row checks for new searches. Every check is a Function request, which the free
 // plan caps per day.
 const PollMs = 60 * 1000;
-
-// The row's source: it pings as each new search comes in, which shows even with the row scrolled
-// along, and keeps pinging while the row loads.
-const LiveDot: React.FC<{ isLoading: boolean }> = ({ isLoading }) => (
-	<span aria-hidden className="relative size-2 shrink-0 rounded-full bg-faceit">
-		<span
-			ref={isLoading ? pulse : undefined}
-			className="absolute inset-0 rounded-full bg-faceit opacity-0"
-		/>
-	</span>
-);
-
-const Ping: Keyframe[] = [
-	{ transform: "scale(1)", opacity: 0.75 },
-	{ transform: "scale(3)", opacity: 0 },
-];
-const PingTiming: KeyframeAnimationOptions = {
-	duration: 1200,
-	easing: "cubic-bezier(0, 0, 0.2, 1)",
-};
-
-function pulse(el: HTMLElement | null) {
-	if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-	const animation = el.animate(Ping, { ...PingTiming, iterations: Number.POSITIVE_INFINITY });
-	return () => animation.cancel();
-}
 
 /**
  * The searches the row shows: all there are at first, and then each new one on its own, spread over
@@ -172,8 +147,6 @@ function mountRow(el: HTMLDivElement | null) {
 	if (!el) return;
 	const list = el.firstElementChild;
 	assert(list instanceof HTMLElement);
-	const ping = el.previousElementSibling?.firstElementChild;
-	assert(ping instanceof HTMLElement);
 
 	const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 	let glide: { position: number; velocity: number; target: number } | null = null;
@@ -223,7 +196,6 @@ function mountRow(el: HTMLDivElement | null) {
 			for (const item of items.slice(0, arrivals)) item.animate(Appear, 400);
 			return;
 		}
-		if (arrivals > 0) ping.animate(Ping, PingTiming);
 		items.forEach((item, position) => {
 			const id = playerIdOf(item);
 			const from =
