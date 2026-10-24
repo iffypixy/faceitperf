@@ -11,12 +11,18 @@ const t = translate({
 	ru: { label: "Недавние поиски" },
 });
 
-// Back from a match opens the profile again, and each record is a Function request.
+// Each record is a Function request, which the free plan caps per day. Bots open profiles straight
+// from their URLs, so the page a visit lands on doesn't count, and a profile opened again (back from
+// a match) counts once.
+const landingPath = window.location.pathname;
 const recorded = new Set<string>();
 
-/** Adds a player to the feed of recent searches, once per visit. */
+/**
+ * Adds a player to the feed of recent searches when their profile is opened from within the site,
+ * once per visit.
+ */
 export function recordSearch(playerId: string) {
-	if (recorded.has(playerId)) return;
+	if (window.location.pathname === landingPath || recorded.has(playerId)) return;
 	recorded.add(playerId);
 	api
 		.post("/faceit/lookups", { json: { playerId } })

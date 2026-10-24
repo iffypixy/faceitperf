@@ -286,7 +286,6 @@ const Profile: React.FC<{
 		addToHistory({ id: player_id, avatar, nickname, country });
 	}, [playerQuery.data, addToHistory]);
 
-	// Every profile opened counts, once, however it was reached.
 	const playerId = playerQuery.data?.player_id;
 	useEffect(() => {
 		if (playerId) recordSearch(playerId);
