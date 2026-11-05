@@ -1,13 +1,13 @@
 {
 	"name": "rating",
+	"private": true,
 	"type": "module",
-	"version": "0.1.0",
 	"scripts": {
 		"typecheck": "tsc"
 	},
 	"devDependencies": {
 		"@types/node": "^24.10.0",
-		"tsx": "^4.20.6",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.2"
 	}
 }
