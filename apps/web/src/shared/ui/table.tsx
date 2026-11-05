@@ -12,7 +12,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 			<table
 				data-slot="table"
 				className={cn(
-					"w-full caption-bottom bg-background border-collapse border-spacing-0 overflow-hidden tabular-nums",
+					"w-full bg-background border-collapse border-spacing-0 overflow-hidden tabular-nums",
 					className,
 				)}
 				{...props}
@@ -41,22 +41,12 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
 	);
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
-	return (
-		<tfoot
-			data-slot="table-footer"
-			className={cn("bg-muted/25 border-t font-medium last:[&>tr]:border-b-0", className)}
-			{...props}
-		/>
-	);
-}
-
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	return (
 		<tr
 			data-slot="table-row"
 			className={cn(
-				"hover:bg-muted data-[state=selected]:bg-muted odd:bg-card/50 even:bg-card border-b border-border sm:border-border/35",
+				"hover:bg-muted odd:bg-card/50 even:bg-card border-b border-border sm:border-border/35",
 				className,
 			)}
 			{...props}
@@ -72,7 +62,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"text-foreground h-12 px-2 max-sm:px-1.5 max-sm:text-[13px] sm:text-sm sm:font-semibold sm:text-muted-foreground text-left align-middle font-bold whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r sm:border-r-0 last:border-r-0 border-border",
+				"text-foreground h-12 px-2 max-sm:px-1.5 max-sm:text-[13px] sm:text-sm sm:font-semibold sm:text-muted-foreground text-left align-middle font-bold whitespace-nowrap border-r sm:border-r-0 last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
@@ -85,7 +75,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"p-2 max-sm:px-1.5 max-sm:text-[13px] max-sm:leading-5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-[2px] border-r sm:border-r-0 last:border-r-0 border-border",
+				"p-2 max-sm:px-1.5 max-sm:text-[13px] max-sm:leading-5 align-middle whitespace-nowrap border-r sm:border-r-0 last:border-r-0 border-border",
 				className,
 			)}
 			{...props}
@@ -93,14 +83,4 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 	);
 }
 
-function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
-	return (
-		<caption
-			data-slot="table-caption"
-			className={cn("text-muted-foreground mt-4 text-sm", className)}
-			{...props}
-		/>
-	);
-}
-
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };
+export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };
