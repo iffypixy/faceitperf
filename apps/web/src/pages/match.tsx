@@ -47,6 +47,7 @@ const t = translate({
 		notFound: "This match doesn't exist or isn't available right now.",
 		search: "Search for a player",
 		maps: "Maps",
+		bestOf: (count: number) => `Best of ${count}`,
 		server: "Server",
 		matchRoom: "Match room",
 		openOnFaceit: "Open on FACEIT",
@@ -75,6 +76,7 @@ const t = translate({
 		notFound: "Такого матча нет, или он сейчас недоступен.",
 		search: "Найти игрока",
 		maps: "Карты",
+		bestOf: (count: number) => `BO${count}`,
 		server: "Сервер",
 		matchRoom: "Комната матча",
 		openOnFaceit: "Открыть на FACEIT",
@@ -215,7 +217,7 @@ export const MatchPage: React.FC = () => {
 								<div className="grid md:grid-cols-2 gap-8">
 									<div className="flex flex-col gap-2">
 										<h2 className="font-bold">{t.maps}</h2>
-										<InfoBlock>Best of {best_of}</InfoBlock>
+										<InfoBlock>{t.bestOf(best_of)}</InfoBlock>
 										<Veto
 											type="map"
 											matchId={match_id}
