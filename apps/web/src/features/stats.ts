@@ -191,7 +191,7 @@ function estimateKast(kpr: number, apr: number, dpr: number): number {
 }
 
 function estimateRating(kpr: number, apr: number, dpr: number, adr: number, mkpr: number): number {
-	// The fits saw no map above 150 ADR, and the curve would keep steepening past it.
+	// The fits saw only one map above 150 ADR, and the curve would keep steepening past it.
 	const damage = clamp(adr, 0, 150);
 	return clamp(
 		0.879 +
