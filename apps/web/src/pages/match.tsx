@@ -6,7 +6,7 @@ import { match, P } from "ts-pattern";
 import { Link, useParams } from "wouter";
 import { countryName, flagUrl } from "~/entities/country";
 import { mapLabel } from "~/entities/map";
-import { playerUrl } from "~/entities/player";
+import { playerUrl, usePlayerDetailsQuery } from "~/entities/player";
 import {
 	Performance,
 	PerformanceColor,
@@ -633,7 +633,6 @@ const queryKeys = createQueryKeys("match", {
 	vetoProcessByMatchId: (matchId: string) => ["vetoProcess", matchId],
 	assignedServerByMatchId: (matchId: string) => ["assignedServer", matchId],
 	statsByMatchId: (matchId: string) => ["stats", matchId],
-	playerById: (playerId: string) => ["player", playerId],
 });
 
 function useMatchQuery(matchId: string) {
@@ -666,13 +665,6 @@ function useStatsQuery(matchId: string) {
 	return useQuery({
 		queryKey: queryKeys.statsByMatchId(matchId).queryKey,
 		queryFn: () => fetchStats(matchId),
-	});
-}
-
-function usePlayerQuery(playerId: string) {
-	return useQuery({
-		queryKey: queryKeys.playerById(playerId).queryKey,
-		queryFn: () => fetchPlayer(playerId),
 	});
 }
 
@@ -1077,7 +1069,7 @@ const DetailedColumns: Column[] = [
 ];
 
 const PlayerName: React.FC<{ id: string; nickname: string }> = ({ id, nickname }) => {
-	const country = usePlayerQuery(id).data?.country;
+	const country = usePlayerDetailsQuery(id).data?.country;
 
 	return (
 		<div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -1340,44 +1332,4 @@ interface MatchStats {
 
 async function fetchStats(matchId: string) {
 	return await faceitApi.get<MatchStats>(`matches/${matchId}/stats`).json();
-}
-
-interface Player {
-	activated_at: string;
-	avatar: string;
-	country: string;
-	cover_featured_image: string;
-	cover_image: string;
-	faceit_url: string;
-	friends_ids: string[];
-	games: Record<
-		string,
-		{
-			faceit_elo: number;
-			game_player_id: string;
-			game_player_name: string;
-			game_profile_id: string;
-			region: string;
-			regions: unknown;
-			skill_level: number;
-			skill_level_label: string;
-		}
-	>;
-	infractions: unknown;
-	membership_type: string;
-	memberships: string[];
-	new_steam_id: string;
-	nickname: string;
-	platforms: Record<string, string>;
-	player_id: string;
-	settings: {
-		language: string;
-	};
-	steam_id_64: string;
-	steam_nickname: string;
-	verified: boolean;
-}
-
-async function fetchPlayer(playerId: string) {
-	return await faceitApi.get<Player>(`players/${playerId}`).json();
 }

@@ -29,7 +29,7 @@ import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
 import { countryName, flagUrl } from "~/entities/country";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
-import { playerUrl } from "~/entities/player";
+import { playerUrl, usePlayerDetailsQuery } from "~/entities/player";
 import { RecentSearches, recordSearch } from "~/features/recent-searches";
 import {
 	aggregatePlayerPerformance,
@@ -1488,7 +1488,6 @@ function groupMapsIntoSessions(maps: PlayerMapStats[]): PlayerMapStats[][] {
 const queryKeys = createQueryKeys("profile", {
 	mapsByPlayerId: (playerId: string, version: GameVersion) => ["maps", playerId, version],
 	playerByInput: (input: string) => ["player", input],
-	playerDetailsById: (playerId: string) => ["player-details", playerId],
 });
 
 function usePlayerQuery(input: string, enabled: boolean = true) {
@@ -1528,13 +1527,6 @@ function useMapsQuery(playerId: string | null, version: GameVersion) {
 			});
 			return { maps, isComplete: true };
 		},
-	});
-}
-
-function usePlayerDetailsQuery(playerId: string) {
-	return useQuery({
-		queryKey: queryKeys.playerDetailsById(playerId).queryKey,
-		queryFn: ({ signal }) => fetchPlayerDetails(playerId, { signal }),
 	});
 }
 
@@ -2070,19 +2062,6 @@ async function fetchPlayerBySteamId(
 	});
 
 	return res.status === 404 ? null : await res.json();
-}
-
-interface PlayerDetailsResponse {
-	games: Record<string, { faceit_elo: number; skill_level: number }>;
-}
-
-async function fetchPlayerDetails(
-	playerId: string,
-	opts?: { signal?: AbortSignal },
-): Promise<PlayerDetailsResponse> {
-	return await faceitApi
-		.get<PlayerDetailsResponse>(`players/${playerId}`, { signal: opts?.signal })
-		.json();
 }
 
 function usePlayerPerformance(maps: PlayerMapStatsInput[]) {
