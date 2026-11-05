@@ -43,7 +43,6 @@
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
-	--color-card-foreground: var(--foreground);
 	--color-popover: var(--popover);
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);
@@ -76,22 +75,11 @@
 
 @layer base {
 	html {
-		box-sizing: border-box;
 		/* Keeps what keyboard focus scrolls to clear of the sticky header. */
 		scroll-padding-top: 6rem;
-		/* Controls show their own pressed state, so the phone's grey tap flash would double it. */
-		-webkit-tap-highlight-color: transparent;
-		/* iOS otherwise enlarges text in landscape, which pushes table columns apart. */
-		-webkit-text-size-adjust: 100%;
+		/* iOS otherwise enlarges text in landscape, which pushes table columns apart. Tailwind sets
+		   only the prefixed property. */
 		text-size-adjust: 100%;
-	}
-
-	*,
-	*::before,
-	*::after {
-		box-sizing: inherit;
-		padding: 0;
-		margin: 0;
 	}
 
 	body {
