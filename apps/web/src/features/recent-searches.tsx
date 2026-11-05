@@ -6,6 +6,7 @@ import { playerUrl } from "~/entities/player";
 import { api } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { translate } from "~/shared/lib/language";
+import { clamp } from "~/shared/lib/numbers";
 
 const t = translate({
 	en: { label: "Recent searches" },
@@ -162,7 +163,6 @@ function mountRow(el: HTMLDivElement | null) {
 	let movedTo = 0;
 
 	const end = () => el.scrollWidth - el.clientWidth;
-	const clamp = (x: number) => Math.min(Math.max(x, 0), end());
 
 	// The edges fade only where the row goes on, so its start and end show.
 	const fade = () => {
@@ -271,7 +271,7 @@ function mountRow(el: HTMLDivElement | null) {
 			// a fraction short of its end.
 			if ((delta < 0 ? from : end() - from) < 1) return;
 			ev.preventDefault();
-			glideTo(clamp(from + delta));
+			glideTo(clamp(from + delta, 0, end()));
 		},
 		{ passive: false, signal },
 	);
