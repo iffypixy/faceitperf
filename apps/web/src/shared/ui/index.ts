@@ -3,6 +3,7 @@ export * from "./button";
 export * from "./dialog";
 export * from "./dropdown";
 export * from "./icons";
+export * from "./loader";
 export * from "./table";
 export * from "./tabs";
 export * from "./templates";

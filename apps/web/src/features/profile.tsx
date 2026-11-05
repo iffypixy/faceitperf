@@ -47,6 +47,7 @@ import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
+	Button,
 	Container,
 	ContentTemplate,
 	DropdownMenu,
@@ -54,6 +55,7 @@ import {
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuTrigger,
+	Spinner,
 	Table,
 	TableBody,
 	TableCell,
@@ -68,8 +70,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "~/shared/ui";
-import { Button } from "~/shared/ui/button";
-import { Spinner } from "~/shared/ui/loader";
 
 const t = translate({
 	en: {

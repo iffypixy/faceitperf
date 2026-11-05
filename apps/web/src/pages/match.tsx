@@ -32,6 +32,7 @@ import {
 	AvatarImage,
 	Container,
 	ContentTemplate,
+	Spinner,
 	Table,
 	TableBody,
 	TableCell,
@@ -39,7 +40,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/shared/ui";
-import { Spinner } from "~/shared/ui/loader";
 import { NotFound } from "./not-found";
 
 const t = translate({
