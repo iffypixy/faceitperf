@@ -9,11 +9,9 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 		"strict": true,
-		"baseUrl": "./",
 		"paths": {
 			"~/*": ["./src/*"]
 		}
 	},
-	"include": ["src"],
-	"references": [{ "path": "./tsconfig.vite.json" }]
+	"include": ["src", "vite.config.ts"]
 }
