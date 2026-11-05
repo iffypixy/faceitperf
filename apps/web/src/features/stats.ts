@@ -3,18 +3,12 @@ import { clamp, divide } from "~/shared/lib/numbers";
 export interface PlayerPerformance {
 	kills: number;
 	deaths: number;
-	avgk: number;
-	hs: number;
 	adr: number;
 	kd: number;
 	kpr: number;
 	dpr: number;
-	apr: number;
-	hsp: number;
 	kast: number;
 	rating: number;
-	firepower: number;
-	mkpr: number;
 }
 
 // FACEIT added ADR and double kills in late June 2024, and CS:GO maps have neither.
@@ -24,7 +18,6 @@ interface MapStats {
 	kills: number;
 	deaths: number;
 	assists: number;
-	headshots: number;
 	adr?: number;
 	doubleKills?: number;
 	tripleKills: number;
@@ -39,7 +32,6 @@ export interface PlayerMapStatsInput {
 	Deaths: string;
 	Assists: string;
 	Rounds: string;
-	Headshots: string;
 	ADR?: string;
 	"Double Kills"?: string;
 	"Triple Kills": string;
@@ -58,7 +50,6 @@ function normalizeMapStats(x: PlayerMapStatsInput): MapStats {
 		deaths: Number(x.Deaths),
 		assists: Number(x.Assists),
 		rounds: Number(x.Rounds),
-		headshots: Number(x.Headshots),
 		adr: safeNumber(x.ADR),
 		doubleKills: safeNumber(x["Double Kills"]),
 		tripleKills: Number(x["Triple Kills"]),
@@ -77,9 +68,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 		kills,
 		deaths,
 		damage,
-		headshots,
 		rounds,
-		assists,
 		ratingAssists,
 		doubleKills,
 		tripleKills,
@@ -87,19 +76,17 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 		pentaKills,
 	} = stats.reduce<{
 		kills: number;
-		assists: number;
 		ratingAssists: number;
 		deaths: number;
 		rounds: number;
 		damage: number;
-		headshots: number;
 		doubleKills: number;
 		tripleKills: number;
 		quadroKills: number;
 		pentaKills: number;
 	}>(
 		(total, x) => {
-			const { rounds, kills, assists, deaths, headshots, tripleKills, quadroKills, pentaKills } = x;
+			const { rounds, kills, assists, deaths, tripleKills, quadroKills, pentaKills } = x;
 
 			const kpr = divide(kills, rounds);
 			// CS2 counts about 60% of the flash assists that CS:GO leaves out, and the fits take
@@ -120,10 +107,8 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			total.kills += kills;
 			total.rounds += rounds;
 			total.damage += adr * rounds;
-			total.assists += assists;
 			total.ratingAssists += ratingAssists;
 			total.deaths += deaths;
-			total.headshots += headshots;
 			total.doubleKills += doubleKills;
 			total.tripleKills += tripleKills;
 			total.quadroKills += quadroKills;
@@ -136,9 +121,7 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 			deaths: 0,
 			damage: 0,
 			rounds: 0,
-			assists: 0,
 			ratingAssists: 0,
-			headshots: 0,
 			doubleKills: 0,
 			tripleKills: 0,
 			quadroKills: 0,
@@ -147,37 +130,19 @@ function computePlayerPerformance(stats: MapStats[]): PlayerPerformance {
 	);
 
 	const kd = divide(kills, deaths);
-	const hsp = divide(headshots, kills);
 	const kpr = divide(kills, rounds);
 	const dpr = divide(deaths, rounds);
-	const apr = divide(assists, rounds);
 	const adr = divide(damage, rounds);
 	const mkpr = divide(doubleKills + tripleKills + quadroKills + pentaKills, rounds);
 	const ratingApr = divide(ratingAssists, rounds);
 
 	const kast = stats.length > 0 ? estimateKast(kpr, ratingApr, dpr) : 0;
 	const rating = stats.length > 0 ? estimateRating(kpr, ratingApr, dpr, adr, mkpr) : 0;
-	const firepower = stats.length > 0 ? estimateFirepower(kpr, adr, mkpr) : 0;
 
-	return {
-		kills,
-		deaths,
-		avgk: divide(kills, stats.length),
-		hs: divide(headshots, stats.length),
-		adr,
-		kd,
-		dpr,
-		kpr,
-		hsp,
-		apr,
-		kast,
-		rating,
-		firepower,
-		mkpr,
-	};
+	return { kills, deaths, adr, kd, dpr, kpr, kast, rating };
 }
 
-// Rating, KAST and firepower are fitted on HLTV pros, with assists and damage counted the way FACEIT
+// Rating and KAST are fitted on HLTV pros, with assists and damage counted the way FACEIT
 // counts them in CS2. The ADR and double kill estimates for older maps are fitted on recent FACEIT
 // maps, and the ADR estimate for CS:GO maps on HLTV's CS:GO maps, as CS:GO maps had more damage for
 // the same kills, assists and deaths. tools/rating has the data and the fits.
@@ -203,10 +168,6 @@ function estimateRating(kpr: number, apr: number, dpr: number, adr: number, mkpr
 			0.0574 * mkpr,
 		0,
 	);
-}
-
-function estimateFirepower(kpr: number, adr: number, mkpr: number): number {
-	return clamp(-194 + 128 * kpr + 1.3 * adr + 406 * mkpr, 0, 100);
 }
 
 function estimateDoubleKpr(
