@@ -6,6 +6,7 @@ import { match, P } from "ts-pattern";
 import { Link, useParams } from "wouter";
 import { countryName, flagUrl } from "~/entities/country";
 import { mapLabel } from "~/entities/map";
+import { playerUrl } from "~/entities/player";
 import {
 	Performance,
 	PerformanceColor,
@@ -1102,10 +1103,6 @@ const PlayerName: React.FC<{ id: string; nickname: string }> = ({ id, nickname }
 		</div>
 	);
 };
-
-function playerUrl(username: string) {
-	return `/players/${username}`;
-}
 
 // `alt` is empty where the team's name is written beside the avatar.
 const TeamAvatar: React.FC<{

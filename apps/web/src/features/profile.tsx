@@ -29,6 +29,7 @@ import { Link, useLocation, useParams } from "wouter";
 import { create } from "zustand";
 import { countryName, flagUrl } from "~/entities/country";
 import { type MapId, Maps, mapAlias, mapLabel } from "~/entities/map";
+import { playerUrl } from "~/entities/player";
 import { RecentSearches, recordSearch } from "~/features/recent-searches";
 import {
 	aggregatePlayerPerformance,
@@ -1553,7 +1554,7 @@ const ProfileSearchForm: React.FC<{
 	}, [initialValue]);
 
 	useEffect(() => {
-		if (location !== homeUrl()) return;
+		if (location !== "/") return;
 		inputRef.current?.focus();
 	}, [location]);
 
@@ -1672,10 +1673,6 @@ const ProfileSearchForm: React.FC<{
 	);
 };
 
-function playerUrl(username: string) {
-	return `/players/${username}`;
-}
-
 function useMediaQuery(query: string): boolean {
 	return useSyncExternalStore(
 		(onChange) => {
@@ -1685,10 +1682,6 @@ function useMediaQuery(query: string): boolean {
 		},
 		() => window.matchMedia(query).matches,
 	);
-}
-
-function homeUrl() {
-	return "/";
 }
 
 interface PlayerHistoryEntry {

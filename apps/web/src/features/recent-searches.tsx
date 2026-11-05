@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { countryName, flagUrl } from "~/entities/country";
+import { playerUrl } from "~/entities/player";
 import { api } from "~/shared/api";
 import { assert } from "~/shared/lib/assert";
 import { translate } from "~/shared/lib/language";
@@ -64,7 +65,7 @@ export const RecentSearches: React.FC = () => {
 						{searches.map((search) => (
 							<li key={search.player_id} data-player-id={search.player_id}>
 								<Link
-									href={`/players/${search.nickname}`}
+									href={playerUrl(search.nickname)}
 									className="flex items-center gap-2 whitespace-nowrap"
 								>
 									<img
