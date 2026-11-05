@@ -557,7 +557,7 @@ const FilterMenu = <T extends string | number>({
 };
 
 const PlayerCard: React.FC<{
-	player: Pick<PlayerListItem, "player_id" | "avatar" | "nickname" | "country">;
+	player: PlayerResponse;
 	version: GameVersion;
 	isRestored: boolean;
 	children: ReactNode;
@@ -1866,23 +1866,8 @@ async function steamIdByCustomId(
 	return res.response.steamid ?? null;
 }
 
-interface PlayerListItem {
-	player_id: string;
-	nickname: string;
-	status: string;
-	games: {
-		name: string;
-		skill_level: string;
-	}[];
-	country: string;
-	verified: boolean;
-	avatar: string;
-}
-
 interface PlayerListResponse {
-	start: number;
-	end: number;
-	items: PlayerListItem[];
+	items: PlayerResponse[];
 }
 
 // FACEIT's exact lookup is case-sensitive, and its search is fuzzy: past the first
