@@ -1149,9 +1149,7 @@ const TimeFormat = new Intl.DateTimeFormat(locale, { timeStyle: "short" });
 
 // Phones show the day only, so every column fits; the match page has the time.
 const MapDate: React.FC<{ map: PlayerMapStats }> = ({ map }) => {
-	// FACEIT API currently sets "Created At" to the same value as "Match Finished At".
-	// Until this is fixed, we use "Created At" if available, otherwise fallback to "Match Finished At".
-	const date = new Date(map["Created At"] ?? map["Match Finished At"]);
+	const date = new Date(map["Created At"]);
 
 	return (
 		<>
