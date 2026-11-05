@@ -1102,132 +1102,29 @@ const TeamAvatar: React.FC<{
 	</Avatar>
 );
 
+type Faction = "faction1" | "faction2";
+
 interface Match {
 	best_of: number;
-	broadcast_start_time: number;
-	broadcast_start_time_label: boolean;
-	calculate_elo: boolean;
-	chat_room_id: string;
-	competition_id: string;
 	competition_name: string;
-	competition_type: string;
-	configured_at: number;
-	demo_url: string[];
 	// One entry per map played.
-	detailed_results: {
-		asc_score: boolean;
-		factions: Record<"faction1" | "faction2", { score: number }>;
-		winner: string;
-	}[];
+	detailed_results: unknown[];
 	faceit_url: string;
 	finished_at: number;
-	game: string;
-	group: number;
 	match_id: string;
-	organizer_id: string;
-	region: string;
-	results: {
-		score: {
-			faction1: number;
-			faction2: number;
-		};
-		winner: string;
-	};
-	round: number;
-	scheduled_at: number;
+	results: { score: Record<Faction, number>; winner: Faction };
 	started_at: number;
 	status: "FINISHED" | "ONGOING";
-	teams: {
-		faction1: {
-			avatar: string;
-			faction_id: string;
-			leader: string;
-			name: string;
-			roster: [
-				{
-					anticheat_required: boolean;
-					avatar: string;
-					game_player_id: string;
-					game_player_name: string;
-					game_skill_level: number;
-					membership: string;
-					nickname: string;
-					player_id: string;
-				},
-			];
-			roster_v1: null;
-			stats: {
-				rating: number;
-				skillLevel: {
-					average: number;
-					range: {
-						max: number;
-						min: number;
-					};
-				};
-				winProbability: number;
-			};
-			substituted: boolean;
-			type: string;
-		};
-		faction2: {
-			avatar: string;
-			faction_id: string;
-			leader: string;
-			name: string;
-			roster: [
-				{
-					anticheat_required: boolean;
-					avatar: string;
-					game_player_id: string;
-					game_player_name: string;
-					game_skill_level: number;
-					membership: string;
-					nickname: string;
-					player_id: string;
-				},
-			];
-			roster_v1: null;
-			stats: {
-				rating: number;
-				skillLevel: {
-					average: number;
-					range: {
-						max: number;
-						min: number;
-					};
-				};
-				winProbability: number;
-			};
-			substituted: boolean;
-			type: string;
-		};
-	};
-	version: number;
-	voting?: {
-		location?: {
-			entities: {
-				class_name: string;
-				game_location_id: string;
-				guid: string;
-				image_lg: string;
-				image_sm: string;
-				name: string;
-			}[];
-			pick: string[];
-		};
-		map?: {
-			entities: {
-				class_name: string;
-				game_location_id: string;
-				guid: string;
-				image_lg: string;
-				image_sm: string;
-				name: string;
-			}[];
-			pick: string[];
-		};
-	};
+	teams: Record<
+		Faction,
+		{ avatar: string; faction_id: string; name: string; roster: { player_id: string }[] }
+	>;
+	voting?: Partial<Record<"location" | "map", Vote>>;
+}
+
+interface Vote {
+	entities: { guid: string; name: string }[];
+	pick: string[];
 }
 
 async function fetchMatch(matchId: string) {
@@ -1236,19 +1133,9 @@ async function fetchMatch(matchId: string) {
 
 interface VetoProcessResponse {
 	payload: {
-		match_id: string;
 		tickets: {
-			entities: [
-				{
-					guid: string;
-					status: "pick" | "drop";
-					random: boolean;
-					round: number;
-					selected_by: "faction1" | "faction2";
-				},
-			];
+			entities: { guid: string; status: "pick" | "drop"; selected_by: Faction }[];
 			entity_type: "location" | "map";
-			vote_type: "drop_pick";
 		}[];
 	};
 }
@@ -1264,48 +1151,26 @@ async function fetchVetoProcess(matchId: string) {
 
 interface MatchStats {
 	rounds: {
-		best_of: string;
-		competition_id: unknown;
 		game_id: string;
-		game_mode: string;
-		match_id: string;
-		match_round: string;
-		played: string;
-		round_stats: {
-			Region: string;
-			Score: string;
-			Winner: string;
-			Map: string;
-			Rounds: string;
-		};
+		round_stats: { Map: string; Rounds: string; Winner: string };
 		teams: {
 			team_id: string;
-			premade: boolean;
 			team_stats: {
-				"Second Half Score": string;
-				"Team Win": string;
-				"Team Headshots": string;
-				Team: string;
-				"Final Score": string;
-				"Overtime score": string;
 				"First Half Score": string;
+				"Second Half Score": string;
+				"Overtime score": string;
+				"Final Score": string;
 			};
 			players: {
 				player_id: string;
 				nickname: string;
 				player_stats: {
-					MVPs: string;
-					"Penta Kills": string;
-					Deaths: string;
-					"K/R Ratio": string;
-					"Headshots %": string;
 					Kills: string;
+					Deaths: string;
+					Assists: string;
 					"Triple Kills": string;
 					"Quadro Kills": string;
-					Assists: string;
-					Headshots: string;
-					Result: string;
-					"K/D Ratio": string;
+					"Penta Kills": string;
 					// ADR and double kills are missing from matches before late June 2024.
 					ADR?: string;
 					"Double Kills"?: string;
