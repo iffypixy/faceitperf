@@ -1,11 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Link, Route, Switch, useLocation } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { ProfileSearch } from "~/features/profile";
 import { useScrollRestoration } from "~/shared/lib/history-state";
-import { translate } from "~/shared/lib/language";
-import { useDocumentTitle } from "~/shared/lib/use-document-title";
-import { Center, ContentTemplate } from "~/shared/ui";
 import { MatchPage } from "./match";
+import { NotFoundPage } from "./not-found";
 
 export const Routes: React.FC = () => {
 	useScrollRestoration();
@@ -39,31 +37,3 @@ function useFocusOnNavigation() {
 		if (main && !main.contains(document.activeElement)) main.focus({ preventScroll: true });
 	}, [location]);
 }
-
-const t = translate({
-	en: {
-		title: "Page not found",
-		heading: "This page doesn't exist.",
-		search: "Search for a player",
-	},
-	ru: {
-		title: "Страница не найдена",
-		heading: "Такой страницы нет.",
-		search: "Найти игрока",
-	},
-});
-
-const NotFoundPage: React.FC = () => {
-	useDocumentTitle(t.title);
-
-	return (
-		<ContentTemplate>
-			<Center className="flex-col gap-4 px-4 text-center">
-				<h1 className="text-2xl">{t.heading}</h1>
-				<Link href="/" className="text-primary-foreground">
-					{t.search}
-				</Link>
-			</Center>
-		</ContentTemplate>
-	);
-};

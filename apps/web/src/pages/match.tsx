@@ -30,7 +30,6 @@ import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
-	Center,
 	Container,
 	ContentTemplate,
 	Table,
@@ -41,12 +40,12 @@ import {
 	TableRow,
 } from "~/shared/ui";
 import { Spinner } from "~/shared/ui/loader";
+import { NotFound } from "./not-found";
 
 const t = translate({
 	en: {
 		match: "Match",
 		notFound: "This match doesn't exist or isn't available right now.",
-		search: "Search for a player",
 		maps: "Maps",
 		bestOf: (count: number) => `Best of ${count}`,
 		server: "Server",
@@ -75,7 +74,6 @@ const t = translate({
 	ru: {
 		match: "Матч",
 		notFound: "Такого матча нет, или он сейчас недоступен.",
-		search: "Найти игрока",
 		maps: "Карты",
 		bestOf: (count: number) => `BO${count}`,
 		server: "Сервер",
@@ -134,14 +132,7 @@ export const MatchPage: React.FC = () => {
 				.with(
 					{ status: "error" },
 					{ status: "success", data: { status: P.not("FINISHED") } },
-					() => (
-						<Center className="flex-col gap-4 px-4 text-center">
-							<h1 className="text-2xl">{t.notFound}</h1>
-							<Link href="/" className="text-primary-foreground">
-								{t.search}
-							</Link>
-						</Center>
-					),
+					() => <NotFound heading={t.notFound} />,
 				)
 				.with({ status: "success" }, (x) => {
 					const {
