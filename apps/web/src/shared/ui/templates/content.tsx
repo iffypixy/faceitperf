@@ -142,7 +142,7 @@ const HelpButton: React.FC = () => {
 					</DropdownMenuItem>
 
 					<DropdownMenuItem asChild>
-						<a href="https://t.me/iffypixy" target="_blank" rel="noopener noreferrer">
+						<a href="https://t.me/sansblues" target="_blank" rel="noopener noreferrer">
 							<SendIcon className="size-4" /> {t.contact}
 						</a>
 					</DropdownMenuItem>

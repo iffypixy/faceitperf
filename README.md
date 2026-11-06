@@ -12,6 +12,6 @@ FACEIT has no Rating 2.0, so faceitperf recreates it from HLTV's own data. On pr
 
 ## Contact
 
-Questions or ideas? Message me on Telegram at [@iffypixy](https://t.me/iffypixy), or email ansat.euler@gmail.com.
+Questions or ideas? Message me on Telegram at [@sansblues](https://t.me/sansblues), or email ansat.euler@gmail.com.
 
 Not affiliated with FACEIT or HLTV.
