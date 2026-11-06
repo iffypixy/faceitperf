@@ -55,7 +55,7 @@ export const ContentTemplate: React.FC<React.PropsWithChildren> = ({ children })
 				    beside two buttons, so it spaces the items evenly, and the narrowest drop GitHub. */}
 				<div className="flex items-center justify-between xs:grid xs:grid-cols-[1fr_auto_1fr]">
 					<a
-						href="https://github.com/iffypixy/faceitperf"
+						href="https://github.com/sansblues/faceitperf"
 						target="_blank"
 						rel="noopener noreferrer"
 						aria-label={t.sourceCode}
